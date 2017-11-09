@@ -650,9 +650,19 @@ void setup_powerhold() {
  */
 #if HAS_STEPPER_RESET
   void disableStepperDrivers() {
+    HAL_GPIO_WritePin(GPIO?, GPIO_PIN_?, GPIO_PIN_?SET);
     OUT_WRITE(STEPPER_RESET_PIN, LOW);  // drive it down to hold in reset motor driver chips
   }
-  void enableStepperDrivers() { SET_INPUT(STEPPER_RESET_PIN); }  // set to input, which allows it to be pulled high by pullups
+  void enableStepperDrivers() {
+	  GPIO_InitTypeDef GPIO_InitStruct;
+
+	  GPIO_InitStruct.Pin = GPIO_PIN_?;
+	  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	  GPIO_InitStruct.Pull = GPIO_PULLUP;
+	  HAL_GPIO_Init(GPIO?, &GPIO_InitStruct);
+
+	  SET_INPUT(STEPPER_RESET_PIN);
+  }  // set to input, which allows it to be pulled high by pullups
 #endif
 
 /**

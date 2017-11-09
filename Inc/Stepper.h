@@ -9,6 +9,7 @@
 #define STEPPER_H_
 
 #include "macros.h"
+#include "Conditionals.h"
 
 #define E_STEP_WRITE(v) E0_STEP_WRITE(v)
 #define NORM_E_DIR() E0_DIR_WRITE(!INVERT_E0_DIR)

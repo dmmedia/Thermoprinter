@@ -11,6 +11,8 @@
 #include <math.h>
 #include <algorithm>
 
+#include "SREGEmulation.h"
+
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
 #define NUM_AXIS 4

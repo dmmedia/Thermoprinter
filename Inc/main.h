@@ -42,8 +42,12 @@
 
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdint.h>
 
 #include "stm32l0xx_hal.h"
+#include "macros.h"
+#include "SREGEmulation.h"
+#include "Conditionals.h"
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -350,7 +354,7 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // enable this option. Override at any time with M120, M121.
 #define ENDSTOPS_ALWAYS_ON_DEFAULT
 
-#define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
+#define clockCyclesPerMicrosecond() ( SystemCoreClock / 1000000L )
 
 unsigned long micros() {
 	unsigned long m;
