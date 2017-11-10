@@ -192,8 +192,16 @@ void AES_RNG_LPUART1_IRQHandler(void)
     if((__HAL_UART_GET_IT(&hlpuart1, UART_IT_RXNE) != RESET) &&
        (__HAL_UART_GET_IT_SOURCE(&hlpuart1, UART_IT_RXNE) != RESET))
     {
-        rx_buf[rx_i & RXBUF_MSK] = (uint8_t)(hlpuart1.Instance->RDR & 0x00FF);
-        rx_i++;
+    	// read only of no errors, else skip byte
+    	if (
+    			(__HAL_UART_GET_IT(&hlpuart1, UART_IT_NE) == RESET) &&
+				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_FE) == RESET) &&
+				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_PE) == RESET)
+		) {
+    		Serial._rx_complete_irq((uint8_t)(hlpuart1.Instance->RDR & 0x00FF));
+    	} else {
+    		hlpuart1.Instance->RDR;
+    	}
         /* Clear RXNE interrupt flag */
         __HAL_UART_SEND_REQ(&hlpuart1, UART_RXDATA_FLUSH_REQUEST);
     }

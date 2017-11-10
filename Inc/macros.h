@@ -12,6 +12,7 @@
 #include <algorithm>
 
 #include "SREGEmulation.h"
+#include <stm32l0xx_hal_gpio.h>
 
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
@@ -49,7 +50,7 @@
 #define MAX3(a, b, c)       max(max(a, b), c)
 #define MAX4(a, b, c, d)    max(MAX3(a, b, c), d)
 
-#define PIN_EXISTS(PN) (defined(PN ##_PIN) && PN ##_PIN >= 0)
+#define PIN_EXISTS(IO) IS_GPIO_PIN_AVAILABLE(IO ## _PORT, IO ## _PIN)
 
 #define NOOP do{} while(0)
 

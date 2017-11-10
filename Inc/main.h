@@ -68,7 +68,8 @@
 #define E1_DIR_PIN         28
 #define E1_ENABLE_PIN      24
 
-#define STEPPER_RESET_PIN  41   // Stepper drivers have a reset on RigidBot
+#define STEPPER_RESET_PORT GPIOA
+#define STEPPER_RESET_PIN  GPIO_PIN_1   // Stepper driver has a sleep input
 
 //
 // Limit Switches
@@ -353,48 +354,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // If you want endstops to stay on (by default) even when not homing
 // enable this option. Override at any time with M120, M121.
 #define ENDSTOPS_ALWAYS_ON_DEFAULT
-
-#define clockCyclesPerMicrosecond() ( SystemCoreClock / 1000000L )
-
-unsigned long micros() {
-	unsigned long m;
-	uint8_t oldSREG = SREG, t;
-
-	cli();
-	m = timer0_overflow_count;
-#if defined(TCNT0)
-	t = TCNT0;
-#elif defined(TCNT0L)
-	t = TCNT0L;
-#else
-	#error TIMER 0 not defined
-#endif
-
-#ifdef TIFR0
-	if ((TIFR0 & _BV(TOV0)) && (t < 255))
-		m++;
-#else
-	if ((TIFR & _BV(TOV0)) && (t < 255))
-		m++;
-#endif
-
-	SREG = oldSREG;
-
-	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
-}
-
-void delay(unsigned long ms)
-{
-	uint32_t start = micros();
-
-	while (ms > 0) {
-		yield();
-		while ( ms > 0 && (micros() - start) >= 1000) {
-			ms--;
-			start += 1000;
-		}
-	}
-}
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
 #define INVERT_E0_DIR true

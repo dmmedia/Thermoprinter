@@ -10,8 +10,25 @@
 
 #include "Conditionals.h"
 #include "main.h"
+#include "stm32l0xx_hal.h"
 
 #define HOTEND_LOOP() for (int8_t e = 0; e < HOTENDS; e++)
+
+#define ADCx                            ADC1
+
+/* Definition of ADCx channels */
+#define ADCx_CHANNEL_VOLTAGE                   ADC_CHANNEL_8
+#define ADCx_CHANNEL_TEMPERATURE               ADC_CHANNEL_5
+
+/* Definition of ADCx channels pins */
+//#define ADCx_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
+#define ADCx_CHANNEL_VOLTAGE_GPIO_PORT         GPIOB
+#define ADCx_CHANNEL_VOLTAGE_PIN               GPIO_PIN_0
+
+//#define ADCx_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
+#define ADCx_CHANNEL_TEMPERATURE_GPIO_PORT         GPIOA
+#define ADCx_CHANNEL_TEMPERATURE_PIN               GPIO_PIN_5
+
 
 // Set the high and low raw values for the heaters
 // For thermistors the highest temperature results in the lowest ADC value
@@ -75,6 +92,9 @@ private:
                    minttemp[HOTENDS],
                    maxttemp[HOTENDS];
 
+    ADC_HandleTypeDef    AdcHandle;
+
+    static void ADC_Config(void);
 };
 
 #endif /* TEMPERATURE_H_ */

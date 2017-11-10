@@ -570,6 +570,10 @@ void lcd_setstatus(const char * const message) {
  */
 inline void gcode_M117() { lcd_setstatus(parser.string_arg); }
 
+inline void gcode_P0() {
+	// TODO: add parser.byte_arg to buffer
+}
+
 /**
  * Process a single command and dispatch it to its handler
  * This is called from the main loop()
@@ -650,18 +654,17 @@ void setup_powerhold() {
  */
 #if HAS_STEPPER_RESET
   void disableStepperDrivers() {
-    HAL_GPIO_WritePin(GPIO?, GPIO_PIN_?, GPIO_PIN_?SET);
-    OUT_WRITE(STEPPER_RESET_PIN, LOW);  // drive it down to hold in reset motor driver chips
+    HAL_GPIO_WritePin(STEPPER_RESET_PORT, STEPPER_RESET_PIN, GPIO_PIN_RESET);
   }
+
   void enableStepperDrivers() {
 	  GPIO_InitTypeDef GPIO_InitStruct;
 
-	  GPIO_InitStruct.Pin = GPIO_PIN_?;
+	  GPIO_InitStruct.Pin = STEPPER_RESET_PIN;
 	  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	  GPIO_InitStruct.Pull = GPIO_PULLUP;
-	  HAL_GPIO_Init(GPIO?, &GPIO_InitStruct);
+	  HAL_GPIO_Init(STEPPER_RESET_PORT, &GPIO_InitStruct);
 
-	  SET_INPUT(STEPPER_RESET_PIN);
   }  // set to input, which allows it to be pulled high by pullups
 #endif
 

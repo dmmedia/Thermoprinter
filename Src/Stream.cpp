@@ -68,6 +68,7 @@ int Stream::peekNextDigit(LookaheadMode lookahead, bool detectDecimal)
                 case '\n': break;
                 default: return -1; // Fail code.
             }
+            break;
         case SKIP_ALL:
             break;
     }
@@ -133,8 +134,9 @@ long Stream::parseInt(LookaheadMode lookahead, char ignore)
     return 0; // zero returned if timeout
 
   do{
-    if(c == ignore)
-      ; // ignore this character
+    if(c == ignore) {
+      // ignore this character
+    }
     else if(c == '-')
       isNegative = true;
     else if(c >= '0' && c <= '9')        // is c a digit?
@@ -164,8 +166,9 @@ float Stream::parseFloat(LookaheadMode lookahead, char ignore)
     return 0; // zero returned if timeout
 
   do{
-    if(c == ignore)
-      ; // ignore
+    if(c == ignore) {
+      // ignore
+    }
     else if(c == '-')
       isNegative = true;
     else if (c == '.')

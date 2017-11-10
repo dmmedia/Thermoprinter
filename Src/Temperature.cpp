@@ -25,6 +25,7 @@ void Temperature::init() {
   // Finish init of mult hotend arrays
   HOTEND_LOOP() maxttemp[e] = maxttemp[0];
 
+  ADC_Config();
   #ifdef DIDR2
     #define ANALOG_SELECT(pin) do{ if (pin < 8) SBI(DIDR0, pin); else SBI(DIDR2, pin - 8); }while(0)
   #else
@@ -65,7 +66,7 @@ void Temperature::init() {
   SBI(TIMSK0, OCIE0B);
 
   // Wait for temperature measurement to settle
-  delay(250);
+  HAL_Delay(250);
 
   #define TEMP_MIN_ROUTINE(NR) \
     minttemp[NR] = HEATER_ ##NR## _MINTEMP; \
@@ -112,4 +113,78 @@ void Temperature::init() {
   #if ENABLED(PROBING_HEATERS_OFF)
     paused = false;
   #endif
+}
+
+/**
+  * @brief  ADC configuration
+  * @param  None
+  * @retval None
+  */
+static void Temperature::ADC_Config(void)
+{
+  ADC_ChannelConfTypeDef   sConfig;
+
+  /* Configuration of AdcHandle init structure: ADC parameters and regular group */
+  AdcHandle.Instance = ADCx;
+
+  if (HAL_ADC_DeInit(&AdcHandle) != HAL_OK)
+  {
+    /* ADC initialization error */
+    Error_Handler();
+  }
+
+  AdcHandle.Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
+  AdcHandle.Init.Resolution            = ADC_RESOLUTION12b;
+  AdcHandle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+  AdcHandle.Init.ScanConvMode          = ADC_SCAN_DIRECTION_FORWARD;    /* Sequencer will convert the number of channels configured below, successively from the lowest to the highest channel number */
+  AdcHandle.Init.EOCSelection          = EOC_SINGLE_CONV;
+  AdcHandle.Init.LowPowerAutoWait      = DISABLE;
+  AdcHandle.Init.LowPowerAutoPowerOff  = DISABLE;
+  AdcHandle.Init.ContinuousConvMode    = DISABLE;                       /* Continuous mode disabled to have only 1 rank converted at each conversion trig, and because discontinuous mode is enabled */
+  AdcHandle.Init.DiscontinuousConvMode = ENABLE;                        /* Sequencer of regular group will convert the sequence in several sub-divided sequences */
+  AdcHandle.Init.ExternalTrigConv      = ADC_EXTERNALTRIG2_T2_TRGO;     /* Parameter discarded because trig of conversion without external event */
+  AdcHandle.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIG_EDGE_NONE;    /* Trig of conversion without external event: start done manually by software */
+  AdcHandle.Init.DMAContinuousRequests = ENABLE;                        /* ADC-DMA continuous requests to match with DMA configured in circular mode */
+  AdcHandle.Init.Overrun               = OVR_DATA_OVERWRITTEN;
+  AdcHandle.Init.LowPowerFrequencyMode = DISABLE;
+  /* Note: Set long sampling time due to internal channels (VrefInt,          */
+  /*       temperature sensor) constraints. Refer to device datasheet for     */
+  /*       min/typ/max values.                                                */
+  AdcHandle.Init.SamplingTime          = ADC_SAMPLETIME_71CYCLES_5;
+  AdcHandle.Init.OversamplingMode      = DISABLE;
+
+
+  if (HAL_ADC_Init(&AdcHandle) != HAL_OK)
+  {
+    /* ADC initialization error */
+    Error_Handler();
+  }
+
+  /* Configuration of channel on ADCx regular group on sequencer rank 1 */
+  /* Note: Considering IT occurring after each ADC conversion (IT by DMA end  */
+  /*       of transfer), select sampling time and ADC clock with sufficient   */
+  /*       duration to not create an overhead situation in IRQHandler.        */
+  sConfig.Channel      = ADCx_CHANNEL_TEMPERATURE;
+
+  if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK)
+  {
+    /* Channel Configuration Error */
+    Error_Handler();
+  }
+
+  /* Configuration of channel on ADCx regular group on sequencer rank 2 */
+  /* Replicate previous rank settings, change only channel */
+  /* Note: On STM32L0xx, rank is defined by channel number. ADC Channel         */
+  /*       ADC_CHANNEL_VREFINT is on ADC channel 17, there is 1 other         */
+  /*       channel enabled with lower channel number. Therefore,              */
+  /*       ADC_CHANNEL_VREFINT will be converted by the sequencer as the      */
+  /*       2nd rank.                                                          */
+  sConfig.Channel      = ADCx_CHANNEL_VOLTAGE;
+
+  if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK)
+  {
+    /* Channel Configuration Error */
+    Error_Handler();
+  }
+
 }
