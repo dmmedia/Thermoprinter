@@ -53,43 +53,33 @@ int MarlinSerial::read(void) {
 }
 
 void MarlinSerial::begin(const long baud) {
-  uint16_t baud_setting;
-  bool useU2X = true;
 
-  #if F_CPU == 16000000UL && SERIAL_PORT == 0
-    // hard-coded exception for compatibility with the bootloader shipped
-    // with the Duemilanove and previous boards and the firmware on the 8U2
-    // on the Uno and Mega 2560.
-    if (baud == 57600) useU2X = false;
-  #endif
+    hlpuart1.Instance = LPUART1;
+	hlpuart1.Init.BaudRate = baud;
+	hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
+	hlpuart1.Init.StopBits = UART_STOPBITS_1;
+	hlpuart1.Init.Parity = UART_PARITY_NONE;
+	hlpuart1.Init.Mode = UART_MODE_TX_RX;
+	hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+	hlpuart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	hlpuart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&hlpuart1) != HAL_OK)
+	{
+	  _Error_Handler(__FILE__, __LINE__);
+	}
+	__HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_RXNE);
 
-  if (useU2X) {
-    M_UCSRxA = _BV(M_U2Xx);
-    baud_setting = (F_CPU / 4 / baud - 1) / 2;
-  }
-  else {
-    M_UCSRxA = 0;
-    baud_setting = (F_CPU / 8 / baud - 1) / 2;
-  }
+	uint16_t baud_setting;
 
-  // assign the baud_setting, a.k.a. ubbr (USART Baud Rate Register)
-  M_UBRRxH = baud_setting >> 8;
-  M_UBRRxL = baud_setting;
-
-  SBI(M_UCSRxB, M_RXENx);
-  SBI(M_UCSRxB, M_TXENx);
-  SBI(M_UCSRxB, M_RXCIEx);
   #if TX_BUFFER_SIZE > 0
-    CBI(M_UCSRxB, M_UDRIEx);
+    __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_TXE);
+    __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_TC);
     _written = false;
   #endif
 }
 
 void MarlinSerial::end() {
-  CBI(M_UCSRxB, M_RXENx);
-  CBI(M_UCSRxB, M_TXENx);
-  CBI(M_UCSRxB, M_RXCIEx);
-  CBI(M_UCSRxB, M_UDRIEx);
+	HAL_UART_DeInit(&hlpuart1);
 }
 
 // Preinstantiate

@@ -76,6 +76,7 @@ void serialEventRun(void)
 
 void HardwareSerial::_tx_udr_empty_irq(void)
 {
+/*
   // If interrupts are enabled, there must be more data in the output
   // buffer. Send the next byte
   unsigned char c = _tx_buffer[_tx_buffer_tail];
@@ -92,14 +93,16 @@ void HardwareSerial::_tx_udr_empty_irq(void)
     // Buffer empty, so disable interrupts
     cbi(*_ucsrb, UDRIE0);
   }
+*/
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 
 void HardwareSerial::begin(unsigned long baud, byte config)
 {
+/*
   // Try u2x mode first
-  uint16_t baud_setting = (F_CPU / 4 / baud - 1) / 2;
+  uint16_t baud_setting = (SystemCoreClock / 4 / baud - 1) / 2;
   *_ucsra = 1 << U2X0;
 
   // hardcoded exception for 57600 for compatibility with the bootloader
@@ -107,10 +110,10 @@ void HardwareSerial::begin(unsigned long baud, byte config)
   // on the 8U2 on the Uno and Mega 2560. Also, The baud_setting cannot
   // be > 4095, so switch back to non-u2x mode if the baud rate is too
   // low.
-  if (((F_CPU == 16000000UL) && (baud == 57600)) || (baud_setting >4095))
+  if (((SystemCoreClock == 16000000UL) && (baud == 57600)) || (baud_setting >4095))
   {
     *_ucsra = 0;
-    baud_setting = (F_CPU / 8 / baud - 1) / 2;
+    baud_setting = (SystemCoreClock / 8 / baud - 1) / 2;
   }
 
   // assign the baud_setting, a.k.a. ubrr (USART Baud Rate Register)
@@ -129,10 +132,12 @@ void HardwareSerial::begin(unsigned long baud, byte config)
   sbi(*_ucsrb, TXEN0);
   sbi(*_ucsrb, RXCIE0);
   cbi(*_ucsrb, UDRIE0);
+*/
 }
 
 void HardwareSerial::end()
 {
+/*
   // wait for transmission of outgoing data
   flush();
 
@@ -143,6 +148,7 @@ void HardwareSerial::end()
 
   // clear any received data
   _rx_buffer_head = _rx_buffer_tail;
+*/
 }
 
 int HardwareSerial::available(void)
@@ -193,7 +199,7 @@ void HardwareSerial::flush()
   // complete) bit to 1 during initialization
   if (!_written)
     return;
-
+/*
   while (bit_is_set(*_ucsrb, UDRIE0) || bit_is_clear(*_ucsra, TXC0)) {
     if (bit_is_clear(SREG, SREG_I) && bit_is_set(*_ucsrb, UDRIE0))
 	// Interrupts are globally disabled, but the DR empty
@@ -202,12 +208,14 @@ void HardwareSerial::flush()
 	if (bit_is_set(*_ucsra, UDRE0))
 	  _tx_udr_empty_irq();
   }
+  */
   // If we get here, nothing is queued anymore (DRIE is disabled) and
   // the hardware finished tranmission (TXC is set).
 }
 
 size_t HardwareSerial::write(uint8_t c)
 {
+/*
   _written = true;
   // If the buffer and the data register is empty, just write the byte
   // to the data register and be done. This shortcut helps
@@ -241,6 +249,8 @@ size_t HardwareSerial::write(uint8_t c)
   sbi(*_ucsrb, UDRIE0);
 
   return 1;
+*/
+  return 0; // remove me
 }
 
 #endif // whole file

@@ -34,11 +34,12 @@
 #include "stm32l0xx_hal.h"
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
+#include "serial.h"
 
 /* USER CODE BEGIN 0 */
 extern uint8_t rx_buf[RXBUF_LEN], tx_buf[TXBUF_LEN];
 extern volatile uint16_t rx_i, tx_o;
-extern uint16_t rx_o, rx_e, tx_i;
+extern uint16_t tx_i;
 extern volatile uint8_t tx_busy;
 
 /* USER CODE END 0 */
@@ -198,7 +199,7 @@ void AES_RNG_LPUART1_IRQHandler(void)
 				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_FE) == RESET) &&
 				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_PE) == RESET)
 		) {
-    		Serial._rx_complete_irq((uint8_t)(hlpuart1.Instance->RDR & 0x00FF));
+    		MYSERIAL._rx_complete_irq((uint8_t)(hlpuart1.Instance->RDR & 0x00FF));
     	} else {
     		hlpuart1.Instance->RDR;
     	}

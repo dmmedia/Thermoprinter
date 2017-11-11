@@ -172,6 +172,31 @@ public:
     static void refresh_positioning();
 
     static void set_position_mm_kinematic(const float position[NUM_AXIS]);
+
+    /**
+     * "Discards" the block and "releases" the memory.
+     * Called when the current block is no longer needed.
+     */
+    static void discard_current_block() {
+      if (blocks_queued())
+        block_buffer_tail = BLOCK_MOD(block_buffer_tail + 1);
+    }
+
+    /**
+     * The current block. NULL if the buffer is empty.
+     * This also marks the block as busy.
+     */
+    static block_t* get_current_block() {
+      if (blocks_queued()) {
+        block_t* block = &block_buffer[block_buffer_tail];
+        SBI(block->flag, BLOCK_BIT_BUSY);
+        return block;
+      }
+      else {
+        return NULL;
+      }
+    }
+
 private:
     /**
      * The current position of the tool in absolute steps

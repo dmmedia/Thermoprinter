@@ -85,6 +85,8 @@ public:
 
     void init();
 
+    static volatile bool in_temp_isr;
+
 private:
     // Init min and max temp with extreme values to prevent false errors during startup
     static int16_t minttemp_raw[HOTENDS],

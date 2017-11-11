@@ -89,4 +89,60 @@
 
 #define LOW  0x0
 
+// Compare Modes
+typedef enum {
+  COM_NORMAL,          //  0
+  COM_TOGGLE,          //  1  Non-PWM: OCnx ... Both PWM (WGM 9,11,14,15): OCnA only ... else NORMAL
+  COM_CLEAR_SET,       //  2  Non-PWM: OCnx ... Fast PWM: OCnx/Bottom ... PF-FC: OCnx Up/Down
+  COM_SET_CLEAR        //  3  Non-PWM: OCnx ... Fast PWM: OCnx/Bottom ... PF-FC: OCnx Up/Down
+} CompareMode;
+
+// Clock Sources
+typedef enum {
+  CS_NONE,             //  0
+  CS_PRESCALER_1,      //  1
+  CS_PRESCALER_8,      //  2
+  CS_PRESCALER_64,     //  3
+  CS_PRESCALER_256,    //  4
+  CS_PRESCALER_1024,   //  5
+  CS_EXT_FALLING,      //  6
+  CS_EXT_RISING        //  7
+} ClockSource;
+
+// Set Compare Mode bits
+#define _SET_COM(T,Q,V) (TCCR##T##Q = (TCCR##T##Q & ~(0x3 << COM##T##Q##0)) | (int(V) << COM##T##Q##0))
+#define SET_COM(T,Q,V) _SET_COM(T,Q,COM_##V)
+#define SET_COMA(T,V) SET_COM(T,A,V)
+
+// Set Clock Select bits
+#define _SET_CS(T,V) (TCCR##T##B = (TCCR##T##B & ~(0x7 << CS##T##0)) | ((int(V) & 0x7) << CS##T##0))
+#define _SET_CS0(V) _SET_CS(0,V)
+#define _SET_CS1(V) _SET_CS(1,V)
+#ifdef TCCR2
+  #define _SET_CS2(V) (TCCR2 = (TCCR2 & ~(0x7 << CS20)) | (int(V) << CS20))
+#else
+  #define _SET_CS2(V) _SET_CS(2,V)
+#endif
+#define _SET_CS3(V) _SET_CS(3,V)
+#define _SET_CS4(V) _SET_CS(4,V)
+#define _SET_CS5(V) _SET_CS(5,V)
+#define SET_CS0(V) _SET_CS0(CS_##V)
+#define SET_CS1(V) _SET_CS1(CS_##V)
+#ifdef TCCR2
+  #define SET_CS2(V) _SET_CS2(CS2_##V)
+#else
+  #define SET_CS2(V) _SET_CS2(CS_##V)
+#endif
+#define SET_CS3(V) _SET_CS3(CS_##V)
+#define SET_CS4(V) _SET_CS4(CS_##V)
+#define SET_CS5(V) _SET_CS5(CS_##V)
+#define SET_CS(T,V) SET_CS##T(V)
+
+// Set Wave Generation Mode bits
+#define _SET_WGM(T,V) do{ \
+    TCCR##T##A = (TCCR##T##A & ~(0x3 << WGM##T##0)) | (( int(V)       & 0x3) << WGM##T##0); \
+    TCCR##T##B = (TCCR##T##B & ~(0x3 << WGM##T##2)) | (((int(V) >> 2) & 0x3) << WGM##T##2); \
+  }while(0)
+#define SET_WGM(T,V) _SET_WGM(T,WGM_##V)
+
 #endif /* MACROS_H_ */

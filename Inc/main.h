@@ -53,20 +53,15 @@
 /* Private define ------------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-// RigidBot swaps E0 / E1 plugs vs RAMPS 1.3
-#undef E0_STEP_PIN
-#undef E0_DIR_PIN
-#undef E0_ENABLE_PIN
-#define E0_STEP_PIN        36
-#define E0_DIR_PIN         34
-#define E0_ENABLE_PIN      30
-
-#undef E1_STEP_PIN
-#undef E1_DIR_PIN
-#undef E1_ENABLE_PIN
-#define E1_STEP_PIN        26
-#define E1_DIR_PIN         28
-#define E1_ENABLE_PIN      24
+#undef MOTOR_STEP_PIN
+#undef MOTOR_DIR_PIN
+#undef MOTOR_ENABLE_PIN
+#define MOTOR_STEP_PORT		GPIOA
+#define MOTOR_STEP_PIN		GPIO_PIN_2
+#define MOTOR_DIR_PORT		GPIOA
+#define MOTOR_DIR_PIN		GPIO_PIN_3
+#define MOTOR_ENABLE_PORT	GPIOA
+#define MOTOR_ENABLE_PIN	GPIO_PIN_1
 
 #define STEPPER_RESET_PORT GPIOA
 #define STEPPER_RESET_PIN  GPIO_PIN_1   // Stepper driver has a sleep input
@@ -155,29 +150,6 @@ typedef uint8_t byte;
 extern bool Running;
 inline bool IsRunning() { return  Running; }
 inline bool IsStopped() { return !Running; }
-
-/**
- * Axis indices as enumerated constants
- *
- * Special axis:
- *  - A_AXIS and B_AXIS are used by COREXY printers
- *  - X_HEAD and Y_HEAD is used for systems that don't have a 1:1 relationship
- *    between X_AXIS and X Head movement, like CoreXY bots
- */
-enum AxisEnum {
-  NO_AXIS   = -1,
-  X_AXIS    = 0,
-  A_AXIS    = 0,
-  Y_AXIS    = 1,
-  B_AXIS    = 1,
-  Z_AXIS    = 2,
-  C_AXIS    = 2,
-  E_AXIS    = 3,
-  X_HEAD    = 4,
-  Y_HEAD    = 5,
-  Z_HEAD    = 6,
-  ALL_AXES  = 100
-};
 
 enum EndstopEnum {
   X_MIN,
@@ -371,6 +343,9 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 #define digitalPinToInterrupt(p) ((p) == 2 ? 0 : ((p) == 3 ? 1 : ((p) >= 18 && (p) <= 21 ? 23 - (p) : NOT_AN_INTERRUPT)))
 
 #define CHANGE 1
+
+// By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
+#define INVERT_MOTOR_STEP_PIN false
 
 /* USER CODE END Private defines */
 
