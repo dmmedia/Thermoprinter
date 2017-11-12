@@ -145,4 +145,29 @@ typedef enum {
   }while(0)
 #define SET_WGM(T,V) _SET_WGM(T,WGM_##V)
 
+// Highly granular delays for step pulses, etc.
+#define DELAY_0_NOP NOOP
+#define DELAY_1_NOP asm("nop");
+#define DELAY_2_NOP DELAY_1_NOP; DELAY_1_NOP
+#define DELAY_3_NOP DELAY_1_NOP; DELAY_2_NOP
+#define DELAY_4_NOP DELAY_1_NOP; DELAY_3_NOP
+#define DELAY_5_NOP DELAY_1_NOP; DELAY_4_NOP
+
+#define DELAY_NOPS(X) \
+  switch (X) { \
+    case 20: DELAY_1_NOP; case 19: DELAY_1_NOP; \
+    case 18: DELAY_1_NOP; case 17: DELAY_1_NOP; \
+    case 16: DELAY_1_NOP; case 15: DELAY_1_NOP; \
+    case 14: DELAY_1_NOP; case 13: DELAY_1_NOP; \
+    case 12: DELAY_1_NOP; case 11: DELAY_1_NOP; \
+    case 10: DELAY_1_NOP; case 9:  DELAY_1_NOP; \
+    case 8:  DELAY_1_NOP; case 7:  DELAY_1_NOP; \
+    case 6:  DELAY_1_NOP; case 5:  DELAY_1_NOP; \
+    case 4:  DELAY_1_NOP; case 3:  DELAY_1_NOP; \
+    case 2:  DELAY_1_NOP; case 1:  DELAY_1_NOP; \
+  }
+
+#define DELAY_10_NOP DELAY_5_NOP;  DELAY_5_NOP
+#define DELAY_20_NOP DELAY_10_NOP; DELAY_10_NOP
+
 #endif /* MACROS_H_ */

@@ -71,4 +71,25 @@
   #define ARRAY_BY_HOTENDS(...) ARRAY_N(HOTENDS, __VA_ARGS__)
   #define ARRAY_BY_HOTENDS1(v1) ARRAY_BY_HOTENDS(v1, v1, v1, v1, v1, v1)
 
+  #define MAX_STEP_FREQUENCY 1000
+
+  #define CYCLES_PER_MICROSECOND (SystemCoreClock / 1000000L) // 16 or 20
+
+  // Stepper pulse duration, in cycles
+  #define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
+
+  /**
+   * Temp Sensor defines
+   */
+  #if TEMP_SENSOR_0 == 0
+    #undef PRINTHEAD_MINTEMP
+    #undef PRINTHEAD_MAXTEMP
+  #elif TEMP_SENSOR_0 > 0
+    #define THERMISTORHEATER_0 TEMP_SENSOR_0
+    #define PRINTHEAD_USES_THERMISTOR
+  #endif
+
+  // Thermistors
+  #define HAS_TEMP_0 (PIN_EXISTS(TEMP_0) && TEMP_SENSOR_0 != 0 && TEMP_SENSOR_0 > -2)
+
 #endif /* CONDITIONALS_H_ */

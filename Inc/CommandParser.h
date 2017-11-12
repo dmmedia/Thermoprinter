@@ -102,7 +102,7 @@ public:
   }
 
   FORCE_INLINE static float value_linear_units()                  {            return value_float(); }
-  FORCE_INLINE static float value_axis_units(const AxisEnum a)    { UNUSED(a); return value_float(); }
+  FORCE_INLINE static float value_axis_units()    { return value_float(); }
 
   FORCE_INLINE static float    linearval(const char c, const float dval=0.0)  { return seenval(c) ? value_linear_units() : dval; }
 

@@ -21,10 +21,79 @@ uint16_t Stepper::cleaning_buffer_counter = 0;
 
 volatile signed char Stepper::count_direction = 1;
 
-unsigned short Stepper::TIM2_ARR_nominal;
+unsigned short Stepper::acc_step_rate; // needed for deceleration start point
+uint8_t Stepper::step_loops, Stepper::step_loops_nominal;
+unsigned short Stepper::TIM6_ARR_nominal;
 
-#define ENABLE_STEPPER_DRIVER_INTERRUPT()  NVIC_EnableIRQ(TIM2_IRQn);
-#define DISABLE_STEPPER_DRIVER_INTERRUPT() NVIC_DisableIRQ(TIM2_IRQn);
+long Stepper::counter_MOTOR = 0;
+volatile uint32_t Stepper::step_events_completed = 0; // The number of step events executed in the current block
+
+#define MOTOR_APPLY_DIR(v,Q) MOTOR_DIR_WRITE(v)
+#define MOTOR_APPLY_STEP(v,Q) MOTOR_STEP_WRITE(v)
+
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  NVIC_EnableIRQ(TIM6_IRQn);
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() NVIC_DisableIRQ(TIM6_IRQn);
+
+// intRes = longIn1 * longIn2 >> 24
+// uses:
+// r26 to store 0
+// r27 to store bits 16-23 of the 48bit result. The top bit is used to round the two byte result.
+// note that the lower two bytes and the upper byte of the 48bit result are not calculated.
+// this can cause the result to be out by one as the lower bytes may cause carries into the upper ones.
+// B0 A0 are bits 24-39 and are the returned value
+// C1 B1 A1 is longIn1
+// D2 C2 B2 A2 is longIn2
+//
+int MultiU24X32toH16(long longIn1, long longIn2) {
+  return ((long long)longIn1 * longIn2) >> 24;
+}
+/*
+#define MultiU24X32toH16(intRes, longIn1, longIn2) \
+  asm volatile ( \
+                 "clr r26 \n\t" \
+                 "mul %A1, %B2 \n\t" \
+                 "mov r27, r1 \n\t" \
+                 "mul %B1, %C2 \n\t" \
+                 "movw %A0, r0 \n\t" \
+                 "mul %C1, %C2 \n\t" \
+                 "add %B0, r0 \n\t" \
+                 "mul %C1, %B2 \n\t" \
+                 "add %A0, r0 \n\t" \
+                 "adc %B0, r1 \n\t" \
+                 "mul %A1, %C2 \n\t" \
+                 "add r27, r0 \n\t" \
+                 "adc %A0, r1 \n\t" \
+                 "adc %B0, r26 \n\t" \
+                 "mul %B1, %B2 \n\t" \
+                 "add r27, r0 \n\t" \
+                 "adc %A0, r1 \n\t" \
+                 "adc %B0, r26 \n\t" \
+                 "mul %C1, %A2 \n\t" \
+                 "add r27, r0 \n\t" \
+                 "adc %A0, r1 \n\t" \
+                 "adc %B0, r26 \n\t" \
+                 "mul %B1, %A2 \n\t" \
+                 "add r27, r1 \n\t" \
+                 "adc %A0, r26 \n\t" \
+                 "adc %B0, r26 \n\t" \
+                 "lsr r27 \n\t" \
+                 "adc %A0, r26 \n\t" \
+                 "adc %B0, r26 \n\t" \
+                 "mul %D2, %A1 \n\t" \
+                 "add %A0, r0 \n\t" \
+                 "adc %B0, r1 \n\t" \
+                 "mul %D2, %B1 \n\t" \
+                 "add %B0, r0 \n\t" \
+                 "clr r1 \n\t" \
+                 : \
+                 "=&r" (intRes) \
+                 : \
+                 "d" (longIn1), \
+                 "d" (longIn2) \
+                 : \
+                 "r26" , "r27" \
+               )
+*/
 
 /**
  *         __________________________
@@ -104,25 +173,23 @@ void Stepper::init() {
     MOTOR_INIT();
   #endif
 
-  TIM_HandleTypeDef htim2;
-
-  TIM_Base_InitTypeDef tim2_Init;
   // Set the timer pre-scaler
   // Generally we use a divider of 8, resulting in a 2MHz timer
   // frequency on a 16MHz MCU. If you are going to change this, be
   // sure to regenerate speed_lookuptable.h with
   // create_speed_lookuptable.py
-  tim2_Init.Prescaler = 8;
-  tim2_Init.CounterMode = TIM_COUNTERMODE_UP;
+  TIM_Base_InitTypeDef tim6_Init;
+  tim6_Init.Prescaler = 8;
+  tim6_Init.CounterMode = TIM_COUNTERMODE_UP;
   // Init Stepper ISR to 122 Hz for quick starting
-  tim2_Init.Period = 0x4000;
-  tim2_Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  tim6_Init.Period = 0x4000;
+  tim6_Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 
-  htim2.Instance = TIM2;
-  htim2.Init = tim2_Init;
-  htim2.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+  htim6.Instance = TIM6;
+  htim6.Init = tim6_Init;
+  htim6.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
 
-  if (HAL_ERROR == HAL_TIM_Base_Init(&htim2)) {
+  if (HAL_ERROR == HAL_TIM_Base_Init(&htim6)) {
 	  Error_Handler();
   }
 
@@ -138,10 +205,10 @@ void Stepper::init() {
 
   // Enable update interrupts
   //TIM2->DIER |= TIM_DIER_UIE;
-  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
+  __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
 
   //TIM2->CNT = 0;
-  __HAL_TIM_SET_COUNTER(&htim2, 0);
+  __HAL_TIM_SET_COUNTER(&htim6, 0);
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
@@ -175,9 +242,9 @@ void Stepper::set_directions() {
  * Stepper Driver Interrupt
  *
  * Directly pulses the stepper motors at high frequency.
- * Timer 1 runs at a base frequency of 2MHz, with this ISR using OCR1A compare mode.
+ * Timer TIM6 runs at a base frequency of 2MHz, with this ISR using ARR compare mode.
  *
- * OCR1A   Frequency
+ * ARR   Frequency
  *     1     2 MHz
  *    50    40 KHz
  *   100    20 KHz - capped max rate
@@ -185,7 +252,7 @@ void Stepper::set_directions() {
  *  2000     1 KHz - sleep rate
  *  4000   500  Hz - init rate
  */
-void TIM2_IRQHandler(void)
+void TIM6_IRQHandler(void)
 {
     Stepper::isr();
 }
@@ -193,9 +260,9 @@ void TIM2_IRQHandler(void)
 #define _ENABLE_ISRs() do { \
 	cli(); \
 	if (thermalManager.in_temp_isr) \
-		NVIC_DisableIRQ(TIM6_IRQn); \
+		NVIC_DisableIRQ(TIM2_IRQn); \
 	else \
-	    NVIC_EnableIRQ(TIM6_IRQn); \
+	    NVIC_EnableIRQ(TIM2_IRQn); \
 	ENABLE_STEPPER_DRIVER_INTERRUPT(); \
 } while(0)
 
@@ -207,7 +274,7 @@ void Stepper::isr() {
   #define OCR_VAL_TOLERANCE 1000          // First max delay is 2.0ms, last min delay is 0.5ms, all others 1.5ms
 
   // Disable Tim6 ISRs and enable global ISR again to capture UART events (incoming chars)
-  NVIC_DisableIRQ(TIM6_IRQn); \
+  NVIC_DisableIRQ(TIM2_IRQn); \
   DISABLE_STEPPER_DRIVER_INTERRUPT();
   sei();
 
@@ -218,7 +285,7 @@ void Stepper::isr() {
     --cleaning_buffer_counter;
     current_block = NULL;
     planner.discard_current_block();
-    __HAL_TIM_SET_AUTORELOAD(&htim2, 200); // Run at max speed - 10 KHz
+    __HAL_TIM_SET_AUTORELOAD(&htim6, 200); // Run at max speed - 10 KHz
     _ENABLE_ISRs(); // re-enable ISRs
     return;
   }
@@ -231,7 +298,7 @@ void Stepper::isr() {
       trapezoid_generator_reset();
 
       // Initialize Bresenham counters to 1/2 the ceiling
-      counter_X = counter_Y = counter_Z = counter_E = -(current_block->step_event_count >> 1);
+      counter_MOTOR = -(current_block->step_event_count >> 1);
 
       step_events_completed = 0;
 
@@ -241,7 +308,7 @@ void Stepper::isr() {
       #endif
     }
     else {
-      _NEXT_ISR(2000); // Run at slow speed - 1 KHz
+      __HAL_TIM_SET_AUTORELOAD(&htim6, 2000); // Run at slow speed - 1 KHz
       _ENABLE_ISRs(); // re-enable ISRs
       return;
     }
@@ -249,32 +316,32 @@ void Stepper::isr() {
 
   // Update endstops state, if enabled
   #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
-    if (e_hit && ENDSTOPS_ENABLED) {
+    if (e_hit && endstops.enabled) {
       endstops.update();
       e_hit--;
     }
   #else
-    if (ENDSTOPS_ENABLED) endstops.update();
+    if (endstops.enabled) endstops.update();
   #endif
 
   // Take multiple steps per interrupt (For high speed moves)
   bool all_steps_done = false;
   for (uint8_t i = step_loops; i--;) {
-    #define _COUNTER(AXIS) counter_## AXIS
-    #define _APPLY_STEP(AXIS) AXIS ##_APPLY_STEP
+    #define _COUNTER() counter_MOTOR
+    #define _APPLY_STEP() MOTOR_APPLY_STEP
     #define _INVERT_STEP_PIN() INVERT_MOTOR_STEP_PIN
 
     // Advance the Bresenham counter; start a pulse if the axis needs a step
-    #define PULSE_START(AXIS) \
-      _COUNTER(AXIS) += current_block->steps[_AXIS(AXIS)]; \
-      if (_COUNTER(AXIS) > 0) { _APPLY_STEP(AXIS)(!_INVERT_STEP_PIN(AXIS),0); }
+    #define PULSE_START() \
+      _COUNTER() += current_block->steps; \
+      if (_COUNTER() > 0) { _APPLY_STEP()(!_INVERT_STEP_PIN(),0); }
 
     // Stop an active pulse, reset the Bresenham counter, update the position
-    #define PULSE_STOP(AXIS) \
-      if (_COUNTER(AXIS) > 0) { \
-        _COUNTER(AXIS) -= current_block->step_event_count; \
-        count_position[_AXIS(AXIS)] += count_direction[_AXIS(AXIS)]; \
-        _APPLY_STEP(AXIS)(_INVERT_STEP_PIN(AXIS),0); \
+    #define PULSE_STOP() \
+      if (_COUNTER() > 0) { \
+        _COUNTER() -= current_block->step_event_count; \
+        count_position += count_direction; \
+        _APPLY_STEP()(_INVERT_STEP_PIN(),0); \
       }
 
     /**
@@ -289,23 +356,15 @@ void Stepper::isr() {
      * Delays under 20 cycles (1.25탎) will be very accurate, using NOPs.
      * Longer delays use a loop. The resolution is 8 cycles.
      */
-    #if HAS_X_STEP
+    #if HAS_MOTOR_STEP
       #define _CYCLE_APPROX_1 5
     #else
       #define _CYCLE_APPROX_1 0
     #endif
     #define _CYCLE_APPROX_2 _CYCLE_APPROX_1
-    #if HAS_Y_STEP
-      #define _CYCLE_APPROX_3 _CYCLE_APPROX_2 + 5
-    #else
-      #define _CYCLE_APPROX_3 _CYCLE_APPROX_2
-    #endif
+    #define _CYCLE_APPROX_3 _CYCLE_APPROX_2
     #define _CYCLE_APPROX_4 _CYCLE_APPROX_3
-    #if HAS_Z_STEP
-      #define _CYCLE_APPROX_5 _CYCLE_APPROX_4 + 5
-    #else
-      #define _CYCLE_APPROX_5 _CYCLE_APPROX_4
-    #endif
+    #define _CYCLE_APPROX_5 _CYCLE_APPROX_4
     #define _CYCLE_APPROX_6 _CYCLE_APPROX_5
     #define _CYCLE_APPROX_7 _CYCLE_APPROX_6 + 5
 
@@ -313,49 +372,32 @@ void Stepper::isr() {
     #define EXTRA_CYCLES_XYZE (STEP_PULSE_CYCLES - (CYCLES_EATEN_XYZE))
 
     /**
-     * If a minimum pulse time was specified get the timer 0 value.
+     * If a minimum pulse time was specified get the timer TIM2 value.
      *
-     * TCNT0 has an 8x prescaler, so it increments every 8 cycles.
+     * TIM2->CNT has an 8x prescaler, so it increments every 8 cycles.
      * That's every 0.5탎 on 16MHz and every 0.4탎 on 20MHz.
      * 20 counts of TCNT0 -by itself- is a good pulse delay.
      * 10탎 = 160 or 200 cycles.
      */
     #if EXTRA_CYCLES_XYZE > 20
-      uint32_t pulse_start = TCNT0;
+      uint32_t pulse_start = __HAL_TIM_GET_COUNTER(&htim2);
     #endif
 
-    #if HAS_X_STEP
-      PULSE_START(X);
+    #if HAS_MOTOR_STEP
+      PULSE_START();
     #endif
-    #if HAS_Y_STEP
-      PULSE_START(Y);
-    #endif
-    #if HAS_Z_STEP
-      PULSE_START(Z);
-    #endif
-
-    // For non-advance use linear interpolation for E also
-    PULSE_START(E);
 
     // For minimum pulse time wait before stopping pulses
     #if EXTRA_CYCLES_XYZE > 20
-      while (EXTRA_CYCLES_XYZE > (uint32_t)(TCNT0 - pulse_start) * (INT0_PRESCALER)) { /* nada */ }
-      pulse_start = TCNT0;
+      while (EXTRA_CYCLES_XYZE > (uint32_t)(__HAL_TIM_GET_COUNTER(&htim2) - pulse_start) * (8)) { }
+      pulse_start = __HAL_TIM_GET_COUNTER(&htim2);
     #elif EXTRA_CYCLES_XYZE > 0
       DELAY_NOPS(EXTRA_CYCLES_XYZE);
     #endif
 
-    #if HAS_X_STEP
-      PULSE_STOP(X);
+    #if HAS_MOTOR_STEP
+      PULSE_STOP();
     #endif
-    #if HAS_Y_STEP
-      PULSE_STOP(Y);
-    #endif
-    #if HAS_Z_STEP
-      PULSE_STOP(Z);
-    #endif
-
-    PULSE_STOP(E);
 
     if (++step_events_completed >= current_block->step_event_count) {
       all_steps_done = true;
@@ -364,7 +406,7 @@ void Stepper::isr() {
 
     // For minimum pulse time wait after stopping pulses also
     #if EXTRA_CYCLES_XYZE > 20
-      if (i) while (EXTRA_CYCLES_XYZE > (uint32_t)(TCNT0 - pulse_start) * (INT0_PRESCALER)) { /* nada */ }
+      if (i) while (EXTRA_CYCLES_XYZE > (uint32_t)(__HAL_TIM_GET_COUNTER(&htim2) - pulse_start) * (8)) { }
     #elif EXTRA_CYCLES_XYZE > 0
       if (i) DELAY_NOPS(EXTRA_CYCLES_XYZE);
     #endif
@@ -374,7 +416,7 @@ void Stepper::isr() {
   // Calculate new timer value
   if (step_events_completed <= (uint32_t)current_block->accelerate_until) {
 
-    MultiU24X32toH16(acc_step_rate, acceleration_time, current_block->acceleration_rate);
+	acc_step_rate = MultiU24X32toH16(acceleration_time, current_block->acceleration_rate);
     acc_step_rate += current_block->initial_rate;
 
     // upper limit
@@ -384,13 +426,13 @@ void Stepper::isr() {
     const uint16_t timer = calc_timer(acc_step_rate);
 
     SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-    _NEXT_ISR(ocr_val);
+    __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
 
     acceleration_time += timer;
   }
   else if (step_events_completed > (uint32_t)current_block->decelerate_after) {
     uint16_t step_rate;
-    MultiU24X32toH16(step_rate, deceleration_time, current_block->acceleration_rate);
+    step_rate = MultiU24X32toH16(deceleration_time, current_block->acceleration_rate);
 
     if (step_rate < acc_step_rate) { // Still decelerating?
       step_rate = acc_step_rate - step_rate;
@@ -403,20 +445,20 @@ void Stepper::isr() {
     const uint16_t timer = calc_timer(step_rate);
 
     SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-    _NEXT_ISR(ocr_val);
+    __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
 
     deceleration_time += timer;
   }
   else {
 
-    SPLIT(TIM2_ARR_nominal);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-    _NEXT_ISR(ocr_val);
+    SPLIT(TIM6_ARR_nominal);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
+    __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
 
     // ensure we're running at the correct step rate, even if we just came off an acceleration
     step_loops = step_loops_nominal;
   }
 
-  NOLESS(OCR1A, TCNT1 + 16);
+  NOLESS(__HAL_TIM_GET_AUTORELOAD(&htim6), __HAL_TIM_GET_COUNTER(&htim6) + 16);
 
   // If current block is finished, reset pointer
   if (all_steps_done) {

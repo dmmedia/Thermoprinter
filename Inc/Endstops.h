@@ -158,6 +158,11 @@ public:
     Endstops() {}
 	virtual ~Endstops();
 
+    /**
+     * Update the endstops bits from the pins
+     */
+    static void update();
+
     // Enable / disable endstop checking
     static void enable(bool onoff=true) { enabled = onoff; }
 

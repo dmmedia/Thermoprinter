@@ -51,7 +51,7 @@ typedef struct {
   unsigned char active_extruder;            // The extruder to move (if E move)
 
   // Fields used by the Bresenham algorithm for tracing the line
-  int32_t steps[NUM_AXIS];                  // Step count along each axis
+  int32_t steps;                  // Step count along each axis
   uint32_t step_event_count;                // The number of step events required to complete this block
 
   int32_t accelerate_until,                 // The index of the step event on which to stop acceleration
@@ -166,7 +166,6 @@ public:
       _set_position_mm(lx, ly, lz, e);
     }
     static void set_position_mm(const AxisEnum axis, const float &v);
-    static FORCE_INLINE void set_e_position_mm(const float &e) { set_position_mm(AxisEnum(E_AXIS), e); }
 
     static void reset_acceleration_rates();
     static void refresh_positioning();

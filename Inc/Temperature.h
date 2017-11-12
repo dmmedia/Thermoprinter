@@ -9,75 +9,89 @@
 #define TEMPERATURE_H_
 
 #include "Conditionals.h"
-#include "main.h"
 #include "stm32l0xx_hal.h"
 
 #define HOTEND_LOOP() for (int8_t e = 0; e < HOTENDS; e++)
 
-#define ADCx                            ADC1
+/* ## Definition of ADC related resources ################################### */
+/* Definition of ADCx clock resources */
+#define ADC1_CLK_ENABLE()               __ADC1_CLK_ENABLE()
+
+#define ADC1_FORCE_RESET()              __ADC1_FORCE_RESET()
+#define ADC1_RELEASE_RESET()            __ADC1_RELEASE_RESET()
 
 /* Definition of ADCx channels */
-#define ADCx_CHANNEL_VOLTAGE                   ADC_CHANNEL_8
-#define ADCx_CHANNEL_TEMPERATURE               ADC_CHANNEL_5
+#define ADC1_CHANNEL_VOLTAGE                   ADC_CHANNEL_8
+#define ADC1_CHANNEL_TEMPERATURE               ADC_CHANNEL_5
 
 /* Definition of ADCx channels pins */
-//#define ADCx_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
-#define ADCx_CHANNEL_VOLTAGE_GPIO_PORT         GPIOB
-#define ADCx_CHANNEL_VOLTAGE_PIN               GPIO_PIN_0
+#define ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() __GPIOB_CLK_ENABLE()
+#define ADC1_CHANNEL_VOLTAGE_GPIO_PORT         GPIOB
+#define ADC1_CHANNEL_VOLTAGE_PIN               GPIO_PIN_0
 
-//#define ADCx_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
-#define ADCx_CHANNEL_TEMPERATURE_GPIO_PORT         GPIOA
-#define ADCx_CHANNEL_TEMPERATURE_PIN               GPIO_PIN_5
+#define ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
+#define ADC1_CHANNEL_TEMPERATURE_GPIO_PORT         GPIOA
+#define ADC1_CHANNEL_TEMPERATURE_PIN               GPIO_PIN_5
 
+/* Definition of ADCx NVIC resources */
+#define ADC1_IRQn                       ADC1_COMP_IRQn
+#define ADC1_IRQHandler                 ADC1_COMP_IRQHandler
+
+
+#define OVERSAMPLENR 16
+
+// User-defined table 1
+// Dummy Thermistor table.. It will ALWAYS read a fixed value.
+#ifndef DUMMY_THERMISTOR_998_VALUE
+  #define DUMMY_THERMISTOR_998_VALUE 25
+#endif
+
+const short temptable_998[][2] = {
+  {    1 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE },
+  { 1023 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE }
+};
 
 // Set the high and low raw values for the heaters
 // For thermistors the highest temperature results in the lowest ADC value
 // For thermocouples the highest temperature results in the highest ADC value
-#ifndef HEATER_0_RAW_HI_TEMP
-  #ifdef HEATER_0_USES_THERMISTOR
-    #define HEATER_0_RAW_HI_TEMP 0
-    #define HEATER_0_RAW_LO_TEMP 16383
+#ifndef PRINTHEAD_RAW_HI_TEMP
+  #ifdef PRINTHEAD_USES_THERMISTOR
+    #define PRINTHEAD_RAW_HI_TEMP 0
+    #define PRINTHEAD_RAW_LO_TEMP 16383
   #else
-    #define HEATER_0_RAW_HI_TEMP 16383
-    #define HEATER_0_RAW_LO_TEMP 0
+    #define PRINTHEAD_RAW_HI_TEMP 16383
+    #define PRINTHEAD_RAW_LO_TEMP 0
   #endif
 #endif
-#ifndef HEATER_1_RAW_HI_TEMP
-  #ifdef HEATER_1_USES_THERMISTOR
-    #define HEATER_1_RAW_HI_TEMP 0
-    #define HEATER_1_RAW_LO_TEMP 16383
-  #else
-    #define HEATER_1_RAW_HI_TEMP 16383
-    #define HEATER_1_RAW_LO_TEMP 0
-  #endif
+
+#define _TT_NAME(_N) temptable_ ## _N
+#define TT_NAME(_N) _TT_NAME(_N)
+
+#ifdef THERMISTORHEATER_0
+  #define PRINTHEAD_TEMPTABLE TT_NAME(THERMISTORHEATER_0)
+  #define PRINTHEAD_TEMPTABLE_LEN COUNT(PRINTHEAD_TEMPTABLE)
+#elif defined(PRINTHEAD_USES_THERMISTOR)
+  #error "No heater 0 thermistor table specified"
+#else
+  #define PRINTHEAD_TEMPTABLE NULL
+  #define PRINTHEAD_TEMPTABLE_LEN 0
 #endif
-#ifndef HEATER_2_RAW_HI_TEMP
-  #ifdef HEATER_2_USES_THERMISTOR
-    #define HEATER_2_RAW_HI_TEMP 0
-    #define HEATER_2_RAW_LO_TEMP 16383
-  #else
-    #define HEATER_2_RAW_HI_TEMP 16383
-    #define HEATER_2_RAW_LO_TEMP 0
+
+/**
+ * States for ADC reading in the ISR
+ */
+enum ADCSensorState {
+  #if HAS_TEMP_0
+    PrepareTemp_0,
+    MeasureTemp_0,
   #endif
-#endif
-#ifndef HEATER_3_RAW_HI_TEMP
-  #ifdef HEATER_3_USES_THERMISTOR
-    #define HEATER_3_RAW_HI_TEMP 0
-    #define HEATER_3_RAW_LO_TEMP 16383
-  #else
-    #define HEATER_3_RAW_HI_TEMP 16383
-    #define HEATER_3_RAW_LO_TEMP 0
+  #if ENABLED(FILAMENT_WIDTH_SENSOR)
+    Prepare_FILWIDTH,
+    Measure_FILWIDTH,
   #endif
-#endif
-#ifndef HEATER_4_RAW_HI_TEMP
-  #ifdef HEATER_4_USES_THERMISTOR
-    #define HEATER_4_RAW_HI_TEMP 0
-    #define HEATER_4_RAW_LO_TEMP 16383
-  #else
-    #define HEATER_4_RAW_HI_TEMP 16383
-    #define HEATER_4_RAW_LO_TEMP 0
-  #endif
-#endif
+  SensorsReady, // Temperatures ready. Delay the next round of readings to let ADC pins settle.
+  StartupDelay  // Startup, delay initial temp reading a tiny bit so the hardware can settle
+};
 
 class Temperature {
 public:
@@ -85,14 +99,24 @@ public:
 
     void init();
 
+    /**
+     * Static (class) methods
+     */
+    static float analog2temp(int raw);
+
+    /**
+     * Called from the Temperature ISR
+     */
+    static void isr();
+
     static volatile bool in_temp_isr;
 
 private:
     // Init min and max temp with extreme values to prevent false errors during startup
-    static int16_t minttemp_raw[HOTENDS],
-                   maxttemp_raw[HOTENDS],
-                   minttemp[HOTENDS],
-                   maxttemp[HOTENDS];
+    static int16_t minttemp_raw,
+                   maxttemp_raw,
+                   minttemp,
+                   maxttemp;
 
     ADC_HandleTypeDef    AdcHandle;
 
