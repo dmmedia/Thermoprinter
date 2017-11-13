@@ -387,14 +387,17 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN          GPIO_PORT_7  // Analog Input
-#define TEMP_0_PORT			GPIO?
+#define TEMP_0_PIN          GPIO_PORT_5  // Analog Input
+#define TEMP_0_PORT			GPIOA
 
 // Incrementing this by 1 will double the software PWM frequency,
 // affecting heaters, and the fan if FAN_SOFT_PWM is enabled.
 // However, control resolution will be halved for each increment;
 // at zero value, there are 128 effective control positions.
 #define SOFT_PWM_SCALE 0
+
+#define FILWIDTH_PIN     GPIO_PIN_0   // should be Analog Input
+#define FILWIDTH_PORT    GPIOB
 
 /* USER CODE END Private defines */
 

@@ -93,6 +93,11 @@ enum ADCSensorState {
   StartupDelay  // Startup, delay initial temp reading a tiny bit so the hardware can settle
 };
 
+// Minimum number of Temperature::ISR loops between sensor readings.
+// Multiplied by 16 (OVERSAMPLENR) to obtain the total time to
+// get all oversampled sensor readings
+#define MIN_ADC_ISR_LOOPS 10
+
 class Temperature {
 public:
 	Temperature() {};
@@ -111,12 +116,24 @@ public:
 
     static volatile bool in_temp_isr;
 
+    static int16_t current_temperature_raw;
+
 private:
     // Init min and max temp with extreme values to prevent false errors during startup
     static int16_t minttemp_raw,
                    maxttemp_raw,
                    minttemp,
                    maxttemp;
+
+    static volatile bool temp_meas_ready;
+
+    static void set_current_temp_raw();
+
+    static uint16_t raw_temp_value;
+
+    static void _temp_error(const char * const serial_msg, const char * const lcd_msg);
+    static void max_temp_error();
+    static void min_temp_error();
 
     ADC_HandleTypeDef    AdcHandle;
 

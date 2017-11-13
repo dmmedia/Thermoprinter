@@ -19,6 +19,12 @@ int16_t Temperature::minttemp_raw = PRINTHEAD_RAW_LO_TEMP,
 static void* heater_ttbl_map = (void*)PRINTHEAD_TEMPTABLE;
 static uint8_t heater_ttbllen_map = PRINTHEAD_TEMPTABLE_LEN;
 
+volatile bool Temperature::temp_meas_ready = false;
+
+uint16_t Temperature::raw_temp_value = 0;
+
+int16_t Temperature::current_temperature_raw = 0;
+
 /**
  * Initialize the temperature manager
  * The manager is implemented by periodic calls to manage_heater()
@@ -192,11 +198,7 @@ void Temperature::isr() {
    */
 
   #define SET_ADMUX_ADCSRA(pin) ADMUX = _BV(REFS0) | (pin & 0x07); SBI(ADCSRA, ADSC)
-  #ifdef MUX5
-    #define START_ADC(pin) if (pin > 7) ADCSRB = _BV(MUX5); else ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
-  #else
-    #define START_ADC(pin) ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
-  #endif
+  #define START_ADC(pin) ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
 
   switch (adc_sensor_state) {
 
@@ -209,10 +211,10 @@ void Temperature::isr() {
         if (delay_count == 0) delay_count = extra_loops;   // Init this delay
         if (--delay_count)                                 // While delaying...
           adc_sensor_state = (ADCSensorState)(int(SensorsReady) - 1); // retain this state (else, next state will be 0)
-        break;
       }
       else
         adc_sensor_state = (ADCSensorState)0; // Fall-through to start first sensor now
+      break;
     }
 
     #if HAS_TEMP_0
@@ -252,26 +254,17 @@ void Temperature::isr() {
       current_raw_filwidth = raw_filwidth_value >> 10;  // Divide to get to 0-16384 range since we used 1/128 IIR filter approach
     #endif
 
-    ZERO(raw_temp_value);
-    raw_temp_bed_value = 0;
+    raw_temp_value = 0;
 
-    #define TEMPDIR(N) ((PRINTHEAD_RAW_LO_TEMP) > (PRINTHEAD_RAW_HI_TEMP) ? -1 : 1)
+    #define TEMPDIR() ((PRINTHEAD_RAW_LO_TEMP) > (PRINTHEAD_RAW_HI_TEMP) ? -1 : 1)
 
-    int constexpr temp_dir = TEMPDIR(0);
+    int constexpr temp_dir = TEMPDIR();
 
     const int16_t tdir = temp_dir, rawtemp = current_temperature_raw * tdir;
-    if (rawtemp > maxttemp_raw * tdir && target_temperature > 0) max_temp_error();
-    if (rawtemp < minttemp_raw * tdir && !is_preheating() && target_temperature > 0) {
-      #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-        if (++consecutive_low_temperature_error >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
-      #endif
+    if (rawtemp > maxttemp_raw * tdir) max_temp_error();
+    if (rawtemp < minttemp_raw * tdir) {
           min_temp_error();
     }
-    #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
-      else
-        consecutive_low_temperature_error = 0;
-    #endif
-
   } // temp_count >= OVERSAMPLENR
 
   // Go to the next state, up to SensorsReady
@@ -315,6 +308,44 @@ float Temperature::analog2temp(int raw) {
 
     return celsius;
   }
-  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR) * (TEMP_SENSOR_AD595_GAIN)) + TEMP_SENSOR_AD595_OFFSET;
+  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR));
+}
+
+/**
+ * Get raw temperatures
+ */
+void Temperature::set_current_temp_raw() {
+  #if HAS_TEMP_0
+    current_temperature_raw = raw_temp_value;
+  #endif
+  temp_meas_ready = true;
+}
+
+//
+// Temperature Error Handlers
+//
+void Temperature::_temp_error(const char * const serial_msg, const char * const lcd_msg) {
+  static bool killed = false;
+  if (IsRunning()) {
+    SERIAL_ERROR_START();
+    serialprintPGM(serial_msg);
+    SERIAL_ERRORPGM(MSG_STOPPED_HEATER);
+  }
+  #if DISABLED(BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE)
+    if (!killed) {
+      Running = false;
+      killed = true;
+      kill(lcd_msg);
+    }
+    else
+      disable_all_heaters(); // paranoia
+  #endif
+}
+
+void Temperature::max_temp_error() {
+    _temp_error(PSTR(MSG_T_MAXTEMP), PSTR(MSG_ERR_MAXTEMP));
+}
+void Temperature::min_temp_error(const int8_t e) {
+    _temp_error(PSTR(MSG_T_MINTEMP), PSTR(MSG_ERR_MINTEMP));
 }
 

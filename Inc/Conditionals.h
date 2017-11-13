@@ -92,4 +92,7 @@
   // Thermistors
   #define HAS_TEMP_0 (PIN_EXISTS(TEMP_0) && TEMP_SENSOR_0 != 0 && TEMP_SENSOR_0 > -2)
 
+  // Sensors
+  #define HAS_FILAMENT_WIDTH_SENSOR (PIN_EXISTS(FILWIDTH))
+
 #endif /* CONDITIONALS_H_ */
