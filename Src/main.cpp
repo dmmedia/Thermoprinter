@@ -136,6 +136,7 @@ static int serial_count = 0;
  */
 static long gcode_N, gcode_LastN;
 
+Stopwatch print_job_timer = Stopwatch();
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1094,6 +1095,46 @@ inline void get_serial_commands() {
 void SysTick_Handler(void) {
   counter++;
 }
+
+/**
+ * Kill all activity and lock the machine.
+ * After this the machine will need to be reset.
+ */
+void kill(const char* lcd_msg) {
+  SERIAL_ERROR_START();
+  SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
+
+  thermalManager.disable_all_heaters();
+  disable_all_steppers();
+
+  #if ENABLED(ULTRA_LCD)
+    kill_screen(lcd_msg);
+  #else
+    UNUSED(lcd_msg);
+  #endif
+
+  _delay_ms(600); // Wait a short time (allows messages to get out before shutting down.
+  cli(); // Stop interrupts
+
+  _delay_ms(250); //Wait to ensure all interrupts routines stopped
+  thermalManager.disable_all_heaters(); //turn off heaters again
+
+  #ifdef ACTION_ON_KILL
+    SERIAL_ECHOLNPGM("//action:" ACTION_ON_KILL);
+  #endif
+
+  #if HAS_POWER_SWITCH
+    SET_INPUT(PS_ON_PIN);
+  #endif
+
+  suicide();
+  while (1) {
+    #if ENABLED(USE_WATCHDOG)
+      watchdog_reset();
+    #endif
+  } // Wait for reset
+}
+
 /* USER CODE END 4 */
 
 /**

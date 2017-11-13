@@ -399,6 +399,16 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 #define FILWIDTH_PIN     GPIO_PIN_0   // should be Analog Input
 #define FILWIDTH_PORT    GPIOB
 
+void kill(const char*);
+
+#define MSG_T_MAXTEMP                       "MAXTEMP triggered"
+#define MSG_T_MINTEMP                       "MINTEMP triggered"
+#ifndef MSG_ERR_MAXTEMP
+  #define MSG_ERR_MAXTEMP                     "Err: MAXTEMP"
+#endif
+#ifndef MSG_ERR_MINTEMP
+  #define MSG_ERR_MINTEMP                     "Err: MINTEMP"
+#endif
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

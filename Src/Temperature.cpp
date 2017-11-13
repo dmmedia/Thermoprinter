@@ -327,25 +327,28 @@ void Temperature::set_current_temp_raw() {
 void Temperature::_temp_error(const char * const serial_msg, const char * const lcd_msg) {
   static bool killed = false;
   if (IsRunning()) {
-    SERIAL_ERROR_START();
-    serialprintPGM(serial_msg);
-    SERIAL_ERRORPGM(MSG_STOPPED_HEATER);
+//    SERIAL_ERROR_START();
+//    serialprintPGM(serial_msg);
+//    SERIAL_ERRORPGM(MSG_STOPPED_HEATER);
   }
-  #if DISABLED(BOGUS_TEMPERATURE_FAILSAFE_OVERRIDE)
-    if (!killed) {
-      Running = false;
-      killed = true;
-      kill(lcd_msg);
-    }
-    else
-      disable_all_heaters(); // paranoia
-  #endif
+  if (!killed) {
+    Running = false;
+    killed = true;
+    kill(lcd_msg);
+  }
+  else
+    disable_all_heaters(); // paranoia
 }
 
 void Temperature::max_temp_error() {
-    _temp_error(PSTR(MSG_T_MAXTEMP), PSTR(MSG_ERR_MAXTEMP));
+    _temp_error((const char *)(MSG_T_MAXTEMP), (const char *)(MSG_ERR_MAXTEMP));
 }
-void Temperature::min_temp_error(const int8_t e) {
-    _temp_error(PSTR(MSG_T_MINTEMP), PSTR(MSG_ERR_MINTEMP));
+void Temperature::min_temp_error() {
+    _temp_error((const char *)(MSG_T_MINTEMP), (const char *)(MSG_ERR_MINTEMP));
+}
+
+void Temperature::disable_all_heaters() {
+  // for sure our print job has stopped
+  print_job_timer.stop();
 }
 

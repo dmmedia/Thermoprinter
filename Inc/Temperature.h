@@ -138,6 +138,12 @@ private:
     ADC_HandleTypeDef    AdcHandle;
 
     static void ADC_Config(void);
+
+    /**
+     * Switch off all heaters, set all target temperatures to 0
+     */
+    static void disable_all_heaters();
+
 };
 
 #endif /* TEMPERATURE_H_ */
