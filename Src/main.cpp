@@ -65,15 +65,13 @@ static char command_queue[BUFSIZE][MAX_CMD_SIZE];
 
 bool Running = true;
 
-const char axis_codes[XYZE] = { 'X', 'Y', 'Z', 'E' };
-
 /**
  * Cartesian Current Position
  *   Used to track the logical position as moves are queued.
  *   Used by 'line_to_current_position' to do a move after changing it.
  *   Used by 'SYNC_PLAN_POSITION_KINEMATIC' to update 'planner.position'.
  */
-float current_position[XYZE] = { 0.0 };
+float current_position = 0.0;
 
 /**
  * Cartesian Destination
@@ -81,50 +79,23 @@ float current_position[XYZE] = { 0.0 };
  *   Set with 'gcode_get_destination' or 'set_destination_to_current'.
  *   'line_to_destination' sets 'current_position' to 'destination'.
  */
-float destination[XYZE] = { 0.0 };
+float destination = 0.0;
 
 // Initialized by settings.load()
-#define AXIS_RELATIVE_MODES {false, false, false, false}
-bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
+#define AXIS_RELATIVE_MODES false
+bool axis_relative_modes = AXIS_RELATIVE_MODES;
 
-// Software Endstops are based on the configured limits.
-#if HAS_SOFTWARE_ENDSTOPS
-  bool soft_endstops_enabled = true;
-#endif
-float soft_endstop_min[XYZ] = { X_MIN_BED, Y_MIN_BED, Z_MIN_POS },
-      soft_endstop_max[XYZ] = { X_MAX_BED, Y_MAX_BED, Z_MAX_POS };
-
-// Relative Mode. Enable with G91, disable with G90.
+// Relative Mode.
 static bool relative_mode = false;
 
 float feedrate_mm_s = MMM_TO_MMS(1500.0);
-static float saved_feedrate_mm_s;
 
 volatile uint32_t counter = 0;
 
-int16_t feedrate_percentage = 100, saved_feedrate_percentage,
-    flow_percentage[EXTRUDERS] = ARRAY_BY_EXTRUDERS1(100);
+int16_t feedrate_percentage = 100, saved_feedrate_percentage;
 
 // Initialized by settings.load()
-bool axis_relative_modes[] = AXIS_RELATIVE_MODES,
-     volumetric_enabled;
-float filament_size[EXTRUDERS], volumetric_multiplier[EXTRUDERS];
-
-// The active extruder (tool). Set with T<extruder> command.
-uint8_t active_extruder = 0;
-
-#define XY_PROBE_FEEDRATE_MM_S PLANNER_XY_FEEDRATE()
-
-/**
- * axis_homed
- *   Flags that each linear axis was homed.
- *   XYZ on cartesian, ABC on delta, ABZ on SCARA.
- *
- * axis_known_position
- *   Flags that the position is known in each linear axis. Set when homed.
- *   Cleared whenever a stepper powers off, potentially losing its position.
- */
-bool axis_homed[XYZ] = { false }, axis_known_position[XYZ] = { false };
+bool axis_relative_modes = AXIS_RELATIVE_MODES;
 
 // Number of characters read in the current line of serial input
 static int serial_count = 0;
@@ -151,16 +122,6 @@ static void MX_LPUART1_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-#define XYZ_CONSTS_FROM_CONFIG(type, array, CONFIG) \
-  static const type array##_P[XYZ] = { X_##CONFIG, Y_##CONFIG, Z_##CONFIG }; \
-  static inline type array(AxisEnum axis) { return array##_P[axis]; } \
-  typedef void __void_##CONFIG##__
-
-XYZ_CONSTS_FROM_CONFIG(float, base_home_pos,  HOME_POS);
-XYZ_CONSTS_FROM_CONFIG(float, max_length,     MAX_LENGTH);
-XYZ_CONSTS_FROM_CONFIG(float, home_bump_mm,   HOME_BUMP_MM);
-XYZ_CONSTS_FROM_CONFIG(signed char, home_dir, HOME_DIR);
-
 void transmit(UART_HandleTypeDef *huart, uint8_t byte)
 {
     tx_buf[TXBUF_MSK & tx_i] = byte;
@@ -173,71 +134,36 @@ void transmit(UART_HandleTypeDef *huart, uint8_t byte)
  * sync_plan_position
  *
  * Set the planner/stepper positions directly from current_position with
- * no kinematic translation. Used for homing axes and cartesian/core syncing.
+ * no kinematic translation. Used for syncing.
  */
 void sync_plan_position() {
-  planner.set_position_mm(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+  planner.set_position_mm(current_position);
 }
 #define SYNC_PLAN_POSITION_KINEMATIC() sync_plan_position()
 
 /**
- * Set XYZE destination and feedrate from the current GCode command
+ * Set destination and feedrate from the current GCode command
  *
  *  - Set destination from included axis codes
  *  - Set to current for missing axis codes
  *  - Set the feedrate, if included
  */
 void gcode_get_destination() {
-  LOOP_XYZE(i) {
-    if (parser.seen(axis_codes[i]))
-      destination[i] = parser.value_axis_units((AxisEnum)i) + (axis_relative_modes[i] || relative_mode ? current_position[i] : 0);
-    else
-      destination[i] = current_position[i];
-  }
+  if (parser.seen('M'))
+    destination = parser.value_axis_units() + (axis_relative_modes || relative_mode ? current_position : 0);
+  else
+    destination = current_position;
 
   if (parser.linearval('F') > 0.0)
     feedrate_mm_s = MMM_TO_MMS(parser.value_feedrate());
 }
 
-#if HAS_SOFTWARE_ENDSTOPS
-
   /**
-   * Constrain the given coordinates to the software endstops.
-   */
-
-  // NOTE: This makes no sense for delta beds other than Z-axis.
-  //       For delta the X/Y would need to be clamped at
-  //       DELTA_PRINTABLE_RADIUS from center of bed, but delta
-  //       now enforces is_position_reachable for X/Y regardless
-  //       of HAS_SOFTWARE_ENDSTOPS, so that enforcement would be
-  //       redundant here.
-
-  void clamp_to_software_endstops(float target[XYZ]) {
-    if (!soft_endstops_enabled) return;
-    #if ENABLED(MIN_SOFTWARE_ENDSTOPS)
-      #if DISABLED(DELTA)
-        NOLESS(target[X_AXIS], soft_endstop_min[X_AXIS]);
-        NOLESS(target[Y_AXIS], soft_endstop_min[Y_AXIS]);
-      #endif
-      NOLESS(target[Z_AXIS], soft_endstop_min[Z_AXIS]);
-    #endif
-    #if ENABLED(MAX_SOFTWARE_ENDSTOPS)
-      #if DISABLED(DELTA)
-        NOMORE(target[X_AXIS], soft_endstop_max[X_AXIS]);
-        NOMORE(target[Y_AXIS], soft_endstop_max[Y_AXIS]);
-      #endif
-      NOMORE(target[Z_AXIS], soft_endstop_max[Z_AXIS]);
-    #endif
-  }
-
-#endif
-
-  /**
-   * Move the planner to the position stored in the destination array, which is
+   * Move the planner to the position stored in the destination, which is
    * used by G0/G1/G2/G3/G5 and many other functions to set a destination.
    */
   inline void line_to_destination(const float fr_mm_s) {
-    planner.buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], fr_mm_s, active_extruder);
+    planner.buffer_line(destination, fr_mm_s);
   }
   inline void line_to_destination() { line_to_destination(feedrate_mm_s); }
 
@@ -249,7 +175,7 @@ void gcode_get_destination() {
    */
   inline bool prepare_move_to_destination_cartesian() {
       // Do not use feedrate_percentage for E or Z only moves
-      if (current_position[X_AXIS] == destination[X_AXIS] && current_position[Y_AXIS] == destination[Y_AXIS])
+      if (current_position == destination)
         line_to_destination();
       else {
         const float fr_scaled = MMS_SCALED(feedrate_mm_s);
@@ -258,8 +184,8 @@ void gcode_get_destination() {
     return false;
   }
 
-  inline void set_current_to_destination() { COPY(current_position, destination); }
-  inline void set_destination_to_current() { COPY(destination, current_position); }
+  inline void set_current_to_destination() { current_position = destination; }
+  inline void set_destination_to_current() { destination = current_position; }
 
 /**
  * Prepare a single move and get ready for the next one
@@ -268,7 +194,6 @@ void gcode_get_destination() {
  * do smaller moves for DELTA, SCARA, mesh moves, etc.
  */
 void prepare_move_to_destination() {
-  clamp_to_software_endstops(destination);
   refresh_cmd_timeout();
 
   if (prepare_move_to_destination_cartesian()) return;
@@ -292,272 +217,47 @@ inline void gcode_G0_G1(
   }
 }
 
-//
-// Prepare to do endstop or probe moves
-// with custom feedrates.
-//
-//  - Save current feedrates
-//  - Reset the rate multiplier
-//  - Reset the command timeout
-//  - Enable the endstops (for endstop moves)
-//
-static void setup_for_endstop_or_probe_move() {
-  saved_feedrate_mm_s = feedrate_mm_s;
-  saved_feedrate_percentage = feedrate_percentage;
-  feedrate_percentage = 100;
-  refresh_cmd_timeout();
-}
-
-/**
- * Feed rates are often configured with mm/m
- * but the planner and stepper like mm/s units.
- */
-static const float homing_feedrate_mm_s[] = {
-  MMM_TO_MMS(HOMING_FEEDRATE_XY), MMM_TO_MMS(HOMING_FEEDRATE_XY),
-  MMM_TO_MMS(HOMING_FEEDRATE_Z), 0
-};
-FORCE_INLINE float homing_feedrate(const AxisEnum a) { return homing_feedrate_mm_s[a]; }
-
 /**
  * Move the planner to the current position from wherever it last moved
  * (or from wherever it has been told it is located).
  */
 inline void line_to_current_position() {
-  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], feedrate_mm_s, active_extruder);
+  planner.buffer_line(current_position, feedrate_mm_s);
 }
 
 /**
- *  Plan a move to (X, Y, Z) and set the current_position
+ *  Plan a move to X and set the current_position
  *  The final current_position may not be the one that was requested
  */
-void do_blocking_move_to(const float &lx, const float &ly, const float &lz, const float &fr_mm_s/*=0.0*/) {
+void do_blocking_move_to(const float &lm, const float &fr_mm_s/*=0.0*/) {
   const float old_feedrate_mm_s = feedrate_mm_s;
 
-  // If Z needs to raise, do it before moving XY
-  if (current_position[Z_AXIS] < lz) {
-    feedrate_mm_s = fr_mm_s ? fr_mm_s : homing_feedrate(Z_AXIS);
-    current_position[Z_AXIS] = lz;
-    line_to_current_position();
-  }
-
-  feedrate_mm_s = fr_mm_s ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S;
-  current_position[X_AXIS] = lx;
-  current_position[Y_AXIS] = ly;
+  feedrate_mm_s = fr_mm_s;
+  current_position = lm;
   line_to_current_position();
-
-  // If Z needs to lower, do it after moving XY
-  if (current_position[Z_AXIS] > lz) {
-    feedrate_mm_s = fr_mm_s ? fr_mm_s : homing_feedrate(Z_AXIS);
-    current_position[Z_AXIS] = lz;
-    line_to_current_position();
-  }
 
   stepper.synchronize();
 
   feedrate_mm_s = old_feedrate_mm_s;
 }
 
-void do_blocking_move_to_z(const float &lz, const float &fr_mm_s = 0.0f) {
-  do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], lz, fr_mm_s);
-}
-
-#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
-
 /**
- * Home an individual linear axis
- */
-static void do_homing_move(const AxisEnum axis, const float distance, const float fr_mm_s=0.0) {
-
-  // Tell the planner we're at Z=0
-  current_position[axis] = 0;
-
-  sync_plan_position();
-  current_position[axis] = distance;
-  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], fr_mm_s ? fr_mm_s : homing_feedrate(axis), active_extruder);
-
-  stepper.synchronize();
-
-  endstops.hit_on_purpose();
-}
-
-/**
- * Some planner shorthand inline functions
- */
-inline float get_homing_bump_feedrate(const AxisEnum axis) {
-  static const uint8_t homing_bump_divisor[] = HOMING_BUMP_DIVISOR;
-  uint8_t hbd = homing_bump_divisor[axis];
-  if (hbd < 1) {
-    hbd = 10;
-  }
-  return homing_feedrate(axis) / hbd;
-}
-
-/**
- * Set an axis' current position to its home position (after homing).
- *
- * For Core and Cartesian robots this applies one-to-one when an
- * individual axis has been homed.
- *
- * DELTA should wait until all homing is done before setting the XYZ
- * current_position to home, because homing is a single operation.
- * In the case where the axis positions are already known and previously
- * homed, DELTA could home to X or Y individually by moving either one
- * to the center. However, homing Z always homes XY and Z.
- *
- * SCARA should wait until all XY homing is done before setting the XY
- * current_position to home, because neither X nor Y is at home until
- * both are at home. Z can however be homed individually.
- *
- * Callers must sync the planner position after calling this!
- */
-static void set_axis_is_at_home(const AxisEnum axis) {
-  axis_known_position[axis] = axis_homed[axis] = true;
-
-  current_position[axis] = LOGICAL_POSITION(base_home_pos(axis), axis);
-}
-
-static void homeaxis(const AxisEnum axis) {
-
-  #define CAN_HOME(A) \
-    (axis == A##_AXIS && ((A##_MIN_PIN > -1 && A##_HOME_DIR < 0) || (A##_MAX_PIN > -1 && A##_HOME_DIR > 0)))
-  if (!CAN_HOME(X) && !CAN_HOME(Y) && !CAN_HOME(Z)) return;
-
-  const int axis_home_dir =
-    home_dir(axis);
-
-  // Fast move towards endstop until triggered
-  do_homing_move(axis, 1.5 * max_length(axis) * axis_home_dir);
-
-  // When homing Z with probe respect probe clearance
-  const float bump = axis_home_dir * (
-    home_bump_mm(axis)
-  );
-
-  // If a second homing move is configured...
-  if (bump) {
-    // Move away from the endstop by the axis HOME_BUMP_MM
-    do_homing_move(axis, -bump);
-
-    // Slow move towards endstop until triggered
-    do_homing_move(axis, 2 * bump, get_homing_bump_feedrate(axis));
-  }
-
-  // For cartesian/core machines,
-  // set the axis to its home position
-  set_axis_is_at_home(axis);
-  sync_plan_position();
-
-  destination[axis] = current_position[axis];
-
-} // homeaxis()
-
-static void clean_up_after_endstop_or_probe_move() {
-  feedrate_mm_s = saved_feedrate_mm_s;
-  feedrate_percentage = saved_feedrate_percentage;
-  refresh_cmd_timeout();
-}
-
-/**
- * G28: Home all axes according to settings
- *
- * Parameters
- *
- *  None  Home to all axes with no parameters.
- *        With QUICK_HOME enabled XY will home together, then Z.
- *
- * Cartesian parameters
- *
- *  X   Home to the X endstop
- *  Y   Home to the Y endstop
- *  Z   Home to the Z endstop
- *
- */
-inline void gcode_G28(const bool always_home_all) {
-
-  // Wait for planner moves to finish!
-  stepper.synchronize();
-
-  setup_for_endstop_or_probe_move();
-  endstops.enable(true); // Enable endstops for next homing move
-
-    const bool homeX = always_home_all || parser.seen('X'),
-               homeY = always_home_all || parser.seen('Y'),
-               homeZ = always_home_all || parser.seen('Z'),
-               home_all = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ);
-
-    set_destination_to_current();
-
-    #if Z_HOME_DIR > 0  // If homing away from BED do Z first
-
-      if (home_all || homeZ) {
-        HOMEAXIS(Z);
-      }
-
-    #else
-
-      if (home_all || homeX || homeY) {
-        // Raise Z before homing any other axes and z is not already high enough (never lower z)
-        destination[Z_AXIS] = LOGICAL_Z_POSITION(Z_HOMING_HEIGHT);
-        if (destination[Z_AXIS] > current_position[Z_AXIS]) {
-
-          do_blocking_move_to_z(destination[Z_AXIS]);
-        }
-      }
-
-    #endif
-
-    // Home X
-    if (home_all || homeX) {
-
-        HOMEAXIS(X);
-
-    }
-
-    // Home Y
-    if (home_all || homeY) {
-      HOMEAXIS(Y);
-    }
-
-    // Home Z last if homing towards the bed
-    #if Z_HOME_DIR < 0
-      if (home_all || homeZ) {
-        HOMEAXIS(Z);
-      } // home_all || homeZ
-    #endif // Z_HOME_DIR < 0
-
-    SYNC_PLAN_POSITION_KINEMATIC();
-
-  endstops.not_homing();
-
-  clean_up_after_endstop_or_probe_move();
-} // G28
-
-inline void sync_plan_position_e() { planner.set_e_position_mm(current_position[E_AXIS]); }
-
-/**
- * G92: Set current position to given X Y Z E
+ * G92: Set current position to given X
  */
 inline void gcode_G92() {
-  bool didXYZ = false,
-       didE = parser.seenval('E');
+  bool didM = false;
 
-  if (!didE) stepper.synchronize();
+  stepper.synchronize();
 
-  LOOP_XYZE(i) {
-    if (parser.seenval(axis_codes[i])) {
-        const float v = parser.value_axis_units((AxisEnum)i);
+  if (parser.seenval('M')) {
+      const float v = parser.value_axis_units();
 
-        current_position[i] = v;
+      current_position = v;
 
-        if (i != E_AXIS) {
-          didXYZ = true;
-        }
-    }
+      didM = true;
   }
-  if (didXYZ)
+  if (didM)
     SYNC_PLAN_POSITION_KINEMATIC();
-  else if (didE)
-    sync_plan_position_e();
 }
 
 void lcd_setstatus(const char * const message) {
@@ -593,10 +293,6 @@ void process_next_command() {
       case 0:
       case 1:
         gcode_G0_G1();
-        break;
-
-      case 28: // G28: Home all axes, one at a time
-        gcode_G28(false);
         break;
 
       case 90: // G90
@@ -712,7 +408,7 @@ void setup() {
   // This also updates variables in the planner, elsewhere
   (void)settings.load();
 
-  ZERO(current_position);
+  current_position = 0;
 
   // Vital to init stepper/planner equivalent for current_position
   SYNC_PLAN_POSITION_KINEMATIC();
@@ -1096,32 +792,28 @@ void SysTick_Handler(void) {
   counter++;
 }
 
+void suicide() {
+  #if HAS_SUICIDE
+    OUT_WRITE(SUICIDE_PIN, LOW);
+  #endif
+}
+
 /**
  * Kill all activity and lock the machine.
  * After this the machine will need to be reset.
  */
-void kill(const char* lcd_msg) {
-  SERIAL_ERROR_START();
-  SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
+void kill() {
+//  SERIAL_ERROR_START();
+//  SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
 
   thermalManager.disable_all_heaters();
   disable_all_steppers();
 
-  #if ENABLED(ULTRA_LCD)
-    kill_screen(lcd_msg);
-  #else
-    UNUSED(lcd_msg);
-  #endif
-
-  _delay_ms(600); // Wait a short time (allows messages to get out before shutting down.
+  HAL_Delay(600); // Wait a short time (allows messages to get out before shutting down.
   cli(); // Stop interrupts
 
-  _delay_ms(250); //Wait to ensure all interrupts routines stopped
+  HAL_Delay(250); //Wait to ensure all interrupts routines stopped
   thermalManager.disable_all_heaters(); //turn off heaters again
-
-  #ifdef ACTION_ON_KILL
-    SERIAL_ECHOLNPGM("//action:" ACTION_ON_KILL);
-  #endif
 
   #if HAS_POWER_SWITCH
     SET_INPUT(PS_ON_PIN);
@@ -1133,6 +825,10 @@ void kill(const char* lcd_msg) {
       watchdog_reset();
     #endif
   } // Wait for reset
+}
+
+void disable_all_steppers() {
+  disable_MOTOR();
 }
 
 /* USER CODE END 4 */

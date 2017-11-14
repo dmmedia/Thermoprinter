@@ -87,10 +87,7 @@
 
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
 // :{ 0:'Low', 1:'High' }
-#define X_ENABLE_ON 0
-#define Y_ENABLE_ON 0
-#define Z_ENABLE_ON 0
-#define E_ENABLE_ON 0 // For all extruders
+#define MOTOR_ENABLE_ON 0
 
 #define RXBUF_LEN            128 // must be power of 2
 #define TXBUF_LEN            128 // must be power of 2
@@ -216,24 +213,8 @@ uint32_t millis() {
 }
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 
-// This defines the number of extruders
-// :[1, 2, 3, 4, 5]
-#define EXTRUDERS 1
-
-  #define  enable_X() X_ENABLE_WRITE( X_ENABLE_ON)
-  #define disable_X() do{ X_ENABLE_WRITE(!X_ENABLE_ON); axis_known_position[X_AXIS] = false; }while(0)
-
-  #define  enable_Y() Y_ENABLE_WRITE( Y_ENABLE_ON)
-  #define disable_Y() do{ Y_ENABLE_WRITE(!Y_ENABLE_ON); axis_known_position[Y_AXIS] = false; }while(0)
-
-  #define  enable_Z() Z_ENABLE_WRITE( Z_ENABLE_ON)
-  #define disable_Z() do{ Z_ENABLE_WRITE(!Z_ENABLE_ON); axis_known_position[Z_AXIS] = false; }while(0)
-
-#define  enable_E0() E0_ENABLE_WRITE( E_ENABLE_ON)
-#define disable_E0() E0_ENABLE_WRITE(!E_ENABLE_ON)
-
-#define DISABLE_E false // For all extruders
-#define DISABLE_INACTIVE_EXTRUDER true // Keep only the active extruder enabled.
+#define  enable_MOTOR() MOTOR_ENABLE_WRITE( MOTOR_ENABLE_ON)
+#define disable_MOTOR() MOTOR_ENABLE_WRITE(!MOTOR_ENABLE_ON)
 
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
@@ -409,6 +390,15 @@ void kill(const char*);
 #ifndef MSG_ERR_MINTEMP
   #define MSG_ERR_MINTEMP                     "Err: MINTEMP"
 #endif
+
+void disable_all_steppers();
+
+//
+// Misc. Functions
+//
+#undef PS_ON_PIN
+#define PS_ON_PIN   GPIO_PIN_1
+#define PS_ON_PORT	GPIOA
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

@@ -101,23 +101,19 @@ public:
      */
     static uint8_t movesplanned() { return BLOCK_MOD(block_buffer_head - block_buffer_tail + BLOCK_BUFFER_SIZE); }
 
-    static float max_feedrate_mm_s[XYZE_N],     // Max speeds in mm per second
-                 axis_steps_per_mm[XYZE_N],
-                 steps_to_mm[XYZE_N];
-
-#define ARG_X const float &lx
-#define ARG_Y const float &ly
-#define ARG_Z const float &lz
+    static float max_feedrate_mm_s,     // Max speeds in mm per second
+                 axis_steps_per_mm,
+                 steps_to_mm;
 
     static float min_feedrate_mm_s,
                  acceleration,         // Normal acceleration mm/s^2  DEFAULT ACCELERATION for all printing moves. M204 SXXXX
                  retract_acceleration, // Retract acceleration mm/s^2 filament pull-back and push-forward while standing still in the other axes M204 TXXXX
                  travel_acceleration,  // Travel acceleration mm/s^2  DEFAULT ACCELERATION for all NON printing moves. M204 MXXXX
-                 max_jerk[XYZE],       // The largest speed change requiring no acceleration
+                 max_jerk,       // The largest speed change requiring no acceleration
                  min_travel_feedrate_mm_s;
 
-    static uint32_t max_acceleration_steps_per_s2[XYZE_N],
-                    max_acceleration_mm_per_s2[XYZE_N]; // Use M201 to override by software
+    static uint32_t max_acceleration_steps_per_s2,
+                    max_acceleration_mm_per_s2;
     static millis_t min_segment_time;
 
     /**
@@ -131,9 +127,9 @@ public:
      *  fr_mm_s   - (target) speed of the move (mm/s)
      *  extruder  - target extruder
      */
-    static void _buffer_line(const float &a, const float &b, const float &c, const float &e, float fr_mm_s, const uint8_t extruder);
+    static void _buffer_line(const float &m, float fr_mm_s);
 
-    static void _set_position_mm(const float &a, const float &b, const float &c, const float &e);
+    static void _set_position_mm(const float &m);
 
     /**
      * Add a new linear movement to the buffer.
@@ -147,8 +143,8 @@ public:
      *  fr_mm_s      - (target) speed of the move (mm/s)
      *  extruder     - target extruder
      */
-    static FORCE_INLINE void buffer_line(ARG_X, ARG_Y, ARG_Z, const float &e, const float &fr_mm_s, const uint8_t extruder) {
-      _buffer_line(lx, ly, lz, e, fr_mm_s, extruder);
+    static FORCE_INLINE void buffer_line(const float &m, const float &fr_mm_s) {
+      _buffer_line(m, fr_mm_s);
     }
 
     /**
@@ -162,15 +158,14 @@ public:
      *
      * Clears previous speed values.
      */
-    static FORCE_INLINE void set_position_mm(ARG_X, ARG_Y, ARG_Z, const float &e) {
-      _set_position_mm(lx, ly, lz, e);
+    static FORCE_INLINE void set_position_mm(const float &m) {
+      _set_position_mm(m);
     }
-    static void set_position_mm(const AxisEnum axis, const float &v);
 
     static void reset_acceleration_rates();
     static void refresh_positioning();
 
-    static void set_position_mm_kinematic(const float position[NUM_AXIS]);
+    static void set_position_mm_kinematic(const float position);
 
     /**
      * "Discards" the block and "releases" the memory.

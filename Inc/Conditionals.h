@@ -11,7 +11,7 @@
 #include "macros.h"
 
 #define MOTOR_ENABLE_INIT SET_OUTPUT(MOTOR_ENABLE_PIN)
-#define MOTOR_ENABLE_WRITE(STATE) WRITE(MOTOR_ENABLE_PIN,STATE)
+#define MOTOR_ENABLE_WRITE(STATE)   HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO_PIN_RESET)
 #define MOTOR_ENABLE_READ READ(MOTOR_ENABLE_PIN)
 
 #define MOTOR_DIR_INIT SET_OUTPUT(MOTOR_DIR_PIN)
@@ -94,5 +94,15 @@
 
   // Sensors
   #define HAS_FILAMENT_WIDTH_SENSOR (PIN_EXISTS(FILWIDTH))
+
+  /**
+   * Set the home position based on settings or manual overrides
+   */
+  #define MOTOR_HOME_POS 0
+
+  /**
+   * Axis lengths and center
+   */
+  #define MOTOR_MAX_LENGTH (X_MAX_POS - (X_MIN_POS))
 
 #endif /* CONDITIONALS_H_ */

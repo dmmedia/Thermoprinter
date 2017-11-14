@@ -9,7 +9,19 @@
 #define STOPWATCH_H_
 
 class Stopwatch {
-public:
+  private:
+    enum State {
+      STOPPED,
+      RUNNING,
+      PAUSED
+    };
+
+    Stopwatch::State state;
+    millis_t stopTimestamp;
+    millis_t startTimestamp;
+    millis_t accumulator;
+
+  public:
 	Stopwatch();
 
     /**
@@ -19,6 +31,26 @@ public:
      * @return true is method was successful
      */
     bool stop();
+
+    /**
+     * @brief Resets the stopwatch
+     * @details Resets all settings to their default values.
+     */
+    void reset();
+
+    /**
+     * @brief Checks if the timer is running
+     * @details Returns true if the timer is currently running, false otherwise.
+     * @return true if stopwatch is running
+     */
+    bool isRunning();
+
+    /**
+     * @brief Checks if the timer is paused
+     * @details Returns true if the timer is currently paused, false otherwise.
+     * @return true if stopwatch is paused
+     */
+    bool isPaused();
 
 };
 
