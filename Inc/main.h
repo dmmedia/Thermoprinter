@@ -70,14 +70,23 @@
 //
 // Limit Switches
 //
-#define X_MIN_PIN           3
-#ifndef X_MAX_PIN
-  #define X_MAX_PIN         2
-#endif
-#define Y_MIN_PIN          14
-#define Y_MAX_PIN          15
-#define Z_MIN_PIN          18
-#define Z_MAX_PIN          19
+#define MOTOR_FAULT_PIN		GPIO_PIN_6
+#define MOTOR_FAULT_PORT	GPIOA
+
+#define OVER_HEAT_PIN		GPIO_PIN_4
+#define OVER_HEAT_PORT		GPIOC
+
+#define LOW_BAT_PIN			GPIO_PIN_5
+#define LOW_BAT_PORT		GPIOC
+
+#define VH_CTRL_PIN			GPIO_PIN_13
+#define VH_CTRL_PORT		GPIOC
+
+#define PAPER_END_PIN		GPIO_PIN_1
+#define PAPER_END_PORT		GPIOB
+
+#define HEAD_UP_PIN			GPIO_PIN_2
+#define HEAD_UP_PORT		GPIOB
 
 //
 // Misc. Functions

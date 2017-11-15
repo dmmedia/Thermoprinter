@@ -13,27 +13,11 @@ volatile char Endstops::endstop_hit_bits; // use X_MIN, Y_MIN, Z_MIN and Z_MIN_P
 
 void Endstops::init() {
 
-  #if HAS_X_MIN
-    #if ENABLED(ENDSTOPPULLUP_XMIN)
-      SET_INPUT_PULLUP(X_MIN_PIN);
+  #if HAS_MOTOR_FAULT
+    #if ENABLED(ENDSTOPPULLUP_MOTORFAULT)
+      SET_INPUT_PULLUP(MOTOR_FAULT_PIN);
     #else
-      SET_INPUT(X_MIN_PIN);
-    #endif
-  #endif
-
-#if HAS_STB_EN
-  #if ENABLED(ENDSTOPPULLUP_STBEN)
-    SET_INPUT_PULLUP(STB_EN_PIN);
-  #else
-    SET_INPUT(STB_EN_PIN);
-  #endif
-#endif
-
-  #if HAS_MOTOR_EN
-    #if ENABLED(ENDSTOPPULLUP_MOTOREN)
-      SET_INPUT_PULLUP(MOTOR_EN_PIN);
-    #else
-      SET_INPUT(MOTOR_EN_PIN);
+      SET_INPUT(MOTOR_FAULT_PIN);
     #endif
   #endif
 
@@ -41,7 +25,7 @@ void Endstops::init() {
     #if ENABLED(ENDSTOPPULLUP_LOWBAT)
       SET_INPUT_PULLUP(LOW_BAT_PIN);
     #else
-      SET_INPUT(LOW_ABT_PIN);
+      SET_INPUT(LOW_BAT_PIN);
     #endif
   #endif
 
@@ -108,97 +92,21 @@ void Endstops::update() {
       } \
     } while(0)
 
-  #if ENABLED(G38_PROBE_TARGET) && PIN_EXISTS(Z_MIN_PROBE) && !(CORE_IS_XY || CORE_IS_XZ)
-    // If G38 command is active check Z_MIN_PROBE for ALL movement
-    if (G38_move) {
-      UPDATE_ENDSTOP_BIT(Z, MIN_PROBE);
-      if (TEST_ENDSTOP(_ENDSTOP(Z, MIN_PROBE))) {
-        if      (stepper.current_block->steps[_AXIS(X)] > 0) { _ENDSTOP_HIT(X, MIN); stepper.endstop_triggered(_AXIS(X)); }
-        else if (stepper.current_block->steps[_AXIS(Y)] > 0) { _ENDSTOP_HIT(Y, MIN); stepper.endstop_triggered(_AXIS(Y)); }
-        else if (stepper.current_block->steps[_AXIS(Z)] > 0) { _ENDSTOP_HIT(Z, MIN); stepper.endstop_triggered(_AXIS(Z)); }
-        G38_endstop_hit = true;
-      }
-    }
-  #endif
-
   /**
    * Define conditions for checking endstops
    */
 
-  #if IS_CORE
-    #define S_(N) stepper.current_block->steps[CORE_AXIS_##N]
-    #define D_(N) stepper.motor_direction(CORE_AXIS_##N)
-  #endif
+  #define X_MOVE_TEST stepper.current_block->steps[X_AXIS] > 0
+  #define X_AXIS_HEAD X_AXIS
 
-  #if CORE_IS_XY || CORE_IS_XZ
-    /**
-     * Head direction in -X axis for CoreXY and CoreXZ bots.
-     *
-     * If steps differ, both axes are moving.
-     * If DeltaA == -DeltaB, the movement is only in the 2nd axis (Y or Z, handled below)
-     * If DeltaA ==  DeltaB, the movement is only in the 1st axis (X)
-     */
-    #if ENABLED(COREXY) || ENABLED(COREXZ)
-      #define X_CMP ==
-    #else
-      #define X_CMP !=
-    #endif
-    #define X_MOVE_TEST ( S_(1) != S_(2) || (S_(1) > 0 && D_(1) X_CMP D_(2)) )
-    #define X_AXIS_HEAD X_HEAD
-  #else
-    #define X_MOVE_TEST stepper.current_block->steps[X_AXIS] > 0
-    #define X_AXIS_HEAD X_AXIS
-  #endif
+  #define Y_MOVE_TEST stepper.current_block->steps[Y_AXIS] > 0
+  #define Y_AXIS_HEAD Y_AXIS
 
-  #if CORE_IS_XY || CORE_IS_YZ
-    /**
-     * Head direction in -Y axis for CoreXY / CoreYZ bots.
-     *
-     * If steps differ, both axes are moving
-     * If DeltaA ==  DeltaB, the movement is only in the 1st axis (X or Y)
-     * If DeltaA == -DeltaB, the movement is only in the 2nd axis (Y or Z)
-     */
-    #if ENABLED(COREYX) || ENABLED(COREYZ)
-      #define Y_CMP ==
-    #else
-      #define Y_CMP !=
-    #endif
-    #define Y_MOVE_TEST ( S_(1) != S_(2) || (S_(1) > 0 && D_(1) Y_CMP D_(2)) )
-    #define Y_AXIS_HEAD Y_HEAD
-  #else
-    #define Y_MOVE_TEST stepper.current_block->steps[Y_AXIS] > 0
-    #define Y_AXIS_HEAD Y_AXIS
-  #endif
+  #define Z_MOVE_TEST stepper.current_block->steps[Z_AXIS] > 0
+  #define Z_AXIS_HEAD Z_AXIS
 
-  #if CORE_IS_XZ || CORE_IS_YZ
-    /**
-     * Head direction in -Z axis for CoreXZ or CoreYZ bots.
-     *
-     * If steps differ, both axes are moving
-     * If DeltaA ==  DeltaB, the movement is only in the 1st axis (X or Y, already handled above)
-     * If DeltaA == -DeltaB, the movement is only in the 2nd axis (Z)
-     */
-    #if ENABLED(COREZX) || ENABLED(COREZY)
-      #define Z_CMP ==
-    #else
-      #define Z_CMP !=
-    #endif
-    #define Z_MOVE_TEST ( S_(1) != S_(2) || (S_(1) > 0 && D_(1) Z_CMP D_(2)) )
-    #define Z_AXIS_HEAD Z_HEAD
-  #else
-    #define Z_MOVE_TEST stepper.current_block->steps[Z_AXIS] > 0
-    #define Z_AXIS_HEAD Z_AXIS
-  #endif
-
-  // With Dual X, endstops are only checked in the homing direction for the active extruder
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #define E0_ACTIVE stepper.current_block->active_extruder == 0
-    #define X_MIN_TEST ((X_HOME_DIR < 0 && E0_ACTIVE) || (X2_HOME_DIR < 0 && !E0_ACTIVE))
-    #define X_MAX_TEST ((X_HOME_DIR > 0 && E0_ACTIVE) || (X2_HOME_DIR > 0 && !E0_ACTIVE))
-  #else
-    #define X_MIN_TEST true
-    #define X_MAX_TEST true
-  #endif
+  #define X_MIN_TEST true
+  #define X_MAX_TEST true
 
   /**
    * Check and update endstops according to conditions

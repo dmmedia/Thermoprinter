@@ -28,14 +28,12 @@
 #define HAS_MOTOR_STEP        (PIN_EXISTS(MOTOR_STEP))
 
 // Endstops
-  #define HAS_X_MIN (PIN_EXISTS(X_MIN))
-  #define HAS_X_MAX (PIN_EXISTS(X_MAX))
-  #define HAS_Y_MIN (PIN_EXISTS(Y_MIN))
-  #define HAS_Y_MAX (PIN_EXISTS(Y_MAX))
-  #define HAS_Z_MIN (PIN_EXISTS(Z_MIN))
-  #define HAS_Z_MAX (PIN_EXISTS(Z_MAX))
-  #define HAS_Z2_MIN (PIN_EXISTS(Z2_MIN))
-  #define HAS_Z2_MAX (PIN_EXISTS(Z2_MAX))
+  #define HAS_MOTOR_FAULT (PIN_EXISTS(MOTOR_FAULT))
+  #define HAS_OVER_HEAT (PIN_EXISTS(OVER_HEAT))
+  #define HAS_LOW_BAT (PIN_EXISTS(LOW_BAT))
+  #define HAS_VH_ON_CTRL (PIN_EXISTS(VH_CTRL))
+  #define HAS_PAPER_END (PIN_EXISTS(PAPER_END))
+  #define HAS_HEAD_UP (PIN_EXISTS(HEAD_UP))
 
   #define HAS_STEPPER_RESET (PIN_EXISTS(STEPPER_RESET))
   // Power Signal Control Definitions
