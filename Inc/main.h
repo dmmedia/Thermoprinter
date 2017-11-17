@@ -79,8 +79,8 @@
 #define LOW_BAT_PIN			GPIO_PIN_5
 #define LOW_BAT_PORT		GPIOC
 
-#define VH_CTRL_PIN			GPIO_PIN_13
-#define VH_CTRL_PORT		GPIOC
+#define VH_ON_CTRL_PIN		GPIO_PIN_13
+#define VH_ON_CTRL_PORT		GPIOC
 
 #define PAPER_END_PIN		GPIO_PIN_1
 #define PAPER_END_PORT		GPIOB
@@ -408,6 +408,7 @@ void disable_all_steppers();
 #undef PS_ON_PIN
 #define PS_ON_PIN   GPIO_PIN_1
 #define PS_ON_PORT	GPIOA
+
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

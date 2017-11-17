@@ -54,8 +54,19 @@
 
 #define NOOP do{} while(0)
 
-#define _SET_INPUT(IO) do {DIO ## IO ## _DDR &= ~_BV(DIO ## IO ## _PIN); } while (0)
-#define SET_INPUT(IO) _SET_INPUT(IO)
+void setInput(GPIO_TypeDef  *port, uint32_t pin) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  GPIO_InitStruct.Pin = pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(port, &GPIO_InitStruct);
+}  // set to input, which allows it to be pulled high by pullups
+
+#define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN)
+
+//#define _SET_INPUT(IO) do {DIO ## IO ## _DDR &= ~_BV(DIO ## IO ## _PIN); } while (0)
+//#define SET_INPUT(IO) _SET_INPUT(IO)
 
 #define _SET_OUTPUT(IO) do {DIO ## IO ## _DDR |= _BV(DIO ## IO ## _PIN); } while (0)
 #define SET_OUTPUT(IO) _SET_OUTPUT(IO)
