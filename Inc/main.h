@@ -54,18 +54,12 @@
 /* Private define ------------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#undef MOTOR_STEP_PIN
-#undef MOTOR_DIR_PIN
-#undef MOTOR_ENABLE_PIN
 #define MOTOR_STEP_PORT		GPIOA
 #define MOTOR_STEP_PIN		GPIO_PIN_2
 #define MOTOR_DIR_PORT		GPIOA
 #define MOTOR_DIR_PIN		GPIO_PIN_3
 #define MOTOR_ENABLE_PORT	GPIOA
 #define MOTOR_ENABLE_PIN	GPIO_PIN_1
-
-#define STEPPER_RESET_PORT GPIOA
-#define STEPPER_RESET_PIN  GPIO_PIN_1   // Stepper driver has a sleep input
 
 //
 // Limit Switches
@@ -76,8 +70,8 @@
 #define OVER_HEAT_PIN		GPIO_PIN_4
 #define OVER_HEAT_PORT		GPIOC
 
-#define LOW_BAT_PIN			GPIO_PIN_5
-#define LOW_BAT_PORT		GPIOC
+#define LO_BAT_PIN			GPIO_PIN_5
+#define LO_BAT_PORT		GPIOC
 
 #define VH_ON_CTRL_PIN		GPIO_PIN_13
 #define VH_ON_CTRL_PORT		GPIOC
@@ -106,22 +100,6 @@
 // The ASCII buffer for serial input
 #define MAX_CMD_SIZE 96
 #define BUFSIZE 4
-
-// Homing speeds (mm/m)
-#define HOMING_FEEDRATE_XY (50*60)
-#define HOMING_FEEDRATE_Z  (4*60)
-
-//homing hits the endstop, then retracts by this distance, before it tries to slowly bump again:
-#define X_HOME_BUMP_MM 5
-#define Y_HOME_BUMP_MM 5
-#define Z_HOME_BUMP_MM 2
-#define HOMING_BUMP_DIVISOR {2, 2, 4}  // Re-Bump Speed Divisor (Divides the Homing Feedrate)
-
-// Direction of endstops when homing; 1=MAX, -1=MIN
-// :[-1,1]
-#define X_HOME_DIR -1
-#define Y_HOME_DIR -1
-#define Z_HOME_DIR -1
 
 // Transfer Buffer Size
 // To save 386 bytes of PROGMEM (and TX_BUFFER_SIZE+3 bytes of RAM) set to 0.
@@ -159,15 +137,12 @@ inline bool IsRunning() { return  Running; }
 inline bool IsStopped() { return !Running; }
 
 enum EndstopEnum {
-  X_MIN,
-  Y_MIN,
-  Z_MIN,
-  Z_MIN_PROBE,
-  X_MAX,
-  Y_MAX,
-  Z_MAX,
-  Z2_MIN,
-  Z2_MAX
+    MOTOR_FAULT,
+	LO_BAT,
+	VH_ON_CTRL,
+	HEAD_UP,
+	PAPER_END,
+	OVER_HEAT
 };
 
 #define LOOP_S_LE_N(VAR, S, N) for (uint8_t VAR=S; VAR<=N; VAR++)
@@ -178,37 +153,7 @@ enum EndstopEnum {
 #define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
 #define MMS_SCALED(MM_S) ((MM_S)*feedrate_percentage*0.01)
 
-// If enabled, axes won't move below MIN_POS in response to movement commands.
-#define MIN_SOFTWARE_ENDSTOPS
-// If enabled, axes won't move above MAX_POS in response to movement commands.
-#define MAX_SOFTWARE_ENDSTOPS
-#define HAS_SOFTWARE_ENDSTOPS (ENABLED(MIN_SOFTWARE_ENDSTOPS) || ENABLED(MAX_SOFTWARE_ENDSTOPS))
-
-#define IS_CARTESIAN !IS_KINEMATIC
-
-// The size of the print bed
-#define X_BED_SIZE 200
-#define Y_BED_SIZE 200
-
-// Travel limits (mm) after homing, corresponding to endstop positions.
-#define X_MIN_POS 0
-#define Y_MIN_POS 0
-#define Z_MIN_POS 0
-#define X_MAX_POS X_BED_SIZE
-#define Y_MAX_POS Y_BED_SIZE
-#define Z_MAX_POS 200
-
-// Defined only if the sanity-check is bypassed
-// Define center values for future use
-#define X_CENTER ((X_BED_SIZE) / 2)
-#define Y_CENTER ((Y_BED_SIZE) / 2)
-#define Z_CENTER ((Z_MIN_POS + Z_MAX_POS) / 2)
-
-// Get the linear boundaries of the bed
-#define X_MIN_BED (X_CENTER - (X_BED_SIZE) / 2)
-#define X_MAX_BED (X_CENTER + (X_BED_SIZE) / 2)
-#define Y_MIN_BED (Y_CENTER - (Y_BED_SIZE) / 2)
-#define Y_MAX_BED (Y_CENTER + (Y_BED_SIZE) / 2)
+#define IS_CARTESIAN 1
 
 // Macros to contrain values
 #define NOLESS(v,n) do{ if (v < n) v = n; }while(0)
@@ -301,6 +246,14 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // enable this option. Override at any time with M120, M121.
 #define ENDSTOPS_ALWAYS_ON_DEFAULT
 
+// Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
+#define MOTOR_FAULT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define LO_BAT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define VH_ON_CTRL_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define HEAD_UP_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define PAPER_END_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define OVER_HEAT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+
 // Enable this feature if all enabled endstop pins are interrupt-capable.
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
 #define ENDSTOP_INTERRUPTS_FEATURE
@@ -312,7 +265,10 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 #define CHANGE 1
 
 // By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
-#define INVERT_MOTOR_STEP_PIN false
+#define INVERT_MOTOR_STEP_PIN GPIO_PIN_RESET
+
+// Invert the stepper direction. Change (or reverse the motor connector) if an paper goes the wrong way.
+#define INVERT_MOTOR_DIR GPIO_PIN_RESET
 
 // The minimum pulse width (in µs) for stepping a stepper.
 // Set this if you find stepping unreliable, or if using a very fast CPU.

@@ -81,10 +81,8 @@ const short temptable_998[][2] = {
  * States for ADC reading in the ISR
  */
 enum ADCSensorState {
-  #if HAS_TEMP_0
-    PrepareTemp_0,
-    MeasureTemp_0,
-  #endif
+  PrepareTemp_0,
+  MeasureTemp_0,
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     Prepare_FILWIDTH,
     Measure_FILWIDTH,
@@ -97,6 +95,8 @@ enum ADCSensorState {
 // Multiplied by 16 (OVERSAMPLENR) to obtain the total time to
 // get all oversampled sensor readings
 #define MIN_ADC_ISR_LOOPS 10
+
+TIM_HandleTypeDef htim2;
 
 class Temperature {
 public:

@@ -153,7 +153,8 @@ void setup_endstop_interrupts( void ) {
 class Endstops {
 public:
     static bool enabled, enabled_globally;
-    static volatile char endstop_hit_bits; // use X_MIN, Y_MIN, Z_MIN and Z_MIN_PROBE as BIT value
+    static volatile char endstop_hit_bits; // use EndstopEnum as BIT value
+    static byte current_endstop_bits, old_endstop_bits;
 
     Endstops() {}
 	virtual ~Endstops();

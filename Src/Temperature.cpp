@@ -8,6 +8,10 @@
 #include <Temperature.h>
 #include "macros.h"
 
+#if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+  #include "endstops.h"
+#endif
+
 Temperature thermalManager;
 
 // Init min and max temp with extreme values to prevent false errors during startup
@@ -39,6 +43,47 @@ void Temperature::init() {
     /* Calibration Error */
     Error_Handler();
   }
+
+
+
+
+  // Set the timer pre-scaler
+  // Generally we use a divider of 8, resulting in a 2MHz timer
+  // frequency on a 16MHz MCU. If you are going to change this, be
+  // sure to regenerate speed_lookuptable.h with
+  // create_speed_lookuptable.py
+  TIM_Base_InitTypeDef tim2_Init;
+  tim2_Init.Prescaler = 64;
+  tim2_Init.CounterMode = TIM_COUNTERMODE_UP;
+  // Init Stepper ISR to 4 us Hz
+  tim2_Init.Period = 256;
+  tim2_Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+
+  htim2.Instance = TIM6;
+  htim2.Init = tim2_Init;
+  htim2.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+
+  if (HAL_ERROR == HAL_TIM_Base_Init(&htim2)) {
+	  Error_Handler();
+  }
+
+  // Set the timer pre-scaler
+  // Generally we use a divider of 64, resulting in a 250KHz timer
+  // frequency on a 16MHz MCU.
+  //TIM2->PSC = 64; // 1/64 prescaler
+
+  // Init Stepper ISR to 4 us
+  //TIM2->ARR = 256;
+
+  // Enable update interrupts
+  //TIM2->DIER |= TIM_DIER_UIE;
+  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
+
+  //TIM2->CNT = 0;
+  __HAL_TIM_SET_COUNTER(&htim2, 0);
+
+
+
 
   // Use timer TIM2 for temperature measurement
   __HAL_TIM_SET_AUTORELOAD(&htim2, 128);

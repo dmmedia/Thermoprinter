@@ -82,6 +82,14 @@ const uint16_t speed_lookuptable_slow[256][2] = {
   { 992, 4}, { 988, 4}, { 984, 4}, { 980, 4}, { 976, 4}, { 972, 4}, { 968, 3}, { 965, 3}
 };
 
+#define MOTOR_DIR_INIT SET_OUTPUT(MOTOR_DIR)
+#define MOTOR_DIR_WRITE(STATE) WRITE(MOTOR_DIR,STATE)
+#define MOTOR_DIR_READ READ(MOTOR_DIR)
+
+#define MOTOR_STEP_INIT SET_OUTPUT(MOTOR_STEP)
+#define MOTOR_STEP_WRITE(STATE) WRITE(MOTOR_STEP,STATE)
+#define MOTOR_STEP_READ READ(MOTOR_STEP)
+
 // intRes = intIn1 * intIn2 >> 16
 // uses:
 // r26 to store 0
@@ -154,6 +162,15 @@ public:
     //
     static void init();
 
+    //
+    // Handle a triggered endstop
+    //
+    static void endstop_triggered();
+
+    static inline void kill_current_block() {
+      step_events_completed = current_block->step_event_count;
+    }
+
 private:
     TIM_HandleTypeDef htim6;
 
@@ -202,7 +219,7 @@ private:
     //
     // Positions of stepper motors, in step units
     //
-    static volatile long count_position[NUM_AXIS];
+    static volatile long count_position;
 
     static uint8_t last_direction_bits;        // The next stepping-bits to be output
     static uint16_t cleaning_buffer_counter;
@@ -215,7 +232,7 @@ private:
     //
     // Current direction of stepper motors (+1 or -1)
     //
-    static volatile signed char count_direction[NUM_AXIS];
+    static volatile signed char count_direction;
 
     // Initialize the trapezoid generator from the current block.
     // Called whenever a new block begins.
@@ -238,6 +255,7 @@ private:
       __HAL_TIM_SET_AUTORELOAD(&htim6, acceleration_time);
     }
 
+    static volatile long endstops_trigsteps;
 };
 
 #endif /* STEPPER_H_ */

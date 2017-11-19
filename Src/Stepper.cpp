@@ -28,6 +28,12 @@ unsigned short Stepper::TIM6_ARR_nominal;
 long Stepper::counter_MOTOR = 0;
 volatile uint32_t Stepper::step_events_completed = 0; // The number of step events executed in the current block
 
+volatile long Stepper::endstops_trigsteps;
+
+#if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+  extern volatile uint8_t e_hit;
+#endif
+
 #define MOTOR_APPLY_DIR(v,Q) MOTOR_DIR_WRITE(v)
 #define MOTOR_APPLY_STEP(v,Q) MOTOR_STEP_WRITE(v)
 
@@ -140,102 +146,22 @@ void Stepper::set_position(const long &a) {
   CRITICAL_SECTION_END;
 }
 
-void Stepper::init() {
-
-  // Init Dir Pin
-  #if HAS_MOTOR_DIR
-    MOTOR_DIR_INIT;
-  #endif
-
-  // Init Enable Pin - stepper default to disabled.
-  #if HAS_MOTOR_ENABLE
-    MOTOR_ENABLE_INIT;
-    if (!MOTOR_ENABLE_ON) MOTOR_ENABLE_WRITE(HIGH);
-  #endif
-
-  // Init endstops and pullups
-  endstops.init();
-
-  #define MOTOR_STEP_INIT SET_OUTPUT(MOTOR_STEP_PIN)
-  #define MOTOR_STEP_WRITE(STATE) WRITE(MOTOR_STEP_PIN,STATE)
-  #define MOTOR_STEP_READ READ(MOTOR_STEP_PIN)
-
-  #define _WRITE_STEP(HIGHLOW) MOTOR_STEP_WRITE(HIGHLOW)
-  #define _DISABLE() disable_MOTOR()
-
-  #define MOTOR_INIT() \
-    MOTOR_STEP_INIT(); \
-    _WRITE_STEP(_INVERT_STEP_PIN()); \
-    _DISABLE()
-
-  // Init Step Pin
-  #if HAS_MOTOR_STEP
-    MOTOR_INIT();
-  #endif
-
-  // Set the timer pre-scaler
-  // Generally we use a divider of 8, resulting in a 2MHz timer
-  // frequency on a 16MHz MCU. If you are going to change this, be
-  // sure to regenerate speed_lookuptable.h with
-  // create_speed_lookuptable.py
-  TIM_Base_InitTypeDef tim6_Init;
-  tim6_Init.Prescaler = 8;
-  tim6_Init.CounterMode = TIM_COUNTERMODE_UP;
-  // Init Stepper ISR to 122 Hz for quick starting
-  tim6_Init.Period = 0x4000;
-  tim6_Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-
-  htim6.Instance = TIM6;
-  htim6.Init = tim6_Init;
-  htim6.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
-
-  if (HAL_ERROR == HAL_TIM_Base_Init(&htim6)) {
-	  Error_Handler();
-  }
-
-  // Set the timer pre-scaler
-  // Generally we use a divider of 8, resulting in a 2MHz timer
-  // frequency on a 16MHz MCU. If you are going to change this, be
-  // sure to regenerate speed_lookuptable.h with
-  // create_speed_lookuptable.py
-  //TIM2->PSC = 8; // 1/8 prescaler
-
-  // Init Stepper ISR to 122 Hz for quick starting
-  //TIM2->ARR = 0x4000;
-
-  // Enable update interrupts
-  //TIM2->DIER |= TIM_DIER_UIE;
-  __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
-
-  //TIM2->CNT = 0;
-  __HAL_TIM_SET_COUNTER(&htim6, 0);
-
-  ENABLE_STEPPER_DRIVER_INTERRUPT();
-
-  endstops.enable(true); // Start with endstops active. After homing they can be disabled
-  sei();
-
-  set_directions(); // Init directions to last_direction_bits = 0
-}
-
 /**
  * Set the stepper direction
  */
 void Stepper::set_directions() {
 
-  #define SET_STEP_DIR \
+  #define SET_STEP_DIR() \
     if (motor_direction()) { \
-      APPLY_DIR(INVERT_DIR, false); \
+      MOTOR_APPLY_DIR(INVERT_MOTOR_DIR, false); \
       count_direction = -1; \
     } \
     else { \
-      APPLY_DIR(!INVERT_DIR, false); \
+      MOTOR_APPLY_DIR(INVERT_MOTOR_DIR == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET, false); \
       count_direction = 1; \
     }
 
-  #if HAS_MOTOR_DIR
-    SET_STEP_DIR(); // A
-  #endif
+  SET_STEP_DIR();
 }
 
 /**
@@ -334,7 +260,7 @@ void Stepper::isr() {
     // Advance the Bresenham counter; start a pulse if the axis needs a step
     #define PULSE_START() \
       _COUNTER() += current_block->steps; \
-      if (_COUNTER() > 0) { _APPLY_STEP()(!_INVERT_STEP_PIN(),0); }
+      if (_COUNTER() > 0) { _APPLY_STEP()(_INVERT_STEP_PIN() == GPIO_PIN_SET ? GPIO_PIN_RESET : GPIO_PIN_SET,0); }
 
     // Stop an active pulse, reset the Bresenham counter, update the position
     #define PULSE_STOP() \
@@ -356,20 +282,7 @@ void Stepper::isr() {
      * Delays under 20 cycles (1.25µs) will be very accurate, using NOPs.
      * Longer delays use a loop. The resolution is 8 cycles.
      */
-    #if HAS_MOTOR_STEP
-      #define _CYCLE_APPROX_1 5
-    #else
-      #define _CYCLE_APPROX_1 0
-    #endif
-    #define _CYCLE_APPROX_2 _CYCLE_APPROX_1
-    #define _CYCLE_APPROX_3 _CYCLE_APPROX_2
-    #define _CYCLE_APPROX_4 _CYCLE_APPROX_3
-    #define _CYCLE_APPROX_5 _CYCLE_APPROX_4
-    #define _CYCLE_APPROX_6 _CYCLE_APPROX_5
-    #define _CYCLE_APPROX_7 _CYCLE_APPROX_6 + 5
-
-    #define CYCLES_EATEN_XYZE _CYCLE_APPROX_7
-    #define EXTRA_CYCLES_XYZE (STEP_PULSE_CYCLES - (CYCLES_EATEN_XYZE))
+    #define EXTRA_CYCLES_XYZE (STEP_PULSE_CYCLES - 10)
 
     /**
      * If a minimum pulse time was specified get the timer TIM2 value.
@@ -383,9 +296,7 @@ void Stepper::isr() {
       uint32_t pulse_start = __HAL_TIM_GET_COUNTER(&htim2);
     #endif
 
-    #if HAS_MOTOR_STEP
-      PULSE_START();
-    #endif
+    PULSE_START();
 
     // For minimum pulse time wait before stopping pulses
     #if EXTRA_CYCLES_XYZE > 20
@@ -395,9 +306,7 @@ void Stepper::isr() {
       DELAY_NOPS(EXTRA_CYCLES_XYZE);
     #endif
 
-    #if HAS_MOTOR_STEP
-      PULSE_STOP();
-    #endif
+    PULSE_STOP();
 
     if (++step_events_completed >= current_block->step_event_count) {
       all_steps_done = true;
@@ -466,5 +375,80 @@ void Stepper::isr() {
     planner.discard_current_block();
   }
   _ENABLE_ISRs(); // re-enable ISRs
+}
+
+void Stepper::endstop_triggered() {
+
+  endstops_trigsteps = count_position;
+
+  kill_current_block();
+}
+
+void Stepper::init() {
+
+  // Init Dir Pin
+  MOTOR_DIR_INIT;
+
+  // Init Enable Pin - stepper default to disabled.
+  MOTOR_ENABLE_INIT;
+  if (!MOTOR_ENABLE_ON) MOTOR_ENABLE_WRITE(HIGH);
+
+  // Init endstops and pullups
+  endstops.init();
+
+  #define _WRITE_STEP(HIGHLOW) MOTOR_STEP_WRITE(HIGHLOW)
+  #define _DISABLE() disable_MOTOR()
+
+  #define MOTOR_INIT() \
+    MOTOR_STEP_INIT(); \
+    _WRITE_STEP(_INVERT_STEP_PIN()); \
+    _DISABLE()
+
+  // Init Step Pin
+  MOTOR_INIT();
+
+  // Set the timer pre-scaler
+  // Generally we use a divider of 8, resulting in a 2MHz timer
+  // frequency on a 16MHz MCU. If you are going to change this, be
+  // sure to regenerate speed_lookuptable.h with
+  // create_speed_lookuptable.py
+  TIM_Base_InitTypeDef tim6_Init;
+  tim6_Init.Prescaler = 8;
+  tim6_Init.CounterMode = TIM_COUNTERMODE_UP;
+  // Init Stepper ISR to 122 Hz for quick starting
+  tim6_Init.Period = 0x4000;
+  tim6_Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+
+  htim6.Instance = TIM6;
+  htim6.Init = tim6_Init;
+  htim6.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+
+  if (HAL_ERROR == HAL_TIM_Base_Init(&htim6)) {
+	  Error_Handler();
+  }
+
+  // Set the timer pre-scaler
+  // Generally we use a divider of 8, resulting in a 2MHz timer
+  // frequency on a 16MHz MCU. If you are going to change this, be
+  // sure to regenerate speed_lookuptable.h with
+  // create_speed_lookuptable.py
+  //TIM2->PSC = 8; // 1/8 prescaler
+
+  // Init Stepper ISR to 122 Hz for quick starting
+  //TIM2->ARR = 0x4000;
+
+  // Enable update interrupts
+  //TIM2->DIER |= TIM_DIER_UIE;
+  __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
+
+  //TIM2->CNT = 0;
+  __HAL_TIM_SET_COUNTER(&htim6, 0);
+
+  ENABLE_STEPPER_DRIVER_INTERRUPT();
+
+  endstops.enable(true); // Start with endstops active. After homing they can be disabled
+  sei();
+
+  set_directions(); // Init directions to last_direction_bits = 0
 }
 

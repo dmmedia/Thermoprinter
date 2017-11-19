@@ -341,29 +341,9 @@ void RCC_ClearFlag(void)
 }
 
 void setup_powerhold() {
-  #if HAS_POWER_SWITCH
-    OUT_WRITE(PS_ON_PIN, PS_ON_AWAKE);
-  #endif
+  if (HAS_POWER_SWITCH)
+    OUT_WRITE(PS_ON, PS_ON_AWAKE);
 }
-
-/**
- * Stepper Reset (RigidBoard, et.al.)
- */
-#if HAS_STEPPER_RESET
-  void disableStepperDrivers() {
-    HAL_GPIO_WritePin(STEPPER_RESET_PORT, STEPPER_RESET_PIN, GPIO_PIN_RESET);
-  }
-
-  void enableStepperDrivers() {
-	  GPIO_InitTypeDef GPIO_InitStruct;
-
-	  GPIO_InitStruct.Pin = STEPPER_RESET_PIN;
-	  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	  GPIO_InitStruct.Pull = GPIO_PULLUP;
-	  HAL_GPIO_Init(STEPPER_RESET_PORT, &GPIO_InitStruct);
-
-  }  // set to input, which allows it to be pulled high by pullups
-#endif
 
 /**
  * Entry-point: Set up before the program loop
@@ -380,10 +360,6 @@ void setup_powerhold() {
  */
 void setup() {
   setup_powerhold();
-
-  #if HAS_STEPPER_RESET
-    disableStepperDrivers();
-  #endif
 
   MYSERIAL.begin(BAUDRATE);
 //  SERIAL_PROTOCOLLNPGM("start");
@@ -420,10 +396,6 @@ void setup() {
   #endif
 
   stepper.init();    // Initialize stepper, this enables interrupts!
-
-  #if HAS_STEPPER_RESET
-    enableStepperDrivers();
-  #endif
 
   #if ENABLED(RGB_LED) || ENABLED(RGBW_LED)
     SET_OUTPUT(RGB_LED_R_PIN);
@@ -815,9 +787,8 @@ void kill() {
   HAL_Delay(250); //Wait to ensure all interrupts routines stopped
   thermalManager.disable_all_heaters(); //turn off heaters again
 
-  #if HAS_POWER_SWITCH
-    SET_INPUT(PS_ON_PIN);
-  #endif
+  if (HAS_POWER_SWITCH)
+    SET_INPUT(PS_ON);
 
   suicide();
   while (1) {
