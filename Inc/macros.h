@@ -40,16 +40,17 @@
 
 #define NOOP do{} while(0)
 
-void setInput(GPIO_TypeDef  *port, uint32_t pin) {
+void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode = GPIO_MODE_INPUT) {
   GPIO_InitTypeDef GPIO_InitStruct;
 
   GPIO_InitStruct.Pin = pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = mode;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(port, &GPIO_InitStruct);
 }  // set to input, which allows it to be pulled high by pullups
 
 #define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN)
+#define SET_INPUT_EXTI(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_IT_RISING_FALLING)
 
 void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
   GPIO_InitTypeDef GPIO_InitStruct;

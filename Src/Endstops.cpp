@@ -16,29 +16,38 @@ byte Endstops::current_endstop_bits = 0;
 
 void Endstops::init() {
   if (HAS_MOTOR_FAULT) {
-      SET_INPUT(MOTOR_FAULT);
+      SET_INPUT_EXTI(MOTOR_FAULT);
   }
 
   if (HAS_LO_BAT) {
-      SET_INPUT(LO_BAT);
+      SET_INPUT_EXTI(LO_BAT);
   }
 
   if (HAS_VH_ON_CTRL) {
-      SET_INPUT(VH_ON_CTRL);
+      SET_INPUT_EXTI(VH_ON_CTRL);
   }
 
   if (HAS_HEAD_UP) {
-      SET_INPUT(HEAD_UP);
+      SET_INPUT_EXTI(HEAD_UP);
   }
 
   if (HAS_PAPER_END) {
-      SET_INPUT(PAPER_END);
+      SET_INPUT_EXTI(PAPER_END);
   }
 
   if (HAS_OVER_HEAT) {
-      SET_INPUT(OVER_HEAT);
+      SET_INPUT_EXTI(OVER_HEAT);
   }
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 } // Endstops::init
 
 // Check endstops - Called from ISR!

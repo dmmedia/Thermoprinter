@@ -11,8 +11,6 @@
 #include "Conditionals.h"
 #include "stm32l0xx_hal.h"
 
-#define HOTEND_LOOP() for (int8_t e = 0; e < HOTENDS; e++)
-
 /* ## Definition of ADC related resources ################################### */
 /* Definition of ADCx clock resources */
 #define ADC1_CLK_ENABLE()               __ADC1_CLK_ENABLE()

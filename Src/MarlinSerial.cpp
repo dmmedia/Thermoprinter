@@ -52,6 +52,36 @@ int MarlinSerial::read(void) {
   return v;
 }
 
+#if TX_BUFFER_SIZE > 0
+
+  FORCE_INLINE void _tx_udr_empty_irq(void) {
+    // If interrupts are enabled, there must be more data in the output
+    // buffer. Send the next byte
+    const uint8_t t = tx_buffer.tail,
+                  c = tx_buffer.buffer[t];
+    tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
+
+    M_UDRx = c;
+
+    // clear the TXC bit -- "can be cleared by writing a one to its bit
+    // location". This makes sure flush() won't return until the bytes
+    // actually got written
+    SBI(M_UCSRxA, M_TXCx);
+
+    if (tx_buffer.head == tx_buffer.tail) {
+      // Buffer empty, so disable interrupts
+      CBI(M_UCSRxB, M_UDRIEx);
+    }
+  }
+
+  #ifdef M_USARTx_UDRE_vect
+    ISR(M_USARTx_UDRE_vect) {
+      _tx_udr_empty_irq();
+    }
+  #endif
+
+#endif // TX_BUFFER_SIZE
+
 void MarlinSerial::begin(const long baud) {
 
     hlpuart1.Instance = LPUART1;
