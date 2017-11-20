@@ -11,6 +11,7 @@
 #include "macros.h"
 #include "Conditionals.h"
 #include <stm32l0xx_hal.h>
+#include "Planner.h"
 
 const uint16_t speed_lookuptable_fast[256][2] = {
   { 62500, 55556}, { 6944, 3268}, { 3676, 1176}, { 2500, 607}, { 1893, 369}, { 1524, 249}, { 1275, 179}, { 1096, 135},
@@ -120,6 +121,11 @@ static int MultiU16X8toH16(char charIn1, int intIn2) {
                )
 */
 
+class Stepper;
+extern Stepper stepper;
+
+TIM_HandleTypeDef htim6;
+
 class Stepper {
 public:
     static block_t* current_block;  // A pointer to the block currently being traced
@@ -172,7 +178,6 @@ public:
     }
 
 private:
-    TIM_HandleTypeDef htim6;
 
     // Counter variables for the Bresenham line tracer
     static long counter_MOTOR;

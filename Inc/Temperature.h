@@ -10,6 +10,9 @@
 
 #include "Conditionals.h"
 #include "stm32l0xx_hal.h"
+#include "stm32l0xx_hal_dma.h"
+#include "stm32l0xx_hal_adc.h"
+#include "stm32l0xx_hal_tim.h"
 
 /* ## Definition of ADC related resources ################################### */
 /* Definition of ADCx clock resources */
@@ -81,7 +84,7 @@ const short temptable_998[][2] = {
 enum ADCSensorState {
   PrepareTemp_0,
   MeasureTemp_0,
-  #if ENABLED(FILAMENT_WIDTH_SENSOR)
+  #ifdef FILAMENT_WIDTH_SENSOR
     Prepare_FILWIDTH,
     Measure_FILWIDTH,
   #endif

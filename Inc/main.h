@@ -41,14 +41,12 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-#include <string.h>
-#include <stdint.h>
-
 #include "stm32l0xx_hal.h"
 #include "macros.h"
 #include "SREGEmulation.h"
 #include "Conditionals.h"
 #include "Temperature.h"
+#include <cstring>
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -145,11 +143,6 @@ enum EndstopEnum {
 	OVER_HEAT
 };
 
-#define LOOP_S_LE_N(VAR, S, N) for (uint8_t VAR=S; VAR<=N; VAR++)
-#define LOOP_S_L_N(VAR, S, N) for (uint8_t VAR=S; VAR<N; VAR++)
-#define LOOP_XYZE(VAR) LOOP_S_LE_N(VAR, X_AXIS, E_AXIS)
-#define LOOP_XYZE_N(VAR) LOOP_S_L_N(VAR, X_AXIS, XYZE_N)
-
 #define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
 #define MMS_SCALED(MM_S) ((MM_S)*feedrate_percentage*0.01)
 
@@ -174,12 +167,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
 // if unwanted behavior is observed on a user's machine when running at very slow speeds.
 #define MINIMUM_PLANNER_SPEED 0.05 // (mm/sec)
-
-#define Z_HOMING_HEIGHT 0
-#define WORKSPACE_OFFSET(AXIS) 0
-
-#define LOGICAL_POSITION(POS, AXIS) ((POS) + WORKSPACE_OFFSET(AXIS))
-#define LOGICAL_Z_POSITION(POS)     LOGICAL_POSITION(POS, Z_AXIS)
 
 /**
  * Select which serial port on the board will be used for communication with the host.
@@ -258,12 +245,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
 #define ENDSTOP_INTERRUPTS_FEATURE
 
-#define NOT_AN_INTERRUPT -1
-
-#define digitalPinToInterrupt(p) ((p) == 2 ? 0 : ((p) == 3 ? 1 : ((p) >= 18 && (p) <= 21 ? 23 - (p) : NOT_AN_INTERRUPT)))
-
-#define CHANGE 1
-
 // By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
 #define INVERT_MOTOR_STEP_PIN GPIO_PIN_RESET
 
@@ -336,12 +317,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 #define TEMP_0_PIN          GPIO_PORT_5  // Analog Input
 #define TEMP_0_PORT			GPIOA
 
-// Incrementing this by 1 will double the software PWM frequency,
-// affecting heaters, and the fan if FAN_SOFT_PWM is enabled.
-// However, control resolution will be halved for each increment;
-// at zero value, there are 128 effective control positions.
-#define SOFT_PWM_SCALE 0
-
 #define FILWIDTH_PIN     GPIO_PIN_0   // should be Analog Input
 #define FILWIDTH_PORT    GPIOB
 
@@ -364,6 +339,42 @@ void disable_all_steppers();
 #undef PS_ON_PIN
 #define PS_ON_PIN   GPIO_PIN_1
 #define PS_ON_PORT	GPIOA
+
+/**
+ * Filament Width Sensor
+ *
+ * Measures the filament width in real-time and adjusts
+ * flow rate to compensate for any irregularities.
+ *
+ * Also allows the measured filament diameter to set the
+ * extrusion rate, so the slicer only has to specify the
+ * volume.
+ *
+ * Only a single extruder is supported at this time.
+ *
+ *  34 RAMPS_14    : Analog input 5 on the AUX2 connector
+ *  81 PRINTRBOARD : Analog input 2 on the Exp1 connector (version B,C,D,E)
+ * 301 RAMBO       : Analog input 3
+ *
+ * Note: May require analog pins to be defined for other boards.
+ */
+#define FILAMENT_WIDTH_SENSOR
+
+#define DEFAULT_NOMINAL_FILAMENT_DIA 3.00   // (mm) Diameter of the filament generally used (3.0 or 1.75mm), also used in the slicer. Used to validate sensor reading.
+
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
+  #define FILAMENT_SENSOR_EXTRUDER_NUM 0    // Index of the extruder that has the filament sensor (0,1,2,3)
+  #define MEASUREMENT_DELAY_CM        14    // (cm) The distance from the filament sensor to the melting chamber
+
+  #define MEASURED_UPPER_LIMIT         3.30 // (mm) Upper limit used to validate sensor reading
+  #define MEASURED_LOWER_LIMIT         1.90 // (mm) Lower limit used to validate sensor reading
+  #define MAX_MEASUREMENT_DELAY       20    // (bytes) Buffer size for stored measurements (1 byte per cm). Must be larger than MEASUREMENT_DELAY_CM.
+
+  #define DEFAULT_MEASURED_FILAMENT_DIA DEFAULT_NOMINAL_FILAMENT_DIA // Set measured to nominal initially
+
+  // Display filament width on the LCD status line. Status messages will expire after 5 seconds.
+  //#define FILAMENT_LCD_DISPLAY
+#endif
 
 /* USER CODE END Private defines */
 

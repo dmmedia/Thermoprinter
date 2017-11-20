@@ -136,10 +136,10 @@ static void Temperature::ADC_Config(void)
   }
 
   AdcHandle.Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
-  AdcHandle.Init.Resolution            = ADC_RESOLUTION12b;
+  AdcHandle.Init.Resolution            = ADC_RESOLUTION10b;
   AdcHandle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
   AdcHandle.Init.ScanConvMode          = ADC_SCAN_DIRECTION_FORWARD;    /* Sequencer will convert the number of channels configured below, successively from the lowest to the highest channel number */
-  AdcHandle.Init.EOCSelection          = EOC_SINGLE_CONV;
+  AdcHandle.Init.EOCSelection          = EOC_SEQ_CONV;
   AdcHandle.Init.LowPowerAutoWait      = DISABLE;
   AdcHandle.Init.LowPowerAutoPowerOff  = DISABLE;
   AdcHandle.Init.ContinuousConvMode    = DISABLE;                       /* Continuous mode disabled to have only 1 rank converted at each conversion trig, and because discontinuous mode is enabled */
@@ -189,6 +189,7 @@ static void Temperature::ADC_Config(void)
     Error_Handler();
   }
 
+  HAL_ADC_Start(&AdcHandle);
 }
 
 /**
@@ -219,14 +220,6 @@ void Temperature::isr() {
 
   static int8_t temp_count = -1;
   static ADCSensorState adc_sensor_state = StartupDelay;
-  static uint8_t pwm_count = _BV(SOFT_PWM_SCALE);
-  // avoid multiple loads of pwm_count
-  uint8_t pwm_count_tmp = pwm_count;
-
-  #define ISR_STATICS(n) static uint8_t soft_pwm_count_ ## n = 0
-
-  // Statics per heater
-  ISR_STATICS(0);
 
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static unsigned long raw_filwidth_value = 0;
@@ -241,9 +234,6 @@ void Temperature::isr() {
    *
    * This gives each ADC 0.9765ms to charge up.
    */
-
-  #define SET_ADMUX_ADCSRA(pin) ADMUX = _BV(REFS0) | (pin & 0x07); SBI(ADCSRA, ADSC)
-  #define START_ADC(pin) ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
 
   switch (adc_sensor_state) {
 
@@ -262,14 +252,11 @@ void Temperature::isr() {
       break;
     }
 
-    #if HAS_TEMP_0
-      case PrepareTemp_0:
-        START_ADC(TEMP_0_PIN);
-        break;
-      case MeasureTemp_0:
-        raw_temp_value[0] += ADC;
-        break;
-    #endif
+    case PrepareTemp_0:
+      break;
+    case MeasureTemp_0:
+      raw_temp_value[0] += HAL_ADC_GetValue(&AdcHandle);
+      break;
 
     #if ENABLED(FILAMENT_WIDTH_SENSOR)
       case Prepare_FILWIDTH:

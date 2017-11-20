@@ -9,7 +9,6 @@
 #define MACROS_H_
 
 #include <math.h>
-#include <algorithm>
 
 #include "SREGEmulation.h"
 #include <stm32l0xx_hal_gpio.h>

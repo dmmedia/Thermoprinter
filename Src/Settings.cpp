@@ -89,24 +89,18 @@ bool Settings::load() {
  * M502 - Reset Configuration
  */
 void Settings::reset() {
-  static const float tmp1[] = DEFAULT_AXIS_STEPS_PER_UNIT, tmp2[] = DEFAULT_MAX_FEEDRATE;
-  static const uint32_t tmp3[] = DEFAULT_MAX_ACCELERATION;
-  LOOP_XYZE_N(i) {
-    planner.axis_steps_per_mm[i]          = tmp1[i < COUNT(tmp1) ? i : COUNT(tmp1) - 1];
-    planner.max_feedrate_mm_s[i]          = tmp2[i < COUNT(tmp2) ? i : COUNT(tmp2) - 1];
-    planner.max_acceleration_mm_per_s2[i] = tmp3[i < COUNT(tmp3) ? i : COUNT(tmp3) - 1];
-  }
+  static const float tmp1 = DEFAULT_STEPS_PER_UNIT, tmp2 = DEFAULT_MAX_FEEDRATE;
+  static const uint32_t tmp3 = DEFAULT_MAX_ACCELERATION;
+  planner.axis_steps_per_mm          = tmp1;
+  planner.max_feedrate_mm_s          = tmp2;
+  planner.max_acceleration_mm_per_s2 = tmp3;
 
   planner.acceleration = DEFAULT_ACCELERATION;
-  planner.retract_acceleration = DEFAULT_RETRACT_ACCELERATION;
   planner.travel_acceleration = DEFAULT_TRAVEL_ACCELERATION;
   planner.min_feedrate_mm_s = DEFAULT_MINIMUMFEEDRATE;
   planner.min_segment_time = DEFAULT_MINSEGMENTTIME;
   planner.min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
-  planner.max_jerk[X_AXIS] = DEFAULT_XJERK;
-  planner.max_jerk[Y_AXIS] = DEFAULT_YJERK;
-  planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
-  planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
+  planner.max_jerk = DEFAULT_JERK;
 
   endstops.enable_globally(
     #if ENABLED(ENDSTOPS_ALWAYS_ON_DEFAULT)

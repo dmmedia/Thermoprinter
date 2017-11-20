@@ -7,6 +7,7 @@
 
 #include <Endstops.h>
 #include "macros.h"
+#include "Stepper.h"
 
 Endstops endstops;
 

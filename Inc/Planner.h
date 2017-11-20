@@ -196,7 +196,7 @@ private:
      * The current position of the tool in absolute steps
      * Recalculated if any axis_steps_per_mm are changed by gcode
      */
-    static long position[NUM_AXIS];
+    static long position;
 
     /**
      * Get the index of the next / previous block in the ring buffer
@@ -214,7 +214,7 @@ private:
   /**
    * Speed of previous path line segment
    */
-  static float previous_speed[NUM_AXIS];
+  static float previous_speed;
 
   /**
    * Nominal speed of previous path line segment
