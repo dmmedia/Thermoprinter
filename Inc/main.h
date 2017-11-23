@@ -311,6 +311,16 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // You should use MINTEMP for thermistor short/failure protection.
 #define PRINTHEAD_MAXTEMP 65
 
+// The minimal voltage defines the voltage below which the printing will not be enabled It is used
+// to check that the wiring to the battery is not broken.
+// Otherwise this would lead to the printer being powered on all the time.
+#define BATTERY_MINVOLT 6
+
+// When battery exceeds max volt, your charger will be switched off.
+// TODO: fix the following text. This feature exists to protect your battery from overcharging accidentally, but *NOT* from charger short/failure!
+// You should use MINVOLT for charger short/failure protection.
+#define BATTERY_MAXVOLT 8.5
+
 //
 // Temperature Sensors
 //

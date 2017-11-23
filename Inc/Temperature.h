@@ -52,17 +52,11 @@ const short temptable_998[][2] = {
   { 1023 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE }
 };
 
-// Set the high and low raw values for the heaters
+// Set the high and low raw values for the print head
 // For thermistors the highest temperature results in the lowest ADC value
-// For thermocouples the highest temperature results in the highest ADC value
 #ifndef PRINTHEAD_RAW_HI_TEMP
-  #ifdef PRINTHEAD_USES_THERMISTOR
-    #define PRINTHEAD_RAW_HI_TEMP 0
-    #define PRINTHEAD_RAW_LO_TEMP 16383
-  #else
-    #define PRINTHEAD_RAW_HI_TEMP 16383
-    #define PRINTHEAD_RAW_LO_TEMP 0
-  #endif
+  #define PRINTHEAD_RAW_HI_TEMP 0
+  #define PRINTHEAD_RAW_LO_TEMP 16383
 #endif
 
 #define _TT_NAME(_N) temptable_ ## _N
@@ -78,16 +72,18 @@ const short temptable_998[][2] = {
   #define PRINTHEAD_TEMPTABLE_LEN 0
 #endif
 
+// Set the high and low raw values for the battery
+#ifndef BATTERY_RAW_HI_VOLT
+  #define BATTERY_RAW_HI_VOLT 16383
+  #define BATTERY_RAW_LO_VOLT 0
+#endif
+
 /**
  * States for ADC reading in the ISR
  */
 enum ADCSensorState {
-  PrepareTemp_0,
-  MeasureTemp_0,
-  #ifdef FILAMENT_WIDTH_SENSOR
-    Prepare_FILWIDTH,
-    Measure_FILWIDTH,
-  #endif
+  PrepareSensors,
+  MeasureSensors,
   SensorsReady, // Temperatures ready. Delay the next round of readings to let ADC pins settle.
   StartupDelay  // Startup, delay initial temp reading a tiny bit so the hardware can settle
 };
@@ -99,6 +95,15 @@ enum ADCSensorState {
 
 TIM_HandleTypeDef htim2;
 
+/* ADC parameters */
+#define ADCCONVERTEDVALUES_BUFFER_SIZE ((uint32_t)    2)    /* Size of array containing ADC converted values: set to ADC sequencer number of ranks converted, to have a rank in each address */
+
+/* Variable containing ADC conversions results */
+__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
+
+/* Variable to report ADC sequencer status */
+uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
+
 class Temperature {
 public:
 	Temperature() {};
@@ -109,6 +114,7 @@ public:
      * Static (class) methods
      */
     static float analog2temp(int raw);
+    static float analog2volt(int raw);
 
     /**
      * Called from the Temperature ISR
@@ -117,7 +123,7 @@ public:
 
     static volatile bool in_temp_isr;
 
-    static int16_t current_temperature_raw;
+    static int16_t current_temperature_raw, current_voltage_raw;
 
 private:
     // Init min and max temp with extreme values to prevent false errors during startup
@@ -126,15 +132,21 @@ private:
                    minttemp,
                    maxttemp;
 
-    static volatile bool temp_meas_ready;
+    // Init min and max volt with extreme values to prevent false errors during startup
+    static int16_t mintvolt_raw,
+                   maxtvolt_raw,
+                   mintvolt,
+                   maxtvolt;
 
-    static void set_current_temp_raw();
+    static volatile bool sens_meas_ready;
 
-    static uint16_t raw_temp_value;
+    static void set_current_sens_raw();
 
-    static void _temp_error(const char * const serial_msg, const char * const lcd_msg);
-    static void max_temp_error();
-    static void min_temp_error();
+    static uint16_t raw_temp_value, raw_volt_value;
+
+    static void _sens_error(const char * const serial_msg, const char * const lcd_msg);
+    static void max_sens_error();
+    static void min_sens_error();
 
     ADC_HandleTypeDef    AdcHandle;
 

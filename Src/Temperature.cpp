@@ -7,10 +7,8 @@
 
 #include <Temperature.h>
 #include "macros.h"
-
-#if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
-  #include "endstops.h"
-#endif
+#include "main.h"
+#include "endstops.h"
 
 Temperature thermalManager;
 
@@ -20,14 +18,24 @@ int16_t Temperature::minttemp_raw = PRINTHEAD_RAW_LO_TEMP,
         Temperature::minttemp = 0,
         Temperature::maxttemp = 16383;
 
+// Init min and max volt with extreme values to prevent false errors during startup
+int16_t Temperature::mintvolt_raw = BATTERY_RAW_LO_VOLT,
+        Temperature::maxtvolt_raw = BATTERY_RAW_HI_VOLT,
+        Temperature::mintvolt = 0,
+        Temperature::maxtvolt = 16383;
+
 static void* heater_ttbl_map = (void*)PRINTHEAD_TEMPTABLE;
 static uint8_t heater_ttbllen_map = PRINTHEAD_TEMPTABLE_LEN;
 
-volatile bool Temperature::temp_meas_ready = false;
+static void* battery_ttbl_map = (void*)BATTERY_VOLTTABLE;
+static uint8_t battery_ttbllen_map = BATTERY_VOLTTABLE_LEN;
+
+volatile bool Temperature::sens_meas_ready = false;
 
 uint16_t Temperature::raw_temp_value = 0;
+uint16_t Temperature::raw_volt_value = 0;
 
-int16_t Temperature::current_temperature_raw = 0;
+int16_t Temperature::current_temperature_raw = 0, current_voltage_raw = 0;
 
 /**
  * Initialize the temperature manager
@@ -115,6 +123,30 @@ void Temperature::init() {
   #ifdef PRINTHEAD_MAXTEMP
     TEMP_MAX_ROUTINE();
   #endif
+
+  #define VOLT_MIN_ROUTINE() \
+    mintvolt = BATTERY_MINVOLT; \
+    while (analog2volt(mintvolt_raw) < BATTERY_MINVOLT) { \
+      if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) \
+        mintvolt_raw += OVERSAMPLENR; \
+      else \
+        mintvolt_raw -= OVERSAMPLENR; \
+    }
+  #define VOLT_MAX_ROUTINE() \
+    maxttemp = BATTERY_MAXVOLT; \
+    while (analog2volt(maxtvolt_raw) > BATTERY_MAXVOLT) { \
+      if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) \
+        maxtvolt_raw -= OVERSAMPLENR; \
+      else \
+        maxtvolt_raw += OVERSAMPLENR; \
+    }
+
+  #ifdef BATTERY_MINVOLT
+    VOLT_MIN_ROUTINE();
+  #endif
+  #ifdef BATTERY_MAXVOLT
+    VOLT_MAX_ROUTINE();
+  #endif
 }
 
 /**
@@ -139,7 +171,7 @@ static void Temperature::ADC_Config(void)
   AdcHandle.Init.Resolution            = ADC_RESOLUTION10b;
   AdcHandle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
   AdcHandle.Init.ScanConvMode          = ADC_SCAN_DIRECTION_FORWARD;    /* Sequencer will convert the number of channels configured below, successively from the lowest to the highest channel number */
-  AdcHandle.Init.EOCSelection          = EOC_SEQ_CONV;
+  AdcHandle.Init.EOCSelection          = EOC_SINGLE_CONV;
   AdcHandle.Init.LowPowerAutoWait      = DISABLE;
   AdcHandle.Init.LowPowerAutoPowerOff  = DISABLE;
   AdcHandle.Init.ContinuousConvMode    = DISABLE;                       /* Continuous mode disabled to have only 1 rank converted at each conversion trig, and because discontinuous mode is enabled */
@@ -189,7 +221,25 @@ static void Temperature::ADC_Config(void)
     Error_Handler();
   }
 
-  HAL_ADC_Start(&AdcHandle);
+  /*## Start ADC conversions #################################################*/
+
+  /* Start ADC conversion on regular group with transfer by DMA */
+  if (HAL_ADC_Start_DMA(&AdcHandle,
+                        (uint32_t *)aADCxConvertedValues,
+                        ADCCONVERTEDVALUES_BUFFER_SIZE
+                       ) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
+
+  /* Run the ADC calibration in single-ended mode */
+  if (HAL_ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != HAL_OK)
+  {
+    /* Calibration Error */
+    Error_Handler();
+  }
+
 }
 
 /**
@@ -252,23 +302,34 @@ void Temperature::isr() {
       break;
     }
 
-    case PrepareTemp_0:
-      break;
-    case MeasureTemp_0:
-      raw_temp_value[0] += HAL_ADC_GetValue(&AdcHandle);
+    case PrepareSensors:
+      /* Start ADC conversion */
+      /* Since sequencer is enabled in discontinuous mode, this will perform    */
+      /* the conversion of the next rank in sequencer.                          */
+      /* Note: For this example, conversion is triggered by software start,     */
+      /*       therefore "HAL_ADC_Start()" must be called for each conversion.  */
+      /*       Since DMA transfer has been initiated previously by function     */
+      /*       "HAL_ADC_Start_DMA()", this function will keep DMA transfer      */
+      /*       active.                                                          */
+      if (HAL_ADC_Start(&AdcHandle) != HAL_OK)
+      {
+        Error_Handler();
+      }
       break;
 
-    #if ENABLED(FILAMENT_WIDTH_SENSOR)
-      case Prepare_FILWIDTH:
-        START_ADC(FILWIDTH_PIN);
+    case MeasureSensors:
+      if (ubSequenceCompleted == SET)
+      {
+        /* Computation of ADC conversions raw data to physical values */
+        /* Note: ADC results are transferred into array "aADCxConvertedValues"  */
+        /*       in the order of their rank in ADC sequencer.                   */
+        raw_temp_value += aADCxConvertedValues[0];
+        raw_volt_value += aADCxConvertedValues[1];
+
+        /* Reset variable for next loop iteration */
+        ubSequenceCompleted = RESET;
+      }
       break;
-      case Measure_FILWIDTH:
-        if (ADC > 102) { // Make sure ADC is reading > 0.5 volts, otherwise don't read.
-          raw_filwidth_value -= (raw_filwidth_value >> 7); // Subtract 1/128th of the raw_filwidth_value
-          raw_filwidth_value += ((unsigned long)ADC << 7); // Add new ADC reading, scaled by 128
-        }
-      break;
-    #endif
 
     case StartupDelay: break;
 
@@ -279,38 +340,38 @@ void Temperature::isr() {
     temp_count = 0;
 
     // Update the raw values if they've been read. Else we could be updating them during reading.
-    if (!temp_meas_ready) set_current_temp_raw();
-
-    // Filament Sensor - can be read any time since IIR filtering is used
-    #if ENABLED(FILAMENT_WIDTH_SENSOR)
-      current_raw_filwidth = raw_filwidth_value >> 10;  // Divide to get to 0-16384 range since we used 1/128 IIR filter approach
-    #endif
+    if (!sens_meas_ready) set_current_sens_raw();
 
     raw_temp_value = 0;
+    raw_volt_value = 0;
 
     #define TEMPDIR() ((PRINTHEAD_RAW_LO_TEMP) > (PRINTHEAD_RAW_HI_TEMP) ? -1 : 1)
+    #define VOLTDIR() ((BATTERY_RAW_LO_VOLT) > (BATTERY_RAW_HI_VOLT) ? -1 : 1)
 
     int constexpr temp_dir = TEMPDIR();
+    int constexpr volt_dir = VOLTDIR();
 
     const int16_t tdir = temp_dir, rawtemp = current_temperature_raw * tdir;
-    if (rawtemp > maxttemp_raw * tdir) max_temp_error();
+    if (rawtemp > maxttemp_raw * tdir) max_sens_error();
     if (rawtemp < minttemp_raw * tdir) {
-          min_temp_error();
+          min_sens_error();
+    }
+    const int16_t vdir = volt_dir, rawvolt = current_voltage_raw * vdir;
+    if (rawvolt > maxtvolt_raw * vdir) max_sens_error();
+    if (rawvolt < mintvolt_raw * vdir) {
+          min_sens_error();
     }
   } // temp_count >= OVERSAMPLENR
 
   // Go to the next state, up to SensorsReady
   adc_sensor_state = (ADCSensorState)((int(adc_sensor_state) + 1) % int(StartupDelay));
 
-  #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+  extern volatile uint8_t e_hit;
 
-    extern volatile uint8_t e_hit;
-
-    if (e_hit && endstops.enabled) {
-      endstops.update();  // call endstop update routine
-      e_hit--;
-    }
-  #endif
+  if (e_hit && endstops.enabled) {
+    endstops.update();  // call endstop update routine
+    e_hit--;
+  }
 
   cli();
   in_temp_isr = false;
@@ -340,23 +401,49 @@ float Temperature::analog2temp(int raw) {
 
     return celsius;
   }
-  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR));
+//  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR));
+  return ((raw * ((3.3 * 100.0) / 1024.0) / OVERSAMPLENR));
+}
+
+// For battery voltage measurement.
+float Temperature::analog2volt(int raw) {
+  if (battery_ttbl_map != NULL) {
+    float voltage = 0;
+    uint8_t i;
+    short(*tt)[][2] = (short(*)[][2])(battery_ttbl_map);
+
+    for (i = 1; i < battery_ttbllen_map; i++) {
+      if ((short)((*tt)[i][0]) > raw) {
+        voltage = (short)((*tt)[i - 1][1]) +
+                  (raw - (short)((*tt)[i - 1][0])) *
+                  (float)((short)((*tt)[i][1]) - (short)((*tt)[i - 1][1])) /
+                  (float)((short)((*tt)[i][0]) - (short)((*tt)[i - 1][0]));
+        break;
+      }
+    }
+
+    // Overflow: Set to last value in the table
+    if (i == battery_ttbllen_map) voltage = (short)((*tt)[i - 1][1]);
+
+    return voltage;
+  }
+//  return ((raw * ((5.0 * 100.0) / 1024.0) / OVERSAMPLENR));
+  return ((raw * ((3.3 * 100.0) / 1024.0) / OVERSAMPLENR));
 }
 
 /**
  * Get raw temperatures
  */
-void Temperature::set_current_temp_raw() {
-  #if HAS_TEMP_0
-    current_temperature_raw = raw_temp_value;
-  #endif
-  temp_meas_ready = true;
+void Temperature::set_current_sens_raw() {
+  current_temperature_raw = raw_temp_value;
+  current_voltage_raw = raw_volt_value;
+  sens_meas_ready = true;
 }
 
 //
 // Temperature Error Handlers
 //
-void Temperature::_temp_error(const char * const serial_msg, const char * const lcd_msg) {
+void Temperature::_sens_error(const char * const serial_msg, const char * const lcd_msg) {
   static bool killed = false;
   if (IsRunning()) {
 //    SERIAL_ERROR_START();
@@ -372,15 +459,50 @@ void Temperature::_temp_error(const char * const serial_msg, const char * const 
     disable_all_heaters(); // paranoia
 }
 
-void Temperature::max_temp_error() {
-    _temp_error((const char *)(MSG_T_MAXTEMP), (const char *)(MSG_ERR_MAXTEMP));
+void Temperature::max_sens_error() {
+    _sens_error((const char *)(MSG_T_MAXTEMP), (const char *)(MSG_ERR_MAXTEMP));
 }
-void Temperature::min_temp_error() {
-    _temp_error((const char *)(MSG_T_MINTEMP), (const char *)(MSG_ERR_MINTEMP));
+void Temperature::min_sens_error() {
+    _sens_error((const char *)(MSG_T_MINTEMP), (const char *)(MSG_ERR_MINTEMP));
 }
 
 void Temperature::disable_all_heaters() {
   // for sure our print job has stopped
   print_job_timer.stop();
+}
+
+/**
+  * @brief  Conversion complete callback in non blocking mode
+  * @param  AdcHandle : ADC handle
+  * @note   This example shows a simple way to report end of conversion
+  *         and get conversion result. You can add your own implementation.
+  * @retval None
+  */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *AdcHandle)
+{
+  /* Report to main program that ADC sequencer has reached its end */
+  ubSequenceCompleted = SET;
+}
+
+/**
+  * @brief  Conversion DMA half-transfer callback in non blocking mode
+  * @param  hadc: ADC handle
+  * @retval None
+  */
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+{
+
+}
+
+/**
+  * @brief  ADC error callback in non blocking mode
+  *        (ADC conversion with interruption or transfer by DMA)
+  * @param  hadc: ADC handle
+  * @retval None
+  */
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+{
+  /* In case of ADC error, call main error handler */
+  Error_Handler();
 }
 
