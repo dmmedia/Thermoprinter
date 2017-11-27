@@ -8,9 +8,9 @@
 #ifndef PLANNER_H_
 #define PLANNER_H_
 
-#include "macros.h"
-#include "Conditionals.h"
-#include "main.h"
+//#include "macros.h"
+//#include "Conditionals.h"
+//#include "main.h"
 
 enum BlockFlagBit {
   // Recalculate trapezoids on entry junction. For optimization.

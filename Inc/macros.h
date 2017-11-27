@@ -8,10 +8,12 @@
 #ifndef MACROS_H_
 #define MACROS_H_
 
-#include <math.h>
+#include <stm32l0xx_hal.h>
+#include <string.h>
 
-#include "SREGEmulation.h"
-#include <stm32l0xx_hal_gpio.h>
+//#include <math.h>
+
+//#include "SREGEmulation.h"
 
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
@@ -38,6 +40,9 @@
 #define PIN_EXISTS(IO) IS_GPIO_PIN_AVAILABLE(IO ## _PORT, IO ## _PIN)
 
 #define NOOP do{} while(0)
+
+//typedef struct GPIO_TypeDef GPIO_TypeDef;
+//typedef struct GPIO_InitTypeDef GPIO_InitTypeDef;
 
 void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode = GPIO_MODE_INPUT) {
   GPIO_InitTypeDef GPIO_InitStruct;
@@ -100,5 +105,23 @@ void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
 
 #define DELAY_10_NOP DELAY_5_NOP;  DELAY_5_NOP
 #define DELAY_20_NOP DELAY_10_NOP; DELAY_10_NOP
+
+#define _CAT(a, ...) a ## __VA_ARGS__
+#define SWITCH_ENABLED_false 0
+#define SWITCH_ENABLED_true  1
+#define SWITCH_ENABLED_0     0
+#define SWITCH_ENABLED_1     1
+#define SWITCH_ENABLED_      1
+#define ENABLED(b) _CAT(SWITCH_ENABLED_, b)
+#define DISABLED(b) (!_CAT(SWITCH_ENABLED_, b))
+
+#define WITHIN(V,L,H) ((V) >= (L) && (V) <= (H))
+#define NUMERIC(a) WITHIN(a, '0', '9')
+#define DECIMAL(a) (NUMERIC(a) || a == '.')
+#define NUMERIC_SIGNED(a) (NUMERIC(a) || (a) == '-' || (a) == '+')
+#define DECIMAL_SIGNED(a) (DECIMAL(a) || (a) == '-' || (a) == '+')
+#define COUNT(a) (sizeof(a)/sizeof(*a))
+#define ZERO(a) memset(a,0,sizeof(a))
+#define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
 
 #endif /* MACROS_H_ */

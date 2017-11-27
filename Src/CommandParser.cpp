@@ -10,7 +10,7 @@
 
 #if ENABLED(FASTER_COMMAND_PARSER)
   // Optimized Parameters
-  byte CommandParser::codebits[4];   // found bits
+  uint8_t CommandParser::codebits[4];   // found bits
   uint8_t CommandParser::param[26];  // parameter offsets from command_ptr
 #else
   char *CommandParser::command_args; // start of parameters

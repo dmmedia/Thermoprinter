@@ -8,8 +8,8 @@
 #ifndef ENDSTOPS_H_
 #define ENDSTOPS_H_
 
-#include "main.h"
-#include "Conditionals.h"
+//#include "main.h"
+//#include "Conditionals.h"
 
 volatile uint8_t e_hit = 0; // Different from 0 when the endstops should be tested in detail.
                             // Must be reset to 0 by the test function when finished.

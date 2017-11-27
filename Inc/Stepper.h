@@ -8,10 +8,9 @@
 #ifndef STEPPER_H_
 #define STEPPER_H_
 
-#include "macros.h"
-#include "Conditionals.h"
-#include <stm32l0xx_hal.h>
-#include "Planner.h"
+//#include "macros.h"
+//#include "Conditionals.h"
+//#include "Planner.h"
 
 const uint16_t speed_lookuptable_fast[256][2] = {
   { 62500, 55556}, { 6944, 3268}, { 3676, 1176}, { 2500, 607}, { 1893, 369}, { 1524, 249}, { 1275, 179}, { 1096, 135},
@@ -91,35 +90,9 @@ const uint16_t speed_lookuptable_slow[256][2] = {
 #define MOTOR_STEP_WRITE(STATE) WRITE(MOTOR_STEP,STATE)
 #define MOTOR_STEP_READ READ(MOTOR_STEP)
 
-// intRes = intIn1 * intIn2 >> 16
-// uses:
-// r26 to store 0
-// r27 to store the byte 1 of the 24 bit result
-static int MultiU16X8toH16(char charIn1, int intIn2) {
-	return ((long)charIn1 * intIn2) >> 16;
+static unsigned short MultiU16X8toH16(unsigned char charIn1, unsigned int intIn2) {
+	return (unsigned short)((intIn2 * charIn1) >> 16);
 }
-/*
-#define MultiU16X8toH16(intRes, charIn1, intIn2) \
-  asm volatile ( \
-                 "clr r26 \n\t" \
-                 "mul %A1, %B2 \n\t" \
-                 "movw %A0, r0 \n\t" \
-                 "mul %A1, %A2 \n\t" \
-                 "add %A0, r1 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "lsr r0 \n\t" \
-                 "adc %A0, r26 \n\t" \
-                 "adc %B0, r26 \n\t" \
-                 "clr r1 \n\t" \
-                 : \
-                 "=&r" (intRes) \
-                 : \
-                 "d" (charIn1), \
-                 "d" (intIn2) \
-                 : \
-                 "r26" \
-               )
-*/
 
 class Stepper;
 extern Stepper stepper;
@@ -203,17 +176,17 @@ private:
       NOLESS(step_rate, SystemCoreClock / 500000);
       step_rate -= SystemCoreClock / 500000; // Correct for minimal speed
       if (step_rate >= (8 * 256)) { // higher step rate
-        unsigned short table_address = (unsigned short)&speed_lookuptable_fast[(unsigned char)(step_rate >> 8)][0];
+        uint16_t *table_address = (uint16_t *)&speed_lookuptable_fast[(uint8_t) (step_rate >> 8)][0];
         unsigned char tmp_step_rate = (step_rate & 0x00FF);
-        unsigned short gain = (unsigned short)(table_address + 2);
+        uint16_t gain = *(table_address + 1);
         timer = MultiU16X8toH16(tmp_step_rate, gain);
-        timer = (unsigned short)(table_address) - timer;
+        timer = (*table_address) - timer;
       }
       else { // lower step rates
-        unsigned short table_address = (unsigned short)&speed_lookuptable_slow[0][0];
-        table_address += ((step_rate) >> 1) & 0xFFFC;
-        timer = (unsigned short)(table_address);
-        timer -= (((unsigned short)(table_address + 2) * (unsigned char)(step_rate & 0x0007)) >> 3);
+        uint16_t *table_address = (uint16_t *)&speed_lookuptable_slow[0][0];
+        table_address += ((step_rate) >> 1) & 0xFFFFFFFC;
+        timer = *table_address;
+        timer -= (((*(table_address + 1)) * (unsigned char)(step_rate & 0x0007)) >> 3);
       }
       if (timer < 100) { // (20kHz - this should never happen)
         timer = 100;

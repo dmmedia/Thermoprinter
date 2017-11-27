@@ -8,7 +8,7 @@
 #ifndef MARLINSERIAL_H_
 #define MARLINSERIAL_H_
 
-#include "main.h"
+//#include "main.h"
 
 #ifndef SERIAL_PORT
   #define SERIAL_PORT 0

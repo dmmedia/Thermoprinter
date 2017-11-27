@@ -8,7 +8,7 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
-#include "main.h"
+//#include "main.h"
 
 class Settings {
 public:

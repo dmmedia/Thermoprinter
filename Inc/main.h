@@ -41,51 +41,16 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-#include "stm32l0xx_hal.h"
-#include "macros.h"
-#include "SREGEmulation.h"
-#include "Conditionals.h"
-#include "Temperature.h"
-#include <cstring>
+//#include "macros.h"
+//#include "SREGEmulation.h"
+//#include "Conditionals.h"
+//#include "Temperature.h"
+//#include <cstring>
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define MOTOR_STEP_PORT		GPIOA
-#define MOTOR_STEP_PIN		GPIO_PIN_2
-#define MOTOR_DIR_PORT		GPIOA
-#define MOTOR_DIR_PIN		GPIO_PIN_3
-#define MOTOR_ENABLE_PORT	GPIOA
-#define MOTOR_ENABLE_PIN	GPIO_PIN_1
-
-//
-// Limit Switches
-//
-#define MOTOR_FAULT_PIN		GPIO_PIN_6
-#define MOTOR_FAULT_PORT	GPIOA
-
-#define OVER_HEAT_PIN		GPIO_PIN_4
-#define OVER_HEAT_PORT		GPIOC
-
-#define LO_BAT_PIN			GPIO_PIN_5
-#define LO_BAT_PORT		GPIOC
-
-#define VH_ON_CTRL_PIN		GPIO_PIN_13
-#define VH_ON_CTRL_PORT		GPIOC
-
-#define PAPER_END_PIN		GPIO_PIN_1
-#define PAPER_END_PORT		GPIOB
-
-#define HEAD_UP_PIN			GPIO_PIN_2
-#define HEAD_UP_PORT		GPIOB
-
-//
-// Misc. Functions
-//
-#undef PS_ON_PIN
-#define PS_ON_PIN          -1
-
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
 // :{ 0:'Low', 1:'High' }
 #define MOTOR_ENABLE_ON 0
@@ -107,28 +72,6 @@
 // Other output doesn't need to be that speedy.
 // :[0, 2, 4, 8, 16, 32, 64, 128, 256]
 #define TX_BUFFER_SIZE 0
-
-#define _CAT(a, ...) a ## __VA_ARGS__
-#define SWITCH_ENABLED_false 0
-#define SWITCH_ENABLED_true  1
-#define SWITCH_ENABLED_0     0
-#define SWITCH_ENABLED_1     1
-#define SWITCH_ENABLED_      1
-#define ENABLED(b) _CAT(SWITCH_ENABLED_, b)
-#define DISABLED(b) (!_CAT(SWITCH_ENABLED_, b))
-
-#define WITHIN(V,L,H) ((V) >= (L) && (V) <= (H))
-#define NUMERIC(a) WITHIN(a, '0', '9')
-#define DECIMAL(a) (NUMERIC(a) || a == '.')
-#define NUMERIC_SIGNED(a) (NUMERIC(a) || (a) == '-' || (a) == '+')
-#define DECIMAL_SIGNED(a) (DECIMAL(a) || (a) == '-' || (a) == '+')
-#define COUNT(a) (sizeof(a)/sizeof(*a))
-#define ZERO(a) memset(a,0,sizeof(a))
-#define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
-
-#define FASTER_COMMAND_PARSER
-
-typedef uint8_t byte;
 
 extern bool Running;
 inline bool IsRunning() { return  Running; }
@@ -321,15 +264,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // You should use MINVOLT for charger short/failure protection.
 #define BATTERY_MAXVOLT 8.5
 
-//
-// Temperature Sensors
-//
-#define TEMP_0_PIN          GPIO_PORT_5  // Analog Input
-#define TEMP_0_PORT			GPIOA
-
-#define FILWIDTH_PIN     GPIO_PIN_0   // should be Analog Input
-#define FILWIDTH_PORT    GPIOB
-
 void kill(const char*);
 
 #define MSG_T_MAXTEMP                       "MAXTEMP triggered"
@@ -342,13 +276,6 @@ void kill(const char*);
 #endif
 
 void disable_all_steppers();
-
-//
-// Misc. Functions
-//
-#undef PS_ON_PIN
-#define PS_ON_PIN   GPIO_PIN_1
-#define PS_ON_PORT	GPIOA
 
 /**
  * Filament Width Sensor
@@ -386,6 +313,10 @@ void disable_all_steppers();
   //#define FILAMENT_LCD_DISPLAY
 #endif
 
+typedef struct UART_HandleTypeDef UART_HandleTypeDef;
+
+extern UART_HandleTypeDef hlpuart1;
+extern float current_position;
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

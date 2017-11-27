@@ -8,16 +8,16 @@
 #ifndef COMMANDPARSER_H_
 #define COMMANDPARSER_H_
 
-#include "stm32l0xx_hal.h"
+#include <stdint.h>
 #include "macros.h"
-
+#include "Configuration.h"
 #include <stdlib.h>
 
 class CommandParser {
 	static char *value_ptr;           // Set by seen, used to fetch the value
 
 #if ENABLED(FASTER_COMMAND_PARSER)
-    static byte codebits[4];        // Parameters pre-scanned
+    static uint8_t codebits[4];        // Parameters pre-scanned
     static uint8_t param[26];       // For A-Z, offsets into command args
 #else
     static char *command_args;      // Args start here, for slow scan

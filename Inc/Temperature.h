@@ -8,11 +8,7 @@
 #ifndef TEMPERATURE_H_
 #define TEMPERATURE_H_
 
-#include "Conditionals.h"
-#include "stm32l0xx_hal.h"
-#include "stm32l0xx_hal_dma.h"
-#include "stm32l0xx_hal_adc.h"
-#include "stm32l0xx_hal_tim.h"
+//#include "Conditionals.h"
 
 /* ## Definition of ADC related resources ################################### */
 /* Definition of ADCx clock resources */

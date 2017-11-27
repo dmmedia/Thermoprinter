@@ -8,7 +8,7 @@
 #ifndef CONDITIONALS_H_
 #define CONDITIONALS_H_
 
-#include "macros.h"
+//#include "macros.h"
 
 #define MOTOR_ENABLE_INIT SET_OUTPUT(MOTOR_ENABLE)
 #define MOTOR_ENABLE_WRITE(STATE)   HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO_PIN_RESET)
