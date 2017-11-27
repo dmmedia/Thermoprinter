@@ -5,7 +5,8 @@
  *      Author: Den
  */
 
-#include <Settings.h>
+#include "Settings.h"
+#include "main.h"
 
 Settings settings;
 

@@ -37,15 +37,11 @@
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
+#include <stm32l053xx.h>
 #define __MAIN_H
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-//#include "macros.h"
-//#include "SREGEmulation.h"
-//#include "Conditionals.h"
-//#include "Temperature.h"
-//#include <cstring>
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -103,8 +99,8 @@ uint32_t millis() {
 }
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 
-#define  enable_MOTOR() MOTOR_ENABLE_WRITE( MOTOR_ENABLE_ON)
-#define disable_MOTOR() MOTOR_ENABLE_WRITE(!MOTOR_ENABLE_ON)
+#define  enable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
+#define disable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, !MOTOR_ENABLE_ON)
 
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
@@ -277,46 +273,21 @@ void kill(const char*);
 
 void disable_all_steppers();
 
-/**
- * Filament Width Sensor
- *
- * Measures the filament width in real-time and adjusts
- * flow rate to compensate for any irregularities.
- *
- * Also allows the measured filament diameter to set the
- * extrusion rate, so the slicer only has to specify the
- * volume.
- *
- * Only a single extruder is supported at this time.
- *
- *  34 RAMPS_14    : Analog input 5 on the AUX2 connector
- *  81 PRINTRBOARD : Analog input 2 on the Exp1 connector (version B,C,D,E)
- * 301 RAMBO       : Analog input 3
- *
- * Note: May require analog pins to be defined for other boards.
- */
-#define FILAMENT_WIDTH_SENSOR
+#ifdef __cplusplus
+ extern "C" {
+#endif
+ extern UART_HandleTypeDef hlpuart1;
 
-#define DEFAULT_NOMINAL_FILAMENT_DIA 3.00   // (mm) Diameter of the filament generally used (3.0 or 1.75mm), also used in the slicer. Used to validate sensor reading.
+ void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode);
+ void setOutput(GPIO_TypeDef  *port, uint32_t pin);
 
-#if ENABLED(FILAMENT_WIDTH_SENSOR)
-  #define FILAMENT_SENSOR_EXTRUDER_NUM 0    // Index of the extruder that has the filament sensor (0,1,2,3)
-  #define MEASUREMENT_DELAY_CM        14    // (cm) The distance from the filament sensor to the melting chamber
-
-  #define MEASURED_UPPER_LIMIT         3.30 // (mm) Upper limit used to validate sensor reading
-  #define MEASURED_LOWER_LIMIT         1.90 // (mm) Lower limit used to validate sensor reading
-  #define MAX_MEASUREMENT_DELAY       20    // (bytes) Buffer size for stored measurements (1 byte per cm). Must be larger than MEASUREMENT_DELAY_CM.
-
-  #define DEFAULT_MEASURED_FILAMENT_DIA DEFAULT_NOMINAL_FILAMENT_DIA // Set measured to nominal initially
-
-  // Display filament width on the LCD status line. Status messages will expire after 5 seconds.
-  //#define FILAMENT_LCD_DISPLAY
+#ifdef __cplusplus
+ }
 #endif
 
-typedef struct UART_HandleTypeDef UART_HandleTypeDef;
-
-extern UART_HandleTypeDef hlpuart1;
 extern float current_position;
+
+
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

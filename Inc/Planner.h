@@ -8,10 +8,6 @@
 #ifndef PLANNER_H_
 #define PLANNER_H_
 
-//#include "macros.h"
-//#include "Conditionals.h"
-//#include "main.h"
-
 enum BlockFlagBit {
   // Recalculate trapezoids on entry junction. For optimization.
   BLOCK_BIT_RECALCULATE,
@@ -29,10 +25,10 @@ enum BlockFlagBit {
 };
 
 enum BlockFlag {
-  BLOCK_FLAG_RECALCULATE          = _BV(BLOCK_BIT_RECALCULATE),
-  BLOCK_FLAG_NOMINAL_LENGTH       = _BV(BLOCK_BIT_NOMINAL_LENGTH),
-  BLOCK_FLAG_START_FROM_FULL_HALT = _BV(BLOCK_BIT_START_FROM_FULL_HALT),
-  BLOCK_FLAG_BUSY                 = _BV(BLOCK_BIT_BUSY)
+  BLOCK_FLAG_RECALCULATE          = (1UL << BLOCK_BIT_RECALCULATE),
+  BLOCK_FLAG_NOMINAL_LENGTH       = (1UL << BLOCK_BIT_NOMINAL_LENGTH),
+  BLOCK_FLAG_START_FROM_FULL_HALT = (1UL << BLOCK_BIT_START_FROM_FULL_HALT),
+  BLOCK_FLAG_BUSY                 = (1UL << BLOCK_BIT_BUSY)
 };
 
 /**
@@ -143,7 +139,7 @@ public:
      *  fr_mm_s      - (target) speed of the move (mm/s)
      *  extruder     - target extruder
      */
-    static FORCE_INLINE void buffer_line(const float &m, const float &fr_mm_s) {
+    static __attribute__((always_inline)) inline void buffer_line(const float &m, const float &fr_mm_s) {
       _buffer_line(m, fr_mm_s);
     }
 
@@ -158,7 +154,7 @@ public:
      *
      * Clears previous speed values.
      */
-    static FORCE_INLINE void set_position_mm(const float &m) {
+    static __attribute__((always_inline)) inline void set_position_mm(const float &m) {
       _set_position_mm(m);
     }
 
@@ -180,16 +176,7 @@ public:
      * The current block. NULL if the buffer is empty.
      * This also marks the block as busy.
      */
-    static block_t* get_current_block() {
-      if (blocks_queued()) {
-        block_t* block = &block_buffer[block_buffer_tail];
-        SBI(block->flag, BLOCK_BIT_BUSY);
-        return block;
-      }
-      else {
-        return NULL;
-      }
-    }
+    static block_t* get_current_block();
 
 private:
     /**
@@ -231,9 +218,7 @@ private:
    * to reach 'target_velocity' using 'acceleration' within a given
    * 'distance'.
    */
-  static float max_allowable_speed(const float &accel, const float &target_velocity, const float &distance) {
-    return SQRT(sq(target_velocity) - 2 * accel * distance);
-  }
+  static float max_allowable_speed(const float &accel, const float &target_velocity, const float &distance);
 
   static void calculate_trapezoid_for_block(block_t* const block, const float &entry_factor, const float &exit_factor);
 
@@ -243,10 +228,7 @@ private:
    * Calculate the distance (not time) it takes to accelerate
    * from initial_rate to target_rate using the given acceleration:
    */
-  static float estimate_acceleration_distance(const float &initial_rate, const float &target_rate, const float &accel) {
-    if (accel == 0) return 0; // accel was 0, set acceleration distance to 0
-    return (sq(target_rate) - sq(initial_rate)) / (accel * 2);
-  }
+  static float estimate_acceleration_distance(const float &initial_rate, const float &target_rate, const float &accel);
 
   /**
    * Return the point at which you must start braking (at the rate of -'acceleration') if
@@ -256,10 +238,7 @@ private:
    * This is used to compute the intersection point between acceleration and deceleration
    * in cases where the "trapezoid" has no plateau (i.e., never reaches maximum speed)
    */
-  static float intersection_distance(const float &initial_rate, const float &final_rate, const float &accel, const float &distance) {
-    if (accel == 0) return 0; // accel was 0, set intersection distance to 0
-    return (accel * 2 * distance - sq(initial_rate) + sq(final_rate)) / (accel * 4);
-  }
+  static float intersection_distance(const float &initial_rate, const float &final_rate, const float &accel, const float &distance);
 
   static void reverse_pass_kernel(block_t* const current, const block_t *next);
   static void forward_pass_kernel(const block_t *previous, block_t* const current);

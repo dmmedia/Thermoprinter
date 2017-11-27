@@ -36,12 +36,15 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include <stm32l0xx_hal.h>
 
 /* USER CODE BEGIN Includes */
-#include "CommandParser.h"
-#include "Planner.h"
 #include "serial.h"
+#include "Conditionals.h"
+#include "Configuration.h"
+#include "Planner.h"
+#include "macros.h"
+#include "SREGEmulation.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -127,7 +130,13 @@ void transmit(UART_HandleTypeDef *huart, uint8_t byte)
     tx_buf[TXBUF_MSK & tx_i] = byte;
     tx_i++;
     tx_busy = 1;
+#ifdef __cplusplus
+ extern "C" {
+#endif
     __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
+#ifdef __cplusplus
+ }
+#endif
 }
 
 /**
@@ -767,6 +776,25 @@ void kill() {
 void disable_all_steppers() {
   disable_MOTOR();
 }
+
+void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode = GPIO_MODE_INPUT) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  GPIO_InitStruct.Pin = pin;
+  GPIO_InitStruct.Mode = mode;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(port, &GPIO_InitStruct);
+}  // set to input, which allows it to be pulled high by pullups
+
+void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  GPIO_InitStruct.Pin = pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(port, &GPIO_InitStruct);
+}  // set to output
 
 /* USER CODE END 4 */
 

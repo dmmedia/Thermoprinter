@@ -8,12 +8,7 @@
 #ifndef MACROS_H_
 #define MACROS_H_
 
-#include <stm32l0xx_hal.h>
 #include <string.h>
-
-//#include <math.h>
-
-//#include "SREGEmulation.h"
 
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
@@ -41,30 +36,8 @@
 
 #define NOOP do{} while(0)
 
-//typedef struct GPIO_TypeDef GPIO_TypeDef;
-//typedef struct GPIO_InitTypeDef GPIO_InitTypeDef;
-
-void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode = GPIO_MODE_INPUT) {
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  GPIO_InitStruct.Pin = pin;
-  GPIO_InitStruct.Mode = mode;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(port, &GPIO_InitStruct);
-}  // set to input, which allows it to be pulled high by pullups
-
 #define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN)
 #define SET_INPUT_EXTI(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_IT_RISING_FALLING)
-
-void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  GPIO_InitStruct.Pin = pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(port, &GPIO_InitStruct);
-}  // set to output
 
 #define SET_OUTPUT(IO) setOutput(IO ## _PORT, IO ## _PIN)
 

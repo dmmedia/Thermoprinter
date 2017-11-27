@@ -6,7 +6,10 @@
  */
 
 #include "Planner.h"
-#include "main.h"
+#include "SREGEmulation.h"
+#include "macros.h"
+#include "Configuration.h"
+#include <stm32l0xx_hal.h>
 
 float Planner::max_feedrate_mm_s, // Max speeds in mm per second
       Planner::axis_steps_per_mm,
@@ -511,3 +514,27 @@ void Planner::set_position_mm_kinematic(const float position) {
   _set_position_mm(position);
 }
 
+static float Planner::intersection_distance(const float &initial_rate, const float &final_rate, const float &accel, const float &distance) {
+  if (accel == 0) return 0; // accel was 0, set intersection distance to 0
+  return (accel * 2 * distance - sq(initial_rate) + sq(final_rate)) / (accel * 4);
+}
+
+static float Planner::estimate_acceleration_distance(const float &initial_rate, const float &target_rate, const float &accel) {
+  if (accel == 0) return 0; // accel was 0, set acceleration distance to 0
+  return (sq(target_rate) - sq(initial_rate)) / (accel * 2);
+}
+
+static float Planner::max_allowable_speed(const float &accel, const float &target_velocity, const float &distance) {
+  return SQRT(sq(target_velocity) - 2 * accel * distance);
+}
+
+static block_t* Planner::get_current_block() {
+  if (blocks_queued()) {
+    block_t* block = &block_buffer[block_buffer_tail];
+    SBI(block->flag, BLOCK_BIT_BUSY);
+    return block;
+  }
+  else {
+    return NULL;
+  }
+}

@@ -5,40 +5,27 @@
  *      Author: Den
  */
 
-#include <Endstops.h>
+#include "Endstops.h"
+#include <stm32l0xx_hal.h>
+#include "Configuration.h"
 #include "macros.h"
+#include "Conditionals.h"
 #include "Stepper.h"
+#include "Planner.h"
 
 Endstops endstops;
 
 volatile char Endstops::endstop_hit_bits; // use MOTOR_FAULT, LOW_BAT, VH_ON_CTRL, HEAD_UP, PAPER_END and OVER_HEAT as BIT value
 
-byte Endstops::current_endstop_bits = 0;
+uint8_t Endstops::current_endstop_bits = 0;
 
 void Endstops::init() {
-  if (HAS_MOTOR_FAULT) {
-      SET_INPUT_EXTI(MOTOR_FAULT);
-  }
-
-  if (HAS_LO_BAT) {
-      SET_INPUT_EXTI(LO_BAT);
-  }
-
-  if (HAS_VH_ON_CTRL) {
-      SET_INPUT_EXTI(VH_ON_CTRL);
-  }
-
-  if (HAS_HEAD_UP) {
-      SET_INPUT_EXTI(HEAD_UP);
-  }
-
-  if (HAS_PAPER_END) {
-      SET_INPUT_EXTI(PAPER_END);
-  }
-
-  if (HAS_OVER_HEAT) {
-      SET_INPUT_EXTI(OVER_HEAT);
-  }
+  setInput(MOTOR_FAULT_PORT, MOTOR_FAULT_PIN, GPIO_MODE_IT_RISING_FALLING);
+  setInput(LO_BAT_PORT, LO_BAT_PIN, GPIO_MODE_IT_RISING_FALLING);
+  setInput(VH_ON_CTRL_PORT, VH_ON_CTRL_PIN, GPIO_MODE_IT_RISING_FALLING);
+  setInput(HEAD_UP_PORT, HEAD_UP_PIN, GPIO_MODE_IT_RISING_FALLING);
+  setInput(PAPER_END_PORT, PAPER_END_PIN, GPIO_MODE_IT_RISING_FALLING);
+  setInput(OVER_HEAT_PORT, OVER_HEAT_PIN, GPIO_MODE_IT_RISING_FALLING);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);

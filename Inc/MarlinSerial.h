@@ -8,8 +8,6 @@
 #ifndef MARLINSERIAL_H_
 #define MARLINSERIAL_H_
 
-//#include "main.h"
-
 #ifndef SERIAL_PORT
   #define SERIAL_PORT 0
 #endif
@@ -58,21 +56,7 @@
     #endif
   #endif
 
-  FORCE_INLINE void store_char(unsigned char c) {
-	CRITICAL_SECTION_START;
-	  const uint8_t h = rx_buffer.head,
-					i = (uint8_t)(h + 1) & (RX_BUFFER_SIZE - 1);
-
-	  // if we should be storing the received character into the location
-	  // just before the tail (meaning that the head would advance to the
-	  // current location of the tail), we're about to overflow the buffer
-	  // and so we don't write the character or advance the head.
-	  if (i != rx_buffer.tail) {
-		rx_buffer.buffer[h] = c;
-		rx_buffer.head = i;
-	  }
-	CRITICAL_SECTION_END;
-  }
+__attribute__((always_inline)) inline void store_char(unsigned char c);
 
 
 class MarlinSerial {

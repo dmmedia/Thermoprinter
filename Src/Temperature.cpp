@@ -5,10 +5,9 @@
  *      Author: Den
  */
 
-#include <Temperature.h>
-#include "macros.h"
-#include "main.h"
-#include "endstops.h"
+#include "Temperature.h"
+#include "Configuration.h"
+#include "SREGEmulation.h"
 
 Temperature thermalManager;
 

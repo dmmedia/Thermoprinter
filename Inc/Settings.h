@@ -8,8 +8,6 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
-//#include "main.h"
-
 class Settings {
 public:
 	Settings() {}
@@ -21,7 +19,7 @@ public:
   static bool load();
 
 #else
-  FORCE_INLINE static bool load() { reset(); return true; }
+  __attribute__((always_inline)) inline static bool load() { reset(); return true; }
 #endif
 
 private:
