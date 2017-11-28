@@ -142,7 +142,7 @@ static void MX_USART2_UART_Init(void)
 
 void MarlinSerial::begin(const long baud) {
 
-    MX_USART2_UART_Init();
+//    MX_USART2_UART_Init();
 	MX_LPUART1_UART_Init();
 
 	hlpuart1.Instance = LPUART1;
@@ -151,7 +151,7 @@ void MarlinSerial::begin(const long baud) {
 	hlpuart1.Init.StopBits = UART_STOPBITS_1;
 	hlpuart1.Init.Parity = UART_PARITY_NONE;
 	hlpuart1.Init.Mode = UART_MODE_TX_RX;
-	hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+	hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
 	hlpuart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
 	hlpuart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 	if (HAL_UART_Init(&hlpuart1) != HAL_OK)
@@ -159,8 +159,6 @@ void MarlinSerial::begin(const long baud) {
 	  _Error_Handler(__FILE__, __LINE__);
 	}
 	UartEnableIT(&hlpuart1, UART_IT_RXNE);
-
-	uint16_t baud_setting;
 
   #if TX_BUFFER_SIZE > 0
 	UartEnableIT(&hlpuart1, UART_IT_TXE);

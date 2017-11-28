@@ -159,17 +159,13 @@ void Stepper::set_position(const long &a) {
  */
 void Stepper::set_directions() {
 
-  #define SET_STEP_DIR() \
-    if (motor_direction()) { \
-      MOTOR_APPLY_DIR(INVERT_MOTOR_DIR, false); \
-      count_direction = -1; \
-    } \
-    else { \
-      MOTOR_APPLY_DIR(INVERT_MOTOR_DIR == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET, false); \
-      count_direction = 1; \
-    }
-
-  SET_STEP_DIR();
+  if (motor_direction()) {
+    MOTOR_APPLY_DIR(INVERT_MOTOR_DIR, false);
+    count_direction = -1;
+  } else {
+    MOTOR_APPLY_DIR(INVERT_MOTOR_DIR == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET, false);
+    count_direction = 1;
+  }
 }
 
 /**
@@ -395,21 +391,19 @@ void Stepper::endstop_triggered() {
 void Stepper::init() {
 
   // Init Dir Pin
-	SET_OUTPUT(MOTOR_DIR);
+  SET_OUTPUT(MOTOR_DIR);
 
   // Init Enable Pin - stepper default to disabled.
-	SET_OUTPUT(MOTOR_ENABLE);
+  SET_OUTPUT(MOTOR_ENABLE);
   if (!MOTOR_ENABLE_ON) HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO_PIN_SET);
 
   // Init endstops and pullups
   endstops.init();
 
-  #define _DISABLE() disable_MOTOR()
-
   // Init Step Pin
   SET_OUTPUT(MOTOR_STEP);
   WRITE(MOTOR_STEP, GPIO_PIN_RESET);
-  _DISABLE();
+  disable_MOTOR();
 
   // Set the timer pre-scaler
   // Generally we use a divider of 8, resulting in a 2MHz timer
@@ -442,11 +436,10 @@ void Stepper::init() {
   //TIM2->ARR = 0x4000;
 
   // Enable update interrupts
-  //TIM2->DIER |= TIM_DIER_UIE;
-  __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
+  TIM6->DIER |= TIM_DIER_UIE;
 
-  //TIM2->CNT = 0;
-  __HAL_TIM_SET_COUNTER(&htim6, 0);
+  // zero counter for start
+  TIM6->CNT = 0;
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 

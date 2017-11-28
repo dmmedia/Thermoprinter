@@ -92,11 +92,9 @@ bool Settings::load() {
  * M502 - Reset Configuration
  */
 void Settings::reset() {
-  static const float tmp1 = DEFAULT_STEPS_PER_UNIT, tmp2 = DEFAULT_MAX_FEEDRATE;
-  static const uint32_t tmp3 = DEFAULT_MAX_ACCELERATION;
-  planner.axis_steps_per_mm          = tmp1;
-  planner.max_feedrate_mm_s          = tmp2;
-  planner.max_acceleration_mm_per_s2 = tmp3;
+  planner.axis_steps_per_mm          = DEFAULT_STEPS_PER_UNIT;
+  planner.max_feedrate_mm_s          = DEFAULT_MAX_FEEDRATE;
+  planner.max_acceleration_mm_per_s2 = DEFAULT_MAX_ACCELERATION;
 
   planner.acceleration = DEFAULT_ACCELERATION;
   planner.travel_acceleration = DEFAULT_TRAVEL_ACCELERATION;
@@ -118,6 +116,6 @@ void Settings::postprocess() {
   planner.reset_acceleration_rates();
 
   // Refresh steps_to_mm with the reciprocal of axis_steps_per_mm
-  // and init stepper.count[], planner.position[] with current_position
+  // and init stepper.count, planner.position with current_position
   planner.refresh_positioning();
 }

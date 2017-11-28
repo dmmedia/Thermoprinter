@@ -98,11 +98,9 @@ void Temperature::init() {
   //TIM2->ARR = 256;
 
   // Enable update interrupts
-  //TIM2->DIER |= TIM_DIER_UIE;
-  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
+  TIM2->DIER |= TIM_DIER_UIE;
 
-  //TIM2->CNT = 0;
-  __HAL_TIM_SET_COUNTER(&htim2, 0);
+  TIM2->CNT = 0;
 
 
 
@@ -114,53 +112,39 @@ void Temperature::init() {
   // Wait for temperature measurement to settle
   HAL_Delay(250);
 
-  #define TEMP_MIN_ROUTINE() \
-    minttemp = PRINTHEAD_MINTEMP; \
-    while (analog2temp(minttemp_raw) < PRINTHEAD_MINTEMP) { \
-      if (PRINTHEAD_RAW_LO_TEMP < PRINTHEAD_RAW_HI_TEMP) \
-        minttemp_raw += OVERSAMPLENR; \
-      else \
-        minttemp_raw -= OVERSAMPLENR; \
+  minttemp = PRINTHEAD_MINTEMP;
+  while (analog2temp(minttemp_raw) < PRINTHEAD_MINTEMP) {
+    if (PRINTHEAD_RAW_LO_TEMP < PRINTHEAD_RAW_HI_TEMP) {
+      minttemp_raw += OVERSAMPLENR;
+    } else {
+      minttemp_raw -= OVERSAMPLENR;
     }
-  #define TEMP_MAX_ROUTINE() \
-    maxttemp = PRINTHEAD_MAXTEMP; \
-    while (analog2temp(maxttemp_raw) > PRINTHEAD_MAXTEMP) { \
-      if (PRINTHEAD_RAW_LO_TEMP < PRINTHEAD_RAW_HI_TEMP) \
-        maxttemp_raw -= OVERSAMPLENR; \
-      else \
-        maxttemp_raw += OVERSAMPLENR; \
+  }
+  maxttemp = PRINTHEAD_MAXTEMP;
+  while (analog2temp(maxttemp_raw) > PRINTHEAD_MAXTEMP) {
+    if (PRINTHEAD_RAW_LO_TEMP < PRINTHEAD_RAW_HI_TEMP) {
+      maxttemp_raw -= OVERSAMPLENR;
+    } else {
+      maxttemp_raw += OVERSAMPLENR;
     }
+  }
 
-  #ifdef PRINTHEAD_MINTEMP
-    TEMP_MIN_ROUTINE();
-  #endif
-  #ifdef PRINTHEAD_MAXTEMP
-    TEMP_MAX_ROUTINE();
-  #endif
-
-  #define VOLT_MIN_ROUTINE() \
-    mintvolt = BATTERY_MINVOLT; \
-    while (analog2volt(mintvolt_raw) < BATTERY_MINVOLT) { \
-      if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) \
-        mintvolt_raw += OVERSAMPLENR; \
-      else \
-        mintvolt_raw -= OVERSAMPLENR; \
+  mintvolt = BATTERY_MINVOLT;
+  while (analog2volt(mintvolt_raw) < BATTERY_MINVOLT) {
+    if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) {
+      mintvolt_raw += OVERSAMPLENR;
+    } else {
+      mintvolt_raw -= OVERSAMPLENR;
     }
-  #define VOLT_MAX_ROUTINE() \
-    maxttemp = BATTERY_MAXVOLT; \
-    while (analog2volt(maxtvolt_raw) > BATTERY_MAXVOLT) { \
-      if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) \
-        maxtvolt_raw -= OVERSAMPLENR; \
-      else \
-        maxtvolt_raw += OVERSAMPLENR; \
+  }
+  maxttemp = BATTERY_MAXVOLT;
+  while (analog2volt(maxtvolt_raw) > BATTERY_MAXVOLT) {
+    if (BATTERY_RAW_LO_VOLT < BATTERY_RAW_HI_VOLT) {
+      maxtvolt_raw -= OVERSAMPLENR;
+    } else {
+      maxtvolt_raw += OVERSAMPLENR;
     }
-
-  #ifdef BATTERY_MINVOLT
-    VOLT_MIN_ROUTINE();
-  #endif
-  #ifdef BATTERY_MAXVOLT
-    VOLT_MAX_ROUTINE();
-  #endif
+  }
 }
 
 /**
