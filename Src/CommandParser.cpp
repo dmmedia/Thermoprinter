@@ -5,7 +5,7 @@
  *      Author: Den
  */
 
-#include <CommandParser.h>
+#include "CommandParser.h"
 #include "main.h"
 
 #if ENABLED(FASTER_COMMAND_PARSER)

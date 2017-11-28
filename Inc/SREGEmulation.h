@@ -9,9 +9,9 @@
 #define SREGEMULATION_H_
 
 //#include <stm32l053xx.h>
-//#include <core_cm0plus.h>
-//#include <cmsis_gcc.h>
-//#include <sys/cdefs.h>
+#include <core_cm0plus.h>
+#include <cmsis_gcc.h>
+#include <sys/cdefs.h>
 
 /**
  * Re-enable interrupts.

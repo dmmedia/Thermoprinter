@@ -5,11 +5,24 @@
  *      Author: Den
  */
 
-#include "Temperature.h"
+#include "stm32l0xx_hal.h"
 #include "Configuration.h"
+#include "Conditionals.h"
+#include "macros.h"
+#include "Temperature.h"
 #include "SREGEmulation.h"
+#include "Endstops.h"
+#include "Stopwatch.h"
 
 Temperature thermalManager;
+
+TIM_HandleTypeDef htim2;
+
+/* Variable containing ADC conversions results */
+__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
+
+/* Variable to report ADC sequencer status */
+uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
 
 // Init min and max temp with extreme values to prevent false errors during startup
 int16_t Temperature::minttemp_raw = PRINTHEAD_RAW_LO_TEMP,
@@ -35,6 +48,8 @@ uint16_t Temperature::raw_temp_value = 0;
 uint16_t Temperature::raw_volt_value = 0;
 
 int16_t Temperature::current_temperature_raw = 0, current_voltage_raw = 0;
+
+ADC_HandleTypeDef AdcHandle;
 
 /**
  * Initialize the temperature manager
@@ -153,7 +168,7 @@ void Temperature::init() {
   * @param  None
   * @retval None
   */
-static void Temperature::ADC_Config(void)
+void Temperature::ADC_Config(void)
 {
   ADC_ChannelConfTypeDef   sConfig;
 
@@ -269,10 +284,6 @@ void Temperature::isr() {
 
   static int8_t temp_count = -1;
   static ADCSensorState adc_sensor_state = StartupDelay;
-
-  #if ENABLED(FILAMENT_WIDTH_SENSOR)
-    static unsigned long raw_filwidth_value = 0;
-  #endif
 
   /**
    * One sensor is sampled on every other call of the ISR.

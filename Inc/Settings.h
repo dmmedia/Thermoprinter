@@ -15,7 +15,7 @@ public:
 
     static void reset();
 
-#if ENABLED(EEPROM_SETTINGS)
+#if defined(EEPROM_SETTINGS)
   static bool load();
 
 #else
@@ -26,5 +26,7 @@ private:
   static void postprocess();
 
 };
+
+extern Settings settings;
 
 #endif /* SETTINGS_H_ */

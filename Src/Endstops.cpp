@@ -15,10 +15,13 @@
 
 Endstops endstops;
 
+bool Endstops::enabled, Endstops::enabled_globally; // Initialized by settings.load()
 volatile char Endstops::endstop_hit_bits; // use MOTOR_FAULT, LOW_BAT, VH_ON_CTRL, HEAD_UP, PAPER_END and OVER_HEAT as BIT value
 
 uint8_t Endstops::current_endstop_bits = 0;
 
+volatile uint8_t e_hit = 0; // Different from 0 when the endstops should be tested in detail.
+                            // Must be reset to 0 by the test function when finished.
 void Endstops::init() {
   setInput(MOTOR_FAULT_PORT, MOTOR_FAULT_PIN, GPIO_MODE_IT_RISING_FALLING);
   setInput(LO_BAT_PORT, LO_BAT_PIN, GPIO_MODE_IT_RISING_FALLING);
@@ -76,3 +79,11 @@ void Endstops::update() {
   old_endstop_bits = current_endstop_bits;
 
 } // Endstops::update()
+
+// Use one Routine to handle each group
+// One ISR for all EXT-Interrupts
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  e_hit = 2; // Because the detection of a e-stop hit has a 1 step debouncer it has to be called at least twice.
+}
+

@@ -36,7 +36,7 @@
 
 #define NOOP do{} while(0)
 
-#define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN)
+#define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_INPUT)
 #define SET_INPUT_EXTI(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_IT_RISING_FALLING)
 
 #define SET_OUTPUT(IO) setOutput(IO ## _PORT, IO ## _PIN)

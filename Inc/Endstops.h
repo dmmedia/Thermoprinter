@@ -10,23 +10,6 @@
 
 #include <stdint.h>
 
-volatile uint8_t e_hit = 0; // Different from 0 when the endstops should be tested in detail.
-                            // Must be reset to 0 by the test function when finished.
-
-// Use one Routine to handle each group
-// One ISR for all EXT-Interrupts
-#ifdef __cplusplus
- extern "C" {
-#endif
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  e_hit = 2; // Because the detection of a e-stop hit has a 1 step debouncer it has to be called at least twice.
-}
-#ifdef __cplusplus
- }
-#endif
-
-
 class Endstops {
 public:
     static bool enabled, enabled_globally;
@@ -34,7 +17,6 @@ public:
     static uint8_t current_endstop_bits, old_endstop_bits;
 
     Endstops() {}
-	virtual ~Endstops();
 
     /**
      * Update the endstops bits from the pins
@@ -59,5 +41,7 @@ public:
     void init();
 
 };
+
+extern Endstops endstops;
 
 #endif /* ENDSTOPS_H_ */

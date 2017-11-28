@@ -8,8 +8,6 @@
 #ifndef STEPPER_H_
 #define STEPPER_H_
 
-//#include "macros.h"
-//#include "Conditionals.h"
 #include "Planner.h"
 
 const uint16_t speed_lookuptable_fast[256][2] = {
@@ -97,7 +95,7 @@ static unsigned short MultiU16X8toH16(unsigned char charIn1, unsigned int intIn2
 class Stepper;
 extern Stepper stepper;
 
-TIM_HandleTypeDef htim6;
+extern TIM_HandleTypeDef htim6;
 
 class Stepper {
 public:

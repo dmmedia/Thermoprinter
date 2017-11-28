@@ -5,7 +5,8 @@
  *      Author: Den
  */
 
-#include <Stopwatch.h>
+#include "main.h"
+#include "Stopwatch.h"
 
 Stopwatch::Stopwatch() {
   this->reset();

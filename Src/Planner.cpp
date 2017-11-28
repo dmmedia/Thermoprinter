@@ -5,11 +5,14 @@
  *      Author: Den
  */
 
+#include <stm32l0xx_hal.h>
 #include "Planner.h"
 #include "SREGEmulation.h"
+#include <math.h>
 #include "macros.h"
 #include "Configuration.h"
-#include <stm32l0xx_hal.h>
+#include <stdlib.h>
+#include "Stepper.h"
 
 float Planner::max_feedrate_mm_s, // Max speeds in mm per second
       Planner::axis_steps_per_mm,
@@ -338,31 +341,21 @@ void Planner::_buffer_line(const float &m, float fr_mm_s) {
     accel = CEIL(retract_acceleration * steps_per_mm);
   }
   else {
-    #define LIMIT_ACCEL_LONG(INDX) do{ \
-      if (block->steps && max_acceleration_steps_per_s2[INDX] < accel) { \
-        const uint32_t comp = max_acceleration_steps_per_s2[INDX] * block->step_event_count; \
-        if (accel * block->steps > comp) accel = comp / block->steps; \
-      } \
-    }while(0)
-
-    #define LIMIT_ACCEL_FLOAT(INDX) do{ \
-      if (block->steps && max_acceleration_steps_per_s2[INDX] < accel) { \
-        const float comp = (float)max_acceleration_steps_per_s2[INDX] * (float)block->step_event_count; \
-        if ((float)accel * (float)block->steps > comp) accel = comp / (float)block->steps; \
-      } \
-    }while(0)
-
     // Start with print or travel acceleration
     accel = CEIL((/*esteps ? acceleration : */travel_acceleration) * steps_per_mm);
 
-    #define ACCEL_IDX 0
-
     // Limit acceleration per axis
     if (block->step_event_count <= cutoff_long) {
-      LIMIT_ACCEL_LONG(0);
+    	if (block->steps && max_acceleration_steps_per_s2 < accel) {
+   	        const uint32_t comp = max_acceleration_steps_per_s2 * block->step_event_count;
+   	        if (accel * block->steps > comp) accel = comp / block->steps;
+        }
     }
     else {
-      LIMIT_ACCEL_FLOAT(0);
+        if (block->steps && max_acceleration_steps_per_s2 < accel) {
+          const float comp = (float)max_acceleration_steps_per_s2 * (float)block->step_event_count;
+          if ((float)accel * (float)block->steps > comp) accel = comp / (float)block->steps;
+        }
     }
   }
   block->acceleration_steps_per_s2 = accel;
@@ -492,7 +485,7 @@ void Planner::_set_position_mm(const float &m) {
   long nm = position = LROUND(m * axis_steps_per_mm);
   stepper.set_position(nm);
   previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
-  ZERO(previous_speed);
+  previous_speed = 0.0;
 }
 
 // Recalculate the steps/s^2 acceleration rates, based on the mm/s^2
@@ -514,21 +507,21 @@ void Planner::set_position_mm_kinematic(const float position) {
   _set_position_mm(position);
 }
 
-static float Planner::intersection_distance(const float &initial_rate, const float &final_rate, const float &accel, const float &distance) {
+float Planner::intersection_distance(const float &initial_rate, const float &final_rate, const float &accel, const float &distance) {
   if (accel == 0) return 0; // accel was 0, set intersection distance to 0
   return (accel * 2 * distance - sq(initial_rate) + sq(final_rate)) / (accel * 4);
 }
 
-static float Planner::estimate_acceleration_distance(const float &initial_rate, const float &target_rate, const float &accel) {
+float Planner::estimate_acceleration_distance(const float &initial_rate, const float &target_rate, const float &accel) {
   if (accel == 0) return 0; // accel was 0, set acceleration distance to 0
   return (sq(target_rate) - sq(initial_rate)) / (accel * 2);
 }
 
-static float Planner::max_allowable_speed(const float &accel, const float &target_velocity, const float &distance) {
+float Planner::max_allowable_speed(const float &accel, const float &target_velocity, const float &distance) {
   return SQRT(sq(target_velocity) - 2 * accel * distance);
 }
 
-static block_t* Planner::get_current_block() {
+block_t* Planner::get_current_block() {
   if (blocks_queued()) {
     block_t* block = &block_buffer[block_buffer_tail];
     SBI(block->flag, BLOCK_BIT_BUSY);
@@ -536,5 +529,22 @@ static block_t* Planner::get_current_block() {
   }
   else {
     return NULL;
+  }
+}
+
+// The kernel called by recalculate() when scanning the plan from last to first entry.
+void Planner::reverse_pass_kernel(block_t* const current, const block_t *next) {
+  if (!current || !next) return;
+  // If entry speed is already at the maximum entry speed, no need to recheck. Block is cruising.
+  // If not, block in state of acceleration or deceleration. Reset entry speed to maximum and
+  // check for maximum allowable speed reductions to ensure maximum possible planned speed.
+  float max_entry_speed = current->max_entry_speed;
+  if (current->entry_speed != max_entry_speed) {
+    // If nominal length true, max junction speed is guaranteed to be reached. Only compute
+    // for max allowable speed if block is decelerating and nominal length is false.
+    current->entry_speed = (TEST(current->flag, BLOCK_BIT_NOMINAL_LENGTH) || max_entry_speed <= next->entry_speed)
+      ? max_entry_speed
+      : min(max_entry_speed, max_allowable_speed(-current->acceleration, next->entry_speed, current->millimeters));
+    SBI(current->flag, BLOCK_BIT_RECALCULATE);
   }
 }

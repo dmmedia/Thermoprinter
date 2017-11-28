@@ -8,8 +8,6 @@
 #ifndef TEMPERATURE_H_
 #define TEMPERATURE_H_
 
-#include "stm32l0xx_hal.h"
-
 #define OVERSAMPLENR 16
 
 // User-defined table 1
@@ -33,7 +31,7 @@ const short temptable_998[][2] = {
 #define _TT_NAME(_N) temptable_ ## _N
 #define TT_NAME(_N) _TT_NAME(_N)
 
-#ifdef THERMISTORHEATER_0
+#if defined(THERMISTORHEATER_0)
   #define PRINTHEAD_TEMPTABLE TT_NAME(THERMISTORHEATER_0)
   #define PRINTHEAD_TEMPTABLE_LEN COUNT(PRINTHEAD_TEMPTABLE)
 #elif defined(PRINTHEAD_USES_THERMISTOR)
@@ -48,6 +46,9 @@ const short temptable_998[][2] = {
   #define BATTERY_RAW_HI_VOLT 16383
   #define BATTERY_RAW_LO_VOLT 0
 #endif
+
+#define BATTERY_VOLTTABLE TT_NAME(THERMISTORHEATER_0) // TODO: fixme
+#define BATTERY_VOLTTABLE_LEN COUNT(BATTERY_VOLTTABLE)
 
 /**
  * States for ADC reading in the ISR
@@ -64,16 +65,12 @@ enum ADCSensorState {
 // get all oversampled sensor readings
 #define MIN_ADC_ISR_LOOPS 10
 
-TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim2;
 
 /* ADC parameters */
 #define ADCCONVERTEDVALUES_BUFFER_SIZE ((uint32_t)    2)    /* Size of array containing ADC converted values: set to ADC sequencer number of ranks converted, to have a rank in each address */
 
-/* Variable containing ADC conversions results */
-__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
-
-/* Variable to report ADC sequencer status */
-uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
+extern ADC_HandleTypeDef AdcHandle;
 
 class Temperature {
 public:
@@ -95,6 +92,11 @@ public:
     static volatile bool in_temp_isr;
 
     static int16_t current_temperature_raw, current_voltage_raw;
+
+    /**
+     * Switch off all heaters, set all target temperatures to 0
+     */
+    static void disable_all_heaters();
 
 private:
     // Init min and max temp with extreme values to prevent false errors during startup
@@ -119,15 +121,10 @@ private:
     static void max_sens_error();
     static void min_sens_error();
 
-    ADC_HandleTypeDef    AdcHandle;
-
-    static void ADC_Config(void);
-
-    /**
-     * Switch off all heaters, set all target temperatures to 0
-     */
-    static void disable_all_heaters();
+    void ADC_Config(void);
 
 };
+
+extern Temperature thermalManager;
 
 #endif /* TEMPERATURE_H_ */

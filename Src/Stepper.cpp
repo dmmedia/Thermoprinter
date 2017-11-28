@@ -5,12 +5,14 @@
  *      Author: Den
  */
 
+#include <stm32l0xx_hal.h>
 #include "Stepper.h"
 #include <stddef.h>
 #include "macros.h"
 #include "SREGEmulation.h"
 #include "Configuration.h"
-#include <stm32l0xx_hal.h>
+#include "Temperature.h"
+#include "Endstops.h"
 
 Stepper stepper; // Singleton
 
@@ -37,6 +39,8 @@ volatile long Stepper::endstops_trigsteps;
 #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
   extern volatile uint8_t e_hit;
 #endif
+
+TIM_HandleTypeDef htim6;
 
 #define MOTOR_APPLY_DIR(v,Q) MOTOR_DIR_WRITE(v)
 #define MOTOR_APPLY_STEP(v,Q) MOTOR_STEP_WRITE(v)
@@ -215,13 +219,7 @@ void Stepper::isr() {
     --cleaning_buffer_counter;
     current_block = NULL;
     planner.discard_current_block();
-#ifdef __cplusplus
- extern "C" {
-#endif
     __HAL_TIM_SET_AUTORELOAD(&htim6, 200); // Run at max speed - 10 KHz
-#ifdef __cplusplus
- }
-#endif
     _ENABLE_ISRs(); // re-enable ISRs
     return;
   }
@@ -244,13 +242,7 @@ void Stepper::isr() {
       #endif
     }
     else {
-#ifdef __cplusplus
- extern "C" {
-#endif
       __HAL_TIM_SET_AUTORELOAD(&htim6, 2000); // Run at slow speed - 1 KHz
-#ifdef __cplusplus
- }
-#endif
       _ENABLE_ISRs(); // re-enable ISRs
       return;
     }
@@ -351,13 +343,7 @@ void Stepper::isr() {
     const uint16_t timer = calc_timer(acc_step_rate);
 
     SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-#ifdef __cplusplus
- extern "C" {
-#endif
     __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
-#ifdef __cplusplus
- }
-#endif
 
     acceleration_time += timer;
   }
@@ -376,38 +362,20 @@ void Stepper::isr() {
     const uint16_t timer = calc_timer(step_rate);
 
     SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-#ifdef __cplusplus
- extern "C" {
-#endif
     __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
-#ifdef __cplusplus
- }
-#endif
 
     deceleration_time += timer;
   }
   else {
 
     SPLIT(TIM6_ARR_nominal);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
-#ifdef __cplusplus
- extern "C" {
-#endif
     __HAL_TIM_SET_AUTORELOAD(&htim6, ocr_val);
-#ifdef __cplusplus
- }
-#endif
 
     // ensure we're running at the correct step rate, even if we just came off an acceleration
     step_loops = step_loops_nominal;
   }
 
-#ifdef __cplusplus
- extern "C" {
-#endif
   NOLESS(__HAL_TIM_GET_AUTORELOAD(&htim6), __HAL_TIM_GET_COUNTER(&htim6) + 16);
-#ifdef __cplusplus
- }
-#endif
 
   // If current block is finished, reset pointer
   if (all_steps_done) {
@@ -475,22 +443,10 @@ void Stepper::init() {
 
   // Enable update interrupts
   //TIM2->DIER |= TIM_DIER_UIE;
-#ifdef __cplusplus
- extern "C" {
-#endif
   __HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
-#ifdef __cplusplus
- }
-#endif
 
   //TIM2->CNT = 0;
-#ifdef __cplusplus
- extern "C" {
-#endif
   __HAL_TIM_SET_COUNTER(&htim6, 0);
-#ifdef __cplusplus
- }
-#endif
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
@@ -500,9 +456,7 @@ void Stepper::init() {
   set_directions(); // Init directions to last_direction_bits = 0
 }
 
-static __attribute__((always_inline)) inline void Stepper::trapezoid_generator_reset() {
-  static int8_t last_extruder = -1;
-
+__attribute__((always_inline)) inline void Stepper::trapezoid_generator_reset() {
   if (current_block->direction_bits != last_direction_bits) {
     last_direction_bits = current_block->direction_bits;
     set_directions();
@@ -515,16 +469,10 @@ static __attribute__((always_inline)) inline void Stepper::trapezoid_generator_r
   step_loops_nominal = step_loops;
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
-#ifdef __cplusplus
- extern "C" {
-#endif
   __HAL_TIM_SET_AUTORELOAD(&htim6, acceleration_time);
-#ifdef __cplusplus
- }
-#endif
 }
 
-static __attribute__((always_inline)) inline unsigned short Stepper::calc_timer(unsigned short step_rate) {
+__attribute__((always_inline)) inline unsigned short Stepper::calc_timer(unsigned short step_rate) {
   unsigned short timer;
 
   NOMORE(step_rate, MAX_STEP_FREQUENCY);
@@ -562,8 +510,8 @@ static __attribute__((always_inline)) inline unsigned short Stepper::calc_timer(
   return timer;
 }
 
-static __attribute__((always_inline)) inline bool Stepper::motor_direction() { return TEST(last_direction_bits, 0); }
+__attribute__((always_inline)) inline bool Stepper::motor_direction() { return TEST(last_direction_bits, 0); }
 
-static inline void Stepper::kill_current_block() {
+inline void Stepper::kill_current_block() {
   step_events_completed = current_block->step_event_count;
 }

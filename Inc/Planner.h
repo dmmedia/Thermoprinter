@@ -8,6 +8,8 @@
 #ifndef PLANNER_H_
 #define PLANNER_H_
 
+#include <stdint.h>
+
 enum BlockFlagBit {
   // Recalculate trapezoids on entry junction. For optimization.
   BLOCK_BIT_RECALCULATE,
@@ -190,13 +192,6 @@ private:
      */
     static int8_t next_block_index(int8_t block_index) { return BLOCK_MOD(block_index + 1); }
     static int8_t prev_block_index(int8_t block_index) { return BLOCK_MOD(block_index - 1); }
-
-#if ENABLED(DISABLE_INACTIVE_EXTRUDER)
-  /**
-   * Counters to manage disabling inactive extruders
-   */
-  static uint8_t g_uc_extruder_last_move[EXTRUDERS];
-#endif // DISABLE_INACTIVE_EXTRUDER
 
   /**
    * Speed of previous path line segment

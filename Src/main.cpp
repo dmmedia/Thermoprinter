@@ -45,22 +45,17 @@
 #include "Planner.h"
 #include "macros.h"
 #include "SREGEmulation.h"
+#include "Stopwatch.h"
+#include "CommandParser.h"
+#include "Stepper.h"
+#include "Settings.h"
+#include "Temperature.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef hlpuart1;
-UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t rx_buf[RXBUF_LEN], tx_buf[TXBUF_LEN];
-/* xx_i - counter of input bytes (tx - pushed for transmit, rx - received)
-   xx_o - counter of output bytes (tx - transmitted, rx - parsed)
-   xx_e - counter of echoed bytes */
-volatile uint16_t rx_i = 0, tx_o = 0;
-uint16_t rx_o = 0, rx_e = 0, tx_i = 0;
-volatile uint8_t tx_busy = 0;
-
 uint8_t commands_in_queue = 0; // Count of commands in the queue
 static uint8_t cmd_queue_index_r = 0, // Ring buffer read position
                cmd_queue_index_w = 0; // Ring buffer write position
@@ -97,9 +92,6 @@ volatile uint32_t counter = 0;
 
 int16_t feedrate_percentage = 100, saved_feedrate_percentage;
 
-// Initialized by settings.load()
-bool axis_relative_modes = AXIS_RELATIVE_MODES;
-
 // Number of characters read in the current line of serial input
 static int serial_count = 0;
 
@@ -111,6 +103,9 @@ static int serial_count = 0;
 static long gcode_N, gcode_LastN;
 
 Stopwatch print_job_timer = Stopwatch();
+
+millis_t previous_cmd_ms = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,20 +120,6 @@ static void MX_LPUART1_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-void transmit(UART_HandleTypeDef *huart, uint8_t byte)
-{
-    tx_buf[TXBUF_MSK & tx_i] = byte;
-    tx_i++;
-    tx_busy = 1;
-#ifdef __cplusplus
- extern "C" {
-#endif
-    __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
-#ifdef __cplusplus
- }
-#endif
-}
-
 /**
  * sync_plan_position
  *
@@ -416,203 +397,6 @@ void setup() {
   #endif
 }
 
-/* USER CODE END 0 */
-
-int main(void)
-{
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration----------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-  SysTick_Config(SystemCoreClock / 16000);
-  HAL_NVIC_EnableIRQ(SysTick_IRQn);
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART2_UART_Init();
-  MX_LPUART1_UART_Init();
-
-  /* USER CODE BEGIN 2 */
-  setup();
-  /* Enable lpusart 1 receive IRQ */
-  for (;;) {
-	  if (commands_in_queue < BUFSIZE) get_available_commands();
-
-	  if (commands_in_queue) {
-		  process_next_command();
-
-		  // The queue may be reset by a command handler or by code invoked by idle() within a handler
-		  if (commands_in_queue) {
-		      --commands_in_queue;
-		      if (++cmd_queue_index_r >= BUFSIZE) cmd_queue_index_r = 0;
-		  }
-	  }
-
-	  idle();
-
-      /* Main cycle */
-      while (rx_i != rx_e) {
-          /* echo here */
-          transmit(&huart2, rx_buf[RXBUF_MSK & rx_e]);
-          rx_e++;
-      }
-      while (rx_i != rx_o) {
-          /* parse here */
-          /* ... */
-          rx_o++;
-      }
-      /* Power save
-      while (tx_busy);
-      HAL_UART_DeInit(&huart1);
-      */
-  }
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-  /* USER CODE END WHILE */
-
-  /* USER CODE BEGIN 3 */
-
-  }
-  /* USER CODE END 3 */
-
-}
-
-/** System Clock Configuration
-*/
-void SystemClock_Config(void)
-{
-
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_PeriphCLKInitTypeDef PeriphClkInit;
-
-    /**Configure the main internal regulator output voltage 
-    */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-    /**Initializes the CPU, AHB and APB busses clocks 
-    */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-    /**Initializes the CPU, AHB and APB busses clocks 
-    */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_LPUART1;
-  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-    /**Configure the Systick interrupt time 
-    */
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-
-    /**Configure the Systick 
-    */
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-}
-
-/* LPUART1 init function */
-static void MX_LPUART1_UART_Init(void)
-{
-
-
-}
-
-/* USART2 init function */
-static void MX_USART2_UART_Init(void)
-{
-
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
-/** Configure pins as 
-        * Analog 
-        * Input 
-        * Output
-        * EVENT_OUT
-        * EXTI
-*/
-static void MX_GPIO_Init(void)
-{
-
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-}
-
-/* USER CODE BEGIN 4 */
-/**
- * Add to the circular command queue the next command from:
- *  - The command-injection queue (injected_commands_P)
- *  - The active serial input (usually USB)
- *  - The SD card file being actively printed
- */
-void get_available_commands() {
-  get_serial_commands();
-}
-
 /**
  * Send a "Resend: nnn" message to the host to
  * indicate that a command needs to be re-sent.
@@ -735,6 +519,169 @@ inline void get_serial_commands() {
   } // queue has space, serial has data
 }
 
+/**
+ * Add to the circular command queue the next command from:
+ *  - The command-injection queue (injected_commands_P)
+ *  - The active serial input (usually USB)
+ *  - The SD card file being actively printed
+ */
+void get_available_commands() {
+  get_serial_commands();
+}
+
+/* USER CODE END 0 */
+
+int main(void)
+{
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration----------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+  SysTick_Config(SystemCoreClock / 16000);
+  HAL_NVIC_EnableIRQ(SysTick_IRQn);
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+
+  /* USER CODE BEGIN 2 */
+  setup();
+  /* Enable lpusart 1 receive IRQ */
+  for (;;) {
+	  if (commands_in_queue < BUFSIZE) get_available_commands();
+
+	  if (commands_in_queue) {
+		  process_next_command();
+
+		  // The queue may be reset by a command handler or by code invoked by idle() within a handler
+		  if (commands_in_queue) {
+		      --commands_in_queue;
+		      if (++cmd_queue_index_r >= BUFSIZE) cmd_queue_index_r = 0;
+		  }
+	  }
+
+	  idle();
+
+      /* Main cycle */
+//      while (rx_i != rx_e) {
+//          /* echo here */
+//          transmit(&huart2, rx_buf[RXBUF_MSK & rx_e]);
+//          rx_e++;
+//      }
+//      while (rx_i != rx_o) {
+//          /* parse here */
+//          /* ... */
+//          rx_o++;
+//      }
+      /* Power save
+      while (tx_busy);
+      HAL_UART_DeInit(&huart1);
+      */
+  }
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+  /* USER CODE END WHILE */
+
+  /* USER CODE BEGIN 3 */
+
+  }
+  /* USER CODE END 3 */
+
+}
+
+/** System Clock Configuration
+*/
+void SystemClock_Config(void)
+{
+
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
+
+    /**Configure the main internal regulator output voltage 
+    */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+    /**Initializes the CPU, AHB and APB busses clocks 
+    */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Initializes the CPU, AHB and APB busses clocks 
+    */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_LPUART1;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure the Systick interrupt time 
+    */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+
+    /**Configure the Systick 
+    */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/** Configure pins as 
+        * Analog 
+        * Input 
+        * Output
+        * EVENT_OUT
+        * EXTI
+*/
+static void MX_GPIO_Init(void)
+{
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+}
+
+/* USER CODE BEGIN 4 */
 void SysTick_Handler(void) {
   counter++;
 }
@@ -777,7 +724,7 @@ void disable_all_steppers() {
   disable_MOTOR();
 }
 
-void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode = GPIO_MODE_INPUT) {
+void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode) {
   GPIO_InitTypeDef GPIO_InitStruct;
 
   GPIO_InitStruct.Pin = pin;
@@ -796,6 +743,9 @@ void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
   HAL_GPIO_Init(port, &GPIO_InitStruct);
 }  // set to output
 
+uint32_t millis() {
+  return counter;
+}
 /* USER CODE END 4 */
 
 /**
@@ -803,7 +753,7 @@ void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
   * @param  None
   * @retval None
   */
-void _Error_Handler(char * file, int line)
+void _Error_Handler(const char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */

@@ -37,16 +37,9 @@
 #include "serial.h"
 
 /* USER CODE BEGIN 0 */
-extern uint8_t rx_buf[RXBUF_LEN], tx_buf[TXBUF_LEN];
-extern volatile uint16_t rx_i, tx_o;
-extern uint16_t tx_i;
-extern volatile uint8_t tx_busy;
-
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern UART_HandleTypeDef hlpuart1;
-extern UART_HandleTypeDef huart2;
 
 /******************************************************************************/
 /*            Cortex-M0+ Processor Interruption and Exception Handlers         */ 
@@ -172,96 +165,6 @@ void EXTI4_15_IRQHandler(void)
   /* USER CODE BEGIN EXTI4_15_IRQn 1 */
 
   /* USER CODE END EXTI4_15_IRQn 1 */
-}
-
-/**
-* @brief This function handles USART2 global interrupt / USART2 wake-up interrupt through EXTI line 26.
-*/
-void USART2_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART2_IRQn 0 */
-    if((__HAL_UART_GET_IT(&huart2, UART_IT_RXNE) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_RXNE) != RESET))
-    {
-        rx_buf[rx_i & RXBUF_MSK] = (uint8_t)(huart2.Instance->RDR & 0x00FF);
-        rx_i++;
-        /* Clear RXNE interrupt flag */
-        __HAL_UART_SEND_REQ(&huart2, UART_RXDATA_FLUSH_REQUEST);
-    }
-    if((__HAL_UART_GET_IT(&huart2, UART_IT_TXE) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_TXE) != RESET))
-    {
-        if (tx_i == tx_o) {
-            __HAL_UART_DISABLE_IT(&huart2, UART_IT_TXE);
-            __HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
-        } else {
-            huart2.Instance->TDR = (uint8_t)(tx_buf[TXBUF_MSK & tx_o] & (uint8_t)0xFF);
-            tx_o++;
-        }
-    }
-    if((__HAL_UART_GET_IT(&huart2, UART_IT_TC) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_TC) != RESET))
-    {
-        tx_busy = 0;
-        __HAL_UART_DISABLE_IT(&huart2, UART_IT_TC);
-    }
-    /* And never call default handler */
-    return;
-
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
-}
-
-/**
-* @brief This function handles AES, RNG and LPUART1 interrupts / LPUART1 wake-up interrupt through EXTI line 28.
-*/
-void AES_RNG_LPUART1_IRQHandler(void)
-{
-  /* USER CODE BEGIN AES_RNG_LPUART1_IRQn 0 */
-    if((__HAL_UART_GET_IT(&hlpuart1, UART_IT_RXNE) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&hlpuart1, UART_IT_RXNE) != RESET))
-    {
-    	// read only of no errors, else skip byte
-    	if (
-    			(__HAL_UART_GET_IT(&hlpuart1, UART_IT_NE) == RESET) &&
-				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_FE) == RESET) &&
-				(__HAL_UART_GET_IT(&hlpuart1, UART_IT_PE) == RESET)
-		) {
-    		store_char((uint8_t)(hlpuart1.Instance->RDR & 0x00FF));
-    	} else {
-    		hlpuart1.Instance->RDR;
-    	}
-        /* Clear RXNE interrupt flag */
-        __HAL_UART_SEND_REQ(&hlpuart1, UART_RXDATA_FLUSH_REQUEST);
-    }
-    if((__HAL_UART_GET_IT(&hlpuart1, UART_IT_TXE) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&hlpuart1, UART_IT_TXE) != RESET))
-    {
-        if (tx_i == tx_o) {
-            __HAL_UART_DISABLE_IT(&hlpuart1, UART_IT_TXE);
-            __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_TC);
-        } else {
-            hlpuart1.Instance->TDR = (uint8_t)(tx_buf[TXBUF_MSK & tx_o] & (uint8_t)0xFF);
-            tx_o++;
-        }
-    }
-    if((__HAL_UART_GET_IT(&hlpuart1, UART_IT_TC) != RESET) &&
-       (__HAL_UART_GET_IT_SOURCE(&hlpuart1, UART_IT_TC) != RESET))
-    {
-        tx_busy = 0;
-        __HAL_UART_DISABLE_IT(&hlpuart1, UART_IT_TC);
-    }
-    /* And never call default handler */
-    return;
-
-  /* USER CODE END AES_RNG_LPUART1_IRQn 0 */
-  HAL_UART_IRQHandler(&hlpuart1);
-  /* USER CODE BEGIN AES_RNG_LPUART1_IRQn 1 */
-
-  /* USER CODE END AES_RNG_LPUART1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

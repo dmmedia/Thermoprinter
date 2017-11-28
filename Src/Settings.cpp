@@ -7,10 +7,12 @@
 
 #include "Settings.h"
 #include "main.h"
+#include "Planner.h"
+#include "Endstops.h"
 
 Settings settings;
 
-#if ENABLED(EEPROM_SETTINGS)
+#if defined(EEPROM_SETTINGS)
 /**
  * M501 - Retrieve Configuration
  */
@@ -103,13 +105,7 @@ void Settings::reset() {
   planner.min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
   planner.max_jerk = DEFAULT_JERK;
 
-  endstops.enable_globally(
-    #if ENABLED(ENDSTOPS_ALWAYS_ON_DEFAULT)
-      true
-    #else
-      false
-    #endif
-  );
+  endstops.enable_globally(true);
 
   postprocess();
 }
