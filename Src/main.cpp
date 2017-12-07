@@ -69,7 +69,7 @@ bool Running = true;
  *   Used by 'line_to_current_position' to do a move after changing it.
  *   Used by 'SYNC_PLAN_POSITION_KINEMATIC' to update 'planner.position'.
  */
-float current_position = 0.0;
+long int current_position = 0;
 
 /**
  * Cartesian Destination
@@ -77,7 +77,7 @@ float current_position = 0.0;
  *   Set with 'gcode_get_destination' or 'set_destination_to_current'.
  *   'line_to_destination' sets 'current_position' to 'destination'.
  */
-float destination = 0.0;
+long int destination = 0;
 
 // Initialized by settings.load()
 #define AXIS_RELATIVE_MODES false
@@ -94,13 +94,6 @@ int16_t feedrate_percentage = 100, saved_feedrate_percentage;
 
 // Number of characters read in the current line of serial input
 static int serial_count = 0;
-
-/**
- * GCode line number handling. Hosts may opt to include line numbers when
- * sending commands to Marlin, and lines will be checked for sequentiality.
- * M110 N<int> sets the current line number.
- */
-static long gcode_N, gcode_LastN;
 
 Stopwatch print_job_timer = Stopwatch();
 
@@ -132,18 +125,17 @@ void sync_plan_position() {
 /**
  * Set destination and feedrate from the current GCode command
  *
- *  - Set destination from included axis codes
- *  - Set to current for missing axis codes
- *  - Set the feedrate, if included
+ *  - Set destination from command line
+ *  - Set to current for non-movement commands
  */
 void gcode_get_destination() {
-  if (parser.seen('M'))
-    destination = parser.value_axis_units() + (axis_relative_modes || relative_mode ? current_position : 0);
-  else
-    destination = current_position;
-
-  if (parser.linearval('F') > 0.0)
-    feedrate_mm_s = MMM_TO_MMS(parser.value_feedrate());
+	if (parser.command_letter == 'M') {
+	    destination = parser.value_axis_units() + (axis_relative_modes || relative_mode ? current_position : 0);
+	} else if (parser.command_letter == 'P') {
+		destination = 2 + (axis_relative_modes || relative_mode ? current_position : 0);
+	} else {
+		destination = current_position;
+	}
 }
 
   /**
@@ -194,12 +186,12 @@ void prepare_move_to_destination() {
  **************************************************/
 
 /**
- * G0, G1: Coordinated movement of X Y Z E axes
+ * M0: Stepped movement of motor
  */
-inline void gcode_G0_G1(
+inline void gcode_M0(
 ) {
   if (IsRunning()) {
-    gcode_get_destination(); // For X Y Z E F
+    gcode_get_destination();
 
     prepare_move_to_destination();
   }
@@ -230,22 +222,14 @@ void do_blocking_move_to(const float &lm, const float &fr_mm_s/*=0.0*/) {
 }
 
 /**
- * G92: Set current position to given X
+ * G92: Set current position to 0
  */
 inline void gcode_G92() {
-  bool didM = false;
-
   stepper.synchronize();
 
-  if (parser.seenval('M')) {
-      const float v = parser.value_axis_units();
+  current_position = 0;
 
-      current_position = v;
-
-      didM = true;
-  }
-  if (didM)
-    SYNC_PLAN_POSITION_KINEMATIC();
+  SYNC_PLAN_POSITION_KINEMATIC();
 }
 
 void lcd_setstatus(const char * const message) {
@@ -275,12 +259,9 @@ void process_next_command() {
 
   // Handle a known M, or P
   switch (parser.command_letter) {
-    case 'G': switch (parser.codenum) {
-
-      // G0, G1
+    case 'M': switch (parser.codenum) {
       case 0:
-      case 1:
-        gcode_G0_G1();
+        gcode_M0();
         break;
 
       case 90: // G90
@@ -296,23 +277,12 @@ void process_next_command() {
     }
     break;
 
-    case 'M': switch (parser.codenum) {
-      case 117: // M117: Set LCD message text, if possible
-        gcode_M117();
-        break;
-    }
-    break;
-
     case 'P': switch (parser.codenum) {
       case 0: // P0
     	gcode_P0();
     	break;
     }
-
-//    default: parser.unknown_command_error();
   }
-
-//  ok_to_send();
 }
 
 /**
@@ -329,8 +299,8 @@ void RCC_ClearFlag(void)
 }
 
 void setup_powerhold() {
-  if (HAS_POWER_SWITCH)
-    OUT_WRITE(PS_ON, PS_ON_AWAKE);
+//  if (HAS_POWER_SWITCH)
+//    OUT_WRITE(PS_ON, PS_ON_AWAKE);
 }
 
 /**
@@ -435,7 +405,6 @@ inline bool _enqueuecommand(const char* cmd, bool say_ok=false) {
  */
 inline void get_serial_commands() {
   static char serial_line_buffer[MAX_CMD_SIZE];
-  static bool serial_comment_mode = false;
 
   /**
    * Loop while serial characters are incoming and the queue is not full
@@ -449,8 +418,6 @@ inline void get_serial_commands() {
      */
     if (serial_char == '\n' || serial_char == '\r') {
 
-      serial_comment_mode = false; // end of line == end of comment
-
       if (!serial_count) continue; // skip empty lines
 
       serial_line_buffer[serial_count] = 0; // terminate string
@@ -459,40 +426,6 @@ inline void get_serial_commands() {
       char* command = serial_line_buffer;
 
       while (*command == ' ') command++; // skip any leading spaces
-      char *npos = (*command == 'N') ? command : NULL, // Require the N parameter to start the line
-           *apos = strchr(command, '*');
-
-      if (npos) {
-
-        gcode_N = strtol(npos + 1, NULL, 10);
-
-        if (gcode_N != gcode_LastN + 1) {
-          gcode_line_error();
-          return;
-        }
-
-        gcode_LastN = gcode_N;
-        // if no errors, continue parsing
-      }
-      else if (apos) { // No '*' without 'N'
-        gcode_line_error(false);
-        return;
-      }
-
-      // Movement commands alert when stopped
-      if (IsStopped()) {
-        char* gpos = strchr(command, 'G');
-        if (gpos) {
-          const int codenum = strtol(gpos + 1, NULL, 10);
-          switch (codenum) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-              break;
-          }
-        }
-      }
 
       // Add the command to the queue
       _enqueuecommand(serial_line_buffer, true);
@@ -505,13 +438,12 @@ inline void get_serial_commands() {
       if (MYSERIAL.available() > 0) {
         // if we have one more character, copy it over
         serial_char = MYSERIAL.read();
-        if (!serial_comment_mode) serial_line_buffer[serial_count++] = serial_char;
+        serial_line_buffer[serial_count++] = serial_char;
       }
       // otherwise do nothing
     }
     else { // it's not a newline, carriage return or escape char
-      if (serial_char == ';') serial_comment_mode = true;
-      if (!serial_comment_mode) serial_line_buffer[serial_count++] = serial_char;
+      serial_line_buffer[serial_count++] = serial_char;
     }
 
   } // queue has space, serial has data
@@ -521,7 +453,6 @@ inline void get_serial_commands() {
  * Add to the circular command queue the next command from:
  *  - The command-injection queue (injected_commands_P)
  *  - The active serial input (usually USB)
- *  - The SD card file being actively printed
  */
 void get_available_commands() {
   get_serial_commands();
@@ -531,35 +462,13 @@ void get_available_commands() {
 
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration----------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
   SysTick_Config(SystemCoreClock / 16000);
   HAL_NVIC_EnableIRQ(SysTick_IRQn);
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
-
-  /* USER CODE BEGIN 2 */
   setup();
-  /* Enable lpusart 1 receive IRQ */
-  for (;;) {
+  while (true) {
 	  if (commands_in_queue < BUFSIZE) get_available_commands();
 
 	  if (commands_in_queue) {
@@ -573,37 +482,7 @@ int main(void)
 	  }
 
 	  idle();
-
-      /* Main cycle */
-//      while (rx_i != rx_e) {
-//          /* echo here */
-//          transmit(&huart2, rx_buf[RXBUF_MSK & rx_e]);
-//          rx_e++;
-//      }
-//      while (rx_i != rx_o) {
-//          /* parse here */
-//          /* ... */
-//          rx_o++;
-//      }
-      /* Power save
-      while (tx_busy);
-      HAL_UART_DeInit(&huart1);
-      */
   }
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-  /* USER CODE END WHILE */
-
-  /* USER CODE BEGIN 3 */
-
-  }
-  /* USER CODE END 3 */
-
 }
 
 /** System Clock Configuration

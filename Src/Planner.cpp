@@ -37,7 +37,6 @@ volatile uint8_t Planner::block_buffer_head = 0,           // Index of the next 
 // Initialized by settings.load()
 float Planner::min_feedrate_mm_s,
       Planner::acceleration,         // Normal acceleration mm/s^2  DEFAULT ACCELERATION for all printing moves. M204 SXXXX
-      Planner::retract_acceleration, // Retract acceleration mm/s^2 filament pull-back and push-forward while standing still in the other axes M204 TXXXX
       Planner::travel_acceleration,  // Travel acceleration mm/s^2  DEFAULT ACCELERATION for all NON printing moves. M204 MXXXX
       Planner::max_jerk,       // The largest speed change requiring no acceleration
       Planner::min_travel_feedrate_mm_s;
@@ -235,16 +234,15 @@ void Planner::recalculate() {
  *
  * Leveling and kinematics should be applied ahead of calling this.
  *
- *  a,b,c,e     - target positions in mm or degrees
+ *  m     - target positions in steps
  *  fr_mm_s     - (target) speed of the move
- *  extruder    - target extruder
  */
-void Planner::_buffer_line(const float &m, float fr_mm_s) {
+void Planner::_buffer_line(const long int &m, float fr_mm_s) {
 
   // The target position of the tool in absolute steps
   // Calculate target position in absolute steps
   //this should be done after the wait, because otherwise a M92 code within the gcode disrupts this calculation somehow
-  const long target = LROUND(m * axis_steps_per_mm);
+  const long target = m;
 
   const long dm = target - position;
 
@@ -286,11 +284,6 @@ void Planner::_buffer_line(const float &m, float fr_mm_s) {
 
   /**
    * This part of the code calculates the total length of the movement.
-   * For cartesian bots, the X_AXIS is the real X movement and same for Y_AXIS.
-   * But for corexy bots, that is not true. The "X_AXIS" and "Y_AXIS" motors (that should be named to A_AXIS
-   * and B_AXIS) cannot be used for X and Y length, because A=X+Y and B=X-Y.
-   * So we need to create other 2 "AXIS", named X_HEAD and Y_HEAD, meaning the real displacement of the Head.
-   * Having the real displacement of the head, we can calculate the total movement length and apply the desired speed.
    */
   float delta_mm;
   delta_mm = dm * steps_to_mm;
@@ -336,13 +329,9 @@ void Planner::_buffer_line(const float &m, float fr_mm_s) {
   // Compute and limit the acceleration rate for the trapezoid generator.
   const float steps_per_mm = block->step_event_count * inverse_millimeters;
   uint32_t accel;
-  if (!block->steps) {
-    // convert to: acceleration steps/sec^2
-    accel = CEIL(retract_acceleration * steps_per_mm);
-  }
-  else {
+  if (block->steps) {
     // Start with print or travel acceleration
-    accel = CEIL((/*esteps ? acceleration : */travel_acceleration) * steps_per_mm);
+    accel = CEIL((travel_acceleration) * steps_per_mm);
 
     // Limit acceleration per axis
     if (block->step_event_count <= cutoff_long) {
@@ -360,7 +349,7 @@ void Planner::_buffer_line(const float &m, float fr_mm_s) {
   }
   block->acceleration_steps_per_s2 = accel;
   block->acceleration = accel / steps_per_mm;
-  block->acceleration_rate = (long)(accel * 16777216.0 / (HAL_RCC_GetHCLKFreq() * 0.125)); // * 8.388608
+  block->acceleration_rate = (long)(accel * 16777216.0 / (HAL_RCC_GetHCLKFreq() * 0.125));
 
   // Initial limit on the segment entry velocity
   float vmax_junction;
@@ -481,8 +470,8 @@ void Planner::_buffer_line(const float &m, float fr_mm_s) {
  * On CORE machines stepper ABC will be translated from the given XYZ.
  */
 
-void Planner::_set_position_mm(const float &m) {
-  long nm = position = LROUND(m * axis_steps_per_mm);
+void Planner::_set_position_mm(const long int &m) {
+  long nm = position = m;
   stepper.set_position(nm);
   previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
   previous_speed = 0.0;

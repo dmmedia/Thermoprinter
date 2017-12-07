@@ -100,10 +100,8 @@ void Temperature::init() {
   // Enable update interrupts
   TIM2->DIER |= TIM_DIER_UIE;
 
+  // zero counter for initial start
   TIM2->CNT = 0;
-
-
-
 
   // Use timer TIM2 for temperature measurement
   __HAL_TIM_SET_AUTORELOAD(&htim2, 128);

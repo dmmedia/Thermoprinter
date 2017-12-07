@@ -52,7 +52,7 @@
 #define MOTOR_ENABLE_ON GPIO_PIN_RESET
 
 // The ASCII buffer for serial input
-#define MAX_CMD_SIZE 96
+#define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
 #define BUFSIZE 4
 
 // Transfer Buffer Size
@@ -91,9 +91,6 @@ extern millis_t previous_cmd_ms;
 extern volatile uint32_t counter;
 uint32_t millis();
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
-
-#define  enable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
-#define disable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, (MOTOR_ENABLE_ON == GPIO_PIN_SET) ? GPIO_PIN_RESET : GPIO_PIN_SET)
 
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
@@ -231,7 +228,7 @@ void disable_all_steppers();
  }
 #endif
 
-extern float current_position;
+extern long int current_position;
 
 void idle();
 

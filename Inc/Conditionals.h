@@ -29,7 +29,7 @@
 // Power Signal Control Definitions
 // By default use ATX definition
 #ifndef POWER_SUPPLY
-  #define POWER_SUPPLY 1
+  #define POWER_SUPPLY 0
 #endif
 #if (POWER_SUPPLY == 1)     // 1 = ATX
   #define PS_ON_AWAKE  GPIO_PIN_RESET

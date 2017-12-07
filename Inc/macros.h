@@ -97,4 +97,7 @@
 #define ZERO(a) memset(a,0,sizeof(a))
 #define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
 
+#define  enable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
+#define disable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, (MOTOR_ENABLE_ON == GPIO_PIN_SET) ? GPIO_PIN_RESET : GPIO_PIN_SET)
+
 #endif /* MACROS_H_ */

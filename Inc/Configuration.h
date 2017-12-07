@@ -44,7 +44,7 @@
 #define PS_ON_PORT		   GPIOA
 //#define PS_ON_PIN   GPIO_PIN_1
 //#define PS_ON_PORT	GPIOA
-#define POWER_SUPPLY 0
+//#define POWER_SUPPLY 0
 
 //
 // Temperature Sensors

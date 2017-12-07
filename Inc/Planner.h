@@ -125,9 +125,9 @@ public:
      *  fr_mm_s   - (target) speed of the move (mm/s)
      *  extruder  - target extruder
      */
-    static void _buffer_line(const float &m, float fr_mm_s);
+    static void _buffer_line(const long int &m, float fr_mm_s);
 
-    static void _set_position_mm(const float &m);
+    static void _set_position_mm(const long int &m);
 
     /**
      * Add a new linear movement to the buffer.
@@ -141,7 +141,7 @@ public:
      *  fr_mm_s      - (target) speed of the move (mm/s)
      *  extruder     - target extruder
      */
-    static __attribute__((always_inline)) inline void buffer_line(const float &m, const float &fr_mm_s) {
+    static __attribute__((always_inline)) inline void buffer_line(const long int &m, const float &fr_mm_s) {
       _buffer_line(m, fr_mm_s);
     }
 
@@ -156,7 +156,7 @@ public:
      *
      * Clears previous speed values.
      */
-    static __attribute__((always_inline)) inline void set_position_mm(const float &m) {
+    static __attribute__((always_inline)) inline void set_position_mm(const long int &m) {
       _set_position_mm(m);
     }
 

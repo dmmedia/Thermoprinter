@@ -31,24 +31,15 @@ public:
 
 	// Command line state
 	static char *command_ptr,               // The command, so it can be echoed
-	            *string_arg;                // string of command line
+	            *string_arg,                // string of command line
+	            *int_arg;                   // signed integer of comman line
 
     static char command_letter;             // M, or P
-    static int codenum;                     // 123
+    static uint8_t codenum;                     // 123
 
 	#define PARAM_IND(N)  ((N) >> 3)
 	#define PARAM_BIT(N)  ((N) & 0x7)
 	#define LETTER_OFF(N) ((N) - 'A')
-
-#if ENABLED(FASTER_COMMAND_PARSER)
-
-  // Set the flag and pointer for a parameter
-  static void set(const char c, char * const ptr) {
-    const uint8_t ind = LETTER_OFF(c);
-    if (ind >= COUNT(param)) return;           // Only A-Z
-    SBI(codebits[PARAM_IND(ind)], PARAM_BIT(ind));        // parameter exists
-    param[ind] = ptr ? ptr - command_ptr : 0;  // parameter offset or 0
-  }
 
   // Code seen bit was set. If not found, value_ptr is unchanged.
   // This allows "if (seen('A')||seen('B'))" to use the last-found value.
@@ -64,45 +55,28 @@ public:
 
   #define SEEN_TEST(L) TEST(codebits[LETTER_IND(L)], LETTER_BIT(L))
 
-#else // !FASTER_GCODE_PARSER
-
-  // Code is found in the string. If not found, value_ptr is unchanged.
-  // This allows "if (seen('A')||seen('B'))" to use the last-found value.
-  static bool seen(const char c) {
-    const char *p = strchr(command_args, c);
-    const bool b = !!p;
-    if (b) value_ptr = DECIMAL_SIGNED(p[1]) ? &p[1] : (char*)NULL;
-    return b;
-  }
-
-  static bool seen_any() { return *command_args == '\0'; }
-
-  #define SEEN_TEST(L) !!strchr(command_args, L)
-
-#endif // !FASTER_GCODE_PARSER
-
   // Float removes 'E' to prevent scientific notation interpretation
-  inline static float value_float() {
-    if (value_ptr) {
-      char *e = value_ptr;
+  inline static int value_int() {
+    if (int_arg) {
+      char *e = int_arg;
       for (;;) {
         const char c = *e;
         if (c == '\0' || c == ' ') break;
         if (c == 'E' || c == 'e') {
           *e = '\0';
-          const float ret = strtod(value_ptr, NULL);
+          const int ret = strtol(int_arg, NULL, 10);
           *e = c;
           return ret;
         }
         ++e;
       }
-      return strtod(value_ptr, NULL);
+      return strtol(int_arg, NULL, 10);
     }
-    return 0.0;
+    return 0;
   }
 
-  FORCE_INLINE static float value_linear_units()                  {            return value_float(); }
-  FORCE_INLINE static float value_axis_units()    { return value_float(); }
+  FORCE_INLINE static int value_linear_units()                  {            return value_int(); }
+  FORCE_INLINE static int value_axis_units()    { return value_int(); }
 
   FORCE_INLINE static float    linearval(const char c, const float dval=0.0)  { return seenval(c) ? value_linear_units() : dval; }
 

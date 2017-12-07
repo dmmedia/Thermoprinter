@@ -21,9 +21,10 @@ CommandParser parser;
 
 char *CommandParser::command_ptr,
      *CommandParser::string_arg,
+     *CommandParser::int_arg,
      *CommandParser::value_ptr;
 char CommandParser::command_letter;
-int CommandParser::codenum;
+uint8_t CommandParser::codenum;
 
 /**
  * Clear all code-seen (and value pointers)
@@ -47,32 +48,14 @@ void CommandParser::parse(char *p) {
   // Skip spaces
   while (*p == ' ') ++p;
 
-  // Skip N[-0-9] if included in the command line
-  if (*p == 'N' && NUMERIC_SIGNED(p[1])) {
-    p += 2;                  // skip N[-0-9]
-    while (NUMERIC(*p)) ++p; // skip [0-9]*
-    while (*p == ' ')   ++p; // skip [ ]*
-  }
-
   // *p now points to the current command, which should be M, or P
   command_ptr = p;
 
   // Get the command letter, which must be M, or P
   const char letter = *p++;
 
-  // Nullify asterisk and trailing whitespace
-  char *starpos = strchr(p, '*');
-  if (starpos) {
-    --starpos;                          // *
-    while (*starpos == ' ') --starpos;  // spaces...
-    starpos[1] = '\0';
-  }
-
   // Bail if the letter is not M, or P
   switch (letter) { case 'M': case 'P': break; default: return; }
-
-  // Skip spaces to get the numeric part
-  while (*p == ' ') p++;
 
   // Bail if there's no command code number
   if (!NUMERIC(*p)) return;
@@ -91,50 +74,37 @@ void CommandParser::parse(char *p) {
   while (*p == ' ') p++;
 
   // The command parameters (if any) start here, for sure!
-
-  #if DISABLED(FASTER_COMMAND_PARSER)
-    command_args = p; // Scan for parameters in seen()
-  #endif
-
-  // Only use string_arg for these M codes
-  if (letter == 'M') switch (codenum) { case 0: string_arg = p; return; default: break; }
-
-  /**
-   * Find all parameters, set flags and pointers for fast parsing
-   *
-   * Most codes ignore 'string_arg', but those that want a string will get the right pointer.
-   * The following loop assigns the first "parameter" having no numeric value to 'string_arg'.
-   */
-  string_arg = NULL;
-  while (char code = *p++) {                    // Get the next parameter. A NUL ends the loop
-
-    // Arguments MUST be uppercase for fast GCode parsing
-    #if ENABLED(FASTER_COMMAND_PARSER)
-      #define PARAM_TEST WITHIN(code, 'A', 'Z')
-    #else
-      #define PARAM_TEST true
-    #endif
-
-    if (PARAM_TEST) {
-
-      while (*p == ' ') p++;                    // Skip spaces between parameters & values
-      const bool has_num = DECIMAL_SIGNED(*p);  // The parameter has a number [-+0-9.]
-
-      if (!has_num && !string_arg) {            // No value? First time, keep as string_arg
-        string_arg = p - 1;
-      }
-
-      #if ENABLED(FASTER_COMMAND_PARSER)
-        set(code, has_num ? p : NULL);          // Set parameter exists and pointer (NULL for no number)
-      #endif
-    }
-    else if (!string_arg) {                     // Not A-Z? First time, keep as the string_arg
-      string_arg = p - 1;
-    }
-
-    if (!WITHIN(*p, 'A', 'Z')) {
-      while (*p && NUMERIC(*p)) p++;            // Skip over the value section of a parameter
-      while (*p == ' ') p++;                    // Skip over all spaces
-    }
+  switch (letter) {
+    // Only use string_arg for these P codes
+    case 'P':
+  	  switch (codenum) {
+  	  	case 0:
+  	  	  int_arg = nullptr;
+          string_arg = p;
+  	  	  // sanity check
+  	  	  if (strlen(string_arg) != 96) {
+  	  		// skip invalid argument
+  	  	  }
+  	  	  return;
+  	  	default:
+  	  	  break;
+  	  }
+  	  break;
+  	case 'M':
+  	  switch (codenum) {
+  	    case 0: {
+  	      string_arg = nullptr;
+  	      const bool has_num = DECIMAL_SIGNED(*p);  // The parameter has a number [-+0-9.]
+  	      if (has_num) {
+            int_arg = p;
+  	      }
+  	      return;
+  	    }
+  	    default:
+  	      break;
+  	  }
+  	  break;
+    default:
+      break;
   }
 }
