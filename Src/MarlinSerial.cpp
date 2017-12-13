@@ -83,68 +83,9 @@ int MarlinSerial::read(void) {
   return v;
 }
 
-#if TX_BUFFER_SIZE > 0
-
-  FORCE_INLINE void _tx_udr_empty_irq(void) {
-    // If interrupts are enabled, there must be more data in the output
-    // buffer. Send the next byte
-    const uint8_t t = tx_buffer.tail,
-                  c = tx_buffer.buffer[t];
-    tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
-
-    M_UDRx = c;
-
-    // clear the TXC bit -- "can be cleared by writing a one to its bit
-    // location". This makes sure flush() won't return until the bytes
-    // actually got written
-    SBI(M_UCSRxA, M_TXCx);
-
-    if (tx_buffer.head == tx_buffer.tail) {
-      // Buffer empty, so disable interrupts
-      CBI(M_UCSRxB, M_UDRIEx);
-    }
-  }
-
-  #ifdef M_USARTx_UDRE_vect
-    ISR(M_USARTx_UDRE_vect) {
-      _tx_udr_empty_irq();
-    }
-  #endif
-
-#endif // TX_BUFFER_SIZE
-
 /* LPUART1 init function */
-static void MX_LPUART1_UART_Init(void)
+static void MX_LPUART1_UART_Init(const long baud)
 {
-
-
-}
-
-/* USART2 init function */
-static void MX_USART2_UART_Init(void)
-{
-
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-	_Error_Handler(__FILE__, __LINE__);
-  }
-}
-
-void MarlinSerial::begin(const long baud) {
-
-//    MX_USART2_UART_Init();
-	MX_LPUART1_UART_Init();
-
 	hlpuart1.Instance = LPUART1;
 	hlpuart1.Init.BaudRate = baud;
 	hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
@@ -158,17 +99,47 @@ void MarlinSerial::begin(const long baud) {
 	{
 	  _Error_Handler(__FILE__, __LINE__);
 	}
-	UartEnableIT(&hlpuart1, UART_IT_RXNE);
+}
+
+/* USART2 init function */
+static void MX_USART2_UART_Init(const long baud)
+{
+    huart2.Instance = USART2;
+    huart2.Init.BaudRate = baud;
+    huart2.Init.WordLength = UART_WORDLENGTH_8B;
+    huart2.Init.StopBits = UART_STOPBITS_1;
+    huart2.Init.Parity = UART_PARITY_NONE;
+    huart2.Init.Mode = UART_MODE_TX_RX;
+    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+    if (HAL_UART_Init(&huart2) != HAL_OK)
+    {
+	    _Error_Handler(__FILE__, __LINE__);
+    }
+}
+
+void MarlinSerial::begin(const long baud) {
+
+    MX_USART2_UART_Init(baud);
+//	MX_LPUART1_UART_Init(baud);
+
+	UartEnableIT(&huart2, UART_IT_RXNE);
+//	UartEnableIT(&hlpuart1, UART_IT_RXNE);
 
   #if TX_BUFFER_SIZE > 0
-	UartEnableIT(&hlpuart1, UART_IT_TXE);
-	UartEnableIT(&hlpuart1, UART_IT_TC);
+	UartEnableIT(&huart2, UART_IT_TXE);
+	UartEnableIT(&huart2, UART_IT_TC);
+//	UartEnableIT(&hlpuart1, UART_IT_TXE);
+//	UartEnableIT(&hlpuart1, UART_IT_TC);
     _written = false;
   #endif
 }
 
 void MarlinSerial::end() {
-	HAL_UART_DeInit(&hlpuart1);
+	HAL_UART_DeInit(&huart2);
+//	HAL_UART_DeInit(&hlpuart1);
 }
 
 /**
@@ -196,12 +167,17 @@ void AES_RNG_LPUART1_IRQHandler(void)
     if((UartGetIT(&hlpuart1, UART_IT_TXE) != RESET) &&
        (UartGetITSource(&hlpuart1, UART_IT_TXE) != RESET))
     {
-        if (tx_i == tx_o) {
+        if (tx_buffer.head == tx_buffer.tail) {
         	UartDisableIT(&hlpuart1, UART_IT_TXE);
         	UartEnableIT(&hlpuart1, UART_IT_TC);
         } else {
-            hlpuart1.Instance->TDR = (uint8_t)(tx_buf[TXBUF_MSK & tx_o] & (uint8_t)0xFF);
-            tx_o++;
+        	// If interrupts are enabled, there must be more data in the output
+        	// buffer. Send the next byte
+        	const uint8_t t = tx_buffer.tail,
+        	              c = tx_buffer.buffer[t];
+        	tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
+
+            hlpuart1.Instance->TDR = c;
         }
     }
     if((UartGetIT(&hlpuart1, UART_IT_TC) != RESET) &&
@@ -210,14 +186,11 @@ void AES_RNG_LPUART1_IRQHandler(void)
         tx_busy = 0;
         UartDisableIT(&hlpuart1, UART_IT_TC);
     }
+
     /* And never call default handler */
     return;
 
-  /* USER CODE END AES_RNG_LPUART1_IRQn 0 */
-  HAL_UART_IRQHandler(&hlpuart1);
-  /* USER CODE BEGIN AES_RNG_LPUART1_IRQn 1 */
-
-  /* USER CODE END AES_RNG_LPUART1_IRQn 1 */
+    HAL_UART_IRQHandler(&hlpuart1);
 }
 
 /**
@@ -229,22 +202,35 @@ void USART2_IRQHandler(void)
     if((UartGetIT(&huart2, UART_IT_RXNE) != RESET) &&
        (UartGetITSource(&huart2, UART_IT_RXNE) != RESET))
     {
-        rx_buf[rx_i & RXBUF_MSK] = (uint8_t)(huart2.Instance->RDR & 0x00FF);
-        rx_i++;
+    	// read only of no errors, else skip byte
+    	if (
+    			(UartGetIT(&huart2, UART_IT_NE) == RESET) &&
+				(UartGetIT(&huart2, UART_IT_FE) == RESET) &&
+				(UartGetIT(&huart2, UART_IT_PE) == RESET)
+		) {
+    		store_char((uint8_t)(huart2.Instance->RDR & 0x00FF));
+    	} else {
+    		huart2.Instance->RDR;
+    	}
         /* Clear RXNE interrupt flag */
-        UartSendReq(&huart2, UART_RXDATA_FLUSH_REQUEST);
+    	UartSendReq(&huart2, UART_RXDATA_FLUSH_REQUEST);
     }
     if((UartGetIT(&huart2, UART_IT_TXE) != RESET) &&
        (UartGetITSource(&huart2, UART_IT_TXE) != RESET))
     {
-        if (tx_i == tx_o) {
+        if (tx_buffer.head == tx_buffer.tail) {
         	UartDisableIT(&huart2, UART_IT_TXE);
         	UartEnableIT(&huart2, UART_IT_TC);
         } else {
-            huart2.Instance->TDR = (uint8_t)(tx_buf[TXBUF_MSK & tx_o] & (uint8_t)0xFF);
-            tx_o++;
+        	// If interrupts are enabled, there must be more data in the output
+        	// buffer. Send the next byte
+        	const uint8_t t = tx_buffer.tail,
+        	              c = tx_buffer.buffer[t];
+        	tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
+
+        	huart2.Instance->TDR = c;
         }
-    }
+}
     if((UartGetIT(&huart2, UART_IT_TC) != RESET) &&
        (UartGetITSource(&huart2, UART_IT_TC) != RESET))
     {
@@ -254,11 +240,7 @@ void USART2_IRQHandler(void)
     /* And never call default handler */
     return;
 
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
+    HAL_UART_IRQHandler(&huart2);
 }
 
 void transmit(UART_HandleTypeDef *huart, uint8_t byte)

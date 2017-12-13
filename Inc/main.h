@@ -113,7 +113,7 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
  *
  * :[2400, 9600, 19200, 38400, 57600, 115200]
  */
-#define BAUDRATE 115200
+#define BAUDRATE 9600
 
 // Enable the Bluetooth serial interface
 //#define BLUETOOTH
