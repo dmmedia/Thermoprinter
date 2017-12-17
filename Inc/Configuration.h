@@ -58,22 +58,14 @@
 #define MAX_STEP_FREQUENCY 1000
 
 /* ## Definition of ADC related resources ################################### */
-/* Definition of ADCx clock resources */
-#define ADC1_CLK_ENABLE()               __ADC1_CLK_ENABLE()
-
-#define ADC1_FORCE_RESET()              __ADC1_FORCE_RESET()
-#define ADC1_RELEASE_RESET()            __ADC1_RELEASE_RESET()
-
 /* Definition of ADCx channels */
 #define ADC1_CHANNEL_VOLTAGE                   ADC_CHANNEL_8
 #define ADC1_CHANNEL_TEMPERATURE               ADC_CHANNEL_5
 
 /* Definition of ADCx channels pins */
-#define ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() __GPIOB_CLK_ENABLE()
 #define ADC1_CHANNEL_VOLTAGE_GPIO_PORT         GPIOB
 #define ADC1_CHANNEL_VOLTAGE_PIN               GPIO_PIN_0
 
-#define ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() __GPIOA_CLK_ENABLE()
 #define ADC1_CHANNEL_TEMPERATURE_GPIO_PORT         GPIOA
 #define ADC1_CHANNEL_TEMPERATURE_PIN               GPIO_PIN_5
 
@@ -134,6 +126,9 @@
  * :{ '0': "Not used", '1':"100k / 4.7k - EPCOS", '2':"200k / 4.7k - ATC Semitec 204GT-2", '3':"Mendel-parts / 4.7k", '4':"10k !! do not use for a hotend. Bad resolution at high temp. !!", '5':"100K / 4.7k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '6':"100k / 4.7k EPCOS - Not as accurate as Table 1", '7':"100k / 4.7k Honeywell 135-104LAG-J01", '8':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT", '9':"100k / 4.7k GE Sensing AL03006-58.2K-97-G1", '10':"100k / 4.7k RS 198-961", '11':"100k / 4.7k beta 3950 1%", '12':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT (calibrated for Makibox hot bed)", '13':"100k Hisens 3950  1% up to 300°C for hotend 'Simple ONE ' & hotend 'All In ONE'", '20':"PT100 (Ultimainboard V2.x)", '51':"100k / 1k - EPCOS", '52':"200k / 1k - ATC Semitec 204GT-2", '55':"100k / 1k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '60':"100k Maker's Tool Works Kapton Bed Thermistor beta=3950", '66':"Dyze Design 4.7M High Temperature thermistor", '70':"the 100K thermistor found in the bq Hephestos 2", '71':"100k / 4.7k Honeywell 135-104LAF-J01", '147':"Pt100 / 4.7k", '1047':"Pt1000 / 4.7k", '110':"Pt100 / 1k (non-standard)", '1010':"Pt1000 / 1k (non standard)", '-3':"Thermocouple + MAX31855 (only for sensor 0)", '-2':"Thermocouple + MAX6675 (only for sensor 0)", '-1':"Thermocouple + AD595",'998':"Dummy 1", '999':"Dummy 2" }
  */
 #define TEMP_SENSOR_0 998 // DGlass3D = 5; RigidBot = 1; 3DSv6 = 5
+
+// Invert the stepper direction. Change (or reverse the motor connector) if an paper goes the wrong way.
+#define INVERT_MOTOR_DIR GPIO_PIN_RESET
 
 
 

@@ -62,7 +62,7 @@
 // For debug-echo: 128 bytes for the optimal speed.
 // Other output doesn't need to be that speedy.
 // :[0, 2, 4, 8, 16, 32, 64, 128, 256]
-#define TX_BUFFER_SIZE 0
+#define TX_BUFFER_SIZE 128
 
 extern bool Running;
 inline bool IsRunning() { return  Running; }
@@ -82,13 +82,8 @@ enum EndstopEnum {
 
 #define IS_CARTESIAN 1
 
-// Macros to contrain values
-#define NOLESS(v,n) do{ if (v < n) v = n; }while(0)
-#define NOMORE(v,n) do{ if (v > n) v = n; }while(0)
-
 typedef unsigned long millis_t;
 extern millis_t previous_cmd_ms;
-extern volatile uint32_t counter;
 uint32_t millis();
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 
@@ -177,9 +172,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
 #define INVERT_MOTOR_STEP_PIN GPIO_PIN_RESET
 
-// Invert the stepper direction. Change (or reverse the motor connector) if an paper goes the wrong way.
-#define INVERT_MOTOR_DIR GPIO_PIN_RESET
-
 // The minimum pulse width (in µs) for stepping a stepper.
 // Set this if you find stepping unreliable, or if using a very fast CPU.
 #define MINIMUM_STEPPER_PULSE 4 // (µs) The smallest stepper pulse allowed
@@ -217,23 +209,26 @@ void kill(const char*);
 
 void disable_all_steppers();
 
-#ifdef __cplusplus
- extern "C" {
-#endif
-
- void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode);
- void setOutput(GPIO_TypeDef  *port, uint32_t pin);
-
-#ifdef __cplusplus
- }
-#endif
-
 extern long int current_position;
 
 void idle();
 
 class Stopwatch;
 extern Stopwatch print_job_timer;
+
+void ok_to_send();
+
+#define MSG_THERMOPRINTER "Thermoprinter"
+
+#define SHORT_BUILD_VERSION "0.1"
+
+#define MSG_OK                              "ok"
+
+uint32_t GetTick(void);
+
+void Delay(__IO uint32_t Delay);
+
+void SysTick_Handler(void);
 
 /* USER CODE END Private defines */
 

@@ -19,7 +19,7 @@ public:
   static bool load();
 
 #else
-  __attribute__((always_inline)) inline static bool load() { reset(); return true; }
+  FORCE_INLINE static bool load() { reset(); return true; }
 #endif
 
 private:

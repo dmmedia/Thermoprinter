@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+typedef unsigned long millis_t;
+
 enum BlockFlagBit {
   // Recalculate trapezoids on entry junction. For optimization.
   BLOCK_BIT_RECALCULATE,
@@ -141,7 +143,7 @@ public:
      *  fr_mm_s      - (target) speed of the move (mm/s)
      *  extruder     - target extruder
      */
-    static __attribute__((always_inline)) inline void buffer_line(const long int &m, const float &fr_mm_s) {
+    static FORCE_INLINE void buffer_line(const long int &m, const float &fr_mm_s) {
       _buffer_line(m, fr_mm_s);
     }
 
@@ -156,7 +158,7 @@ public:
      *
      * Clears previous speed values.
      */
-    static __attribute__((always_inline)) inline void set_position_mm(const long int &m) {
+    static FORCE_INLINE void set_position_mm(const long int &m) {
       _set_position_mm(m);
     }
 

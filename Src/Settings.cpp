@@ -5,6 +5,7 @@
  *      Author: Den
  */
 
+#include "macros.h"
 #include "Settings.h"
 #include "main.h"
 #include "Planner.h"

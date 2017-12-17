@@ -5,13 +5,14 @@
  *      Author: Den
  */
 
-#include <stm32l0xx_hal.h>
-#include "Planner.h"
-#include "SREGEmulation.h"
 #include <math.h>
 #include "macros.h"
+#include "Planner.h"
+#include "SREGEmulation.h"
+#include "gpio.h"
 #include "Configuration.h"
 #include <stdlib.h>
+#include "main.h"
 #include "Stepper.h"
 
 float Planner::max_feedrate_mm_s, // Max speeds in mm per second
@@ -349,7 +350,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   }
   block->acceleration_steps_per_s2 = accel;
   block->acceleration = accel / steps_per_mm;
-  block->acceleration_rate = (long)(accel * 16777216.0 / (HAL_RCC_GetHCLKFreq() * 0.125));
+  block->acceleration_rate = (long)(accel * 16777216.0 / (SystemCoreClock * 0.125));
 
   // Initial limit on the segment entry velocity
   float vmax_junction;

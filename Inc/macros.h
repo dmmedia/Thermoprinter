@@ -12,6 +12,8 @@
 
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
+#define UNUSED(x) ((void)(x))
+
 #define FABS(x)     fabs(x)
 #define SQRT(x)     sqrt(x)
 #define CEIL(x)     ceil(x)
@@ -25,6 +27,14 @@
 #define SBI(n,b) (n |= _BV(b))
 #define CBI(n,b) (n &= ~_BV(b))
 #define SET_BIT2(n,b,value) (n) ^= ((-value)^(n)) & (_BV(b))
+#define SET_BIT(REG, BIT)     ((REG) |= (BIT))
+#define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))
+#define IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) != RESET)
+#define IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == RESET)
+#define WRITE_REG(REG, VAL)   ((REG) = (VAL))
+#define READ_REG(REG)         ((REG))
+#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(CLEARMASK))) | (SETMASK)))
+#define READ_BIT(REG, BIT)    ((REG) & (BIT))
 
 #define sq(x) ((x)*(x))
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -32,25 +42,13 @@
 #define MAX3(a, b, c)       max(max(a, b), c)
 #define MAX4(a, b, c, d)    max(MAX3(a, b, c), d)
 
-#define PIN_EXISTS(IO) IS_GPIO_PIN_AVAILABLE(IO ## _PORT, IO ## _PIN)
-
 #define NOOP do{} while(0)
-
-#define SET_INPUT(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_INPUT)
-#define SET_INPUT_EXTI(IO) setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_IT_RISING_FALLING)
-
-#define SET_OUTPUT(IO) setOutput(IO ## _PORT, IO ## _PIN)
 
 // Bracket code that shouldn't be interrupted
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
   #define CRITICAL_SECTION_END    SREG = _sreg;
 #endif
-
-#define WRITE(IO,V) HAL_GPIO_WritePin(IO ## _PORT, IO ## _PIN, V)
-#define OUT_WRITE(IO, v) do{ SET_OUTPUT(IO); WRITE(IO, v); }while(0)
-
-#define READ(IO) HAL_GPIO_ReadPin(IO ## _PORT, IO ## _PIN)
 
 #define LOW  0x0
 
@@ -97,7 +95,10 @@
 #define ZERO(a) memset(a,0,sizeof(a))
 #define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
 
-#define  enable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
-#define disable_MOTOR() HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, (MOTOR_ENABLE_ON == GPIO_PIN_SET) ? GPIO_PIN_RESET : GPIO_PIN_SET)
+#define PSTR(s) ((const char *)(s))
+
+// Macros to contrain values
+#define NOLESS(v,n) do{ if (v < n) v = n; }while(0)
+#define NOMORE(v,n) do{ if (v > n) v = n; }while(0)
 
 #endif /* MACROS_H_ */

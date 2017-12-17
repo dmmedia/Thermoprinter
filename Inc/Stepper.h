@@ -9,6 +9,8 @@
 #define STEPPER_H_
 
 #include "Planner.h"
+#include <stddef.h>
+#include "typedefs.h"
 
 const uint16_t speed_lookuptable_fast[256][2] = {
   { 62500, 55556}, { 6944, 3268}, { 3676, 1176}, { 2500, 607}, { 1893, 369}, { 1524, 249}, { 1275, 179}, { 1096, 135},
@@ -88,9 +90,51 @@ const uint16_t speed_lookuptable_slow[256][2] = {
 #define MOTOR_STEP_WRITE(STATE) WRITE(MOTOR_STEP,STATE)
 #define MOTOR_STEP_READ READ(MOTOR_STEP)
 
-static unsigned short MultiU16X8toH16(unsigned char charIn1, unsigned int intIn2) {
-	return (unsigned short)((intIn2 * charIn1) >> 16);
-}
+#define  enable_MOTOR() GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
+#define disable_MOTOR() GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, (MOTOR_ENABLE_ON == GPIO_PIN_SET) ? GPIO_PIN_RESET : GPIO_PIN_SET)
+
+/**
+  * @brief  Sets the TIM Autoreload Register value on runtime without calling
+  *         another time any Init function.
+  * @param  __HANDLE__ : TIM handle.
+  * @param  __AUTORELOAD__: specifies the Counter register new value.
+  * @retval None
+  */
+#define TIM_SET_AUTORELOAD(__HANDLE__, __AUTORELOAD__) \
+                        do{                                                    \
+                              (__HANDLE__)->Instance->ARR = (__AUTORELOAD__);  \
+                              (__HANDLE__)->Init.Period = (__AUTORELOAD__);    \
+                          } while(0)
+
+/**
+  * @brief  Gets the TIM Autoreload Register value on runtime
+  * @param  __HANDLE__ : TIM handle.
+  * @retval None
+  */
+#define TIM_GET_AUTORELOAD(__HANDLE__) ((__HANDLE__)->Instance->ARR)
+
+/**
+  * @brief  Gets the TIM Counter Register value on runtime.
+  * @param  __HANDLE__ : TIM handle.
+  * @retval None
+  */
+#define TIM_GET_COUNTER(__HANDLE__) ((__HANDLE__)->Instance->CNT)
+
+/** @defgroup TIM_Counter_Mode Counter mode
+  * @{
+  */
+#define TIM_COUNTERMODE_UP                 ((uint32_t)0x0000U)
+#define TIM_COUNTERMODE_DOWN               TIM_CR1_DIR
+#define TIM_COUNTERMODE_CENTERALIGNED1     TIM_CR1_CMS_0
+#define TIM_COUNTERMODE_CENTERALIGNED2     TIM_CR1_CMS_1
+#define TIM_COUNTERMODE_CENTERALIGNED3     TIM_CR1_CMS
+
+/** @defgroup TIM_ClockDivision Clock division
+  * @{
+  */
+#define TIM_CLOCKDIVISION_DIV1                       ((uint32_t)0x0000U)
+#define TIM_CLOCKDIVISION_DIV2                       (TIM_CR1_CKD_0)
+#define TIM_CLOCKDIVISION_DIV4                       (TIM_CR1_CKD_1)
 
 class Stepper;
 extern Stepper stepper;
@@ -127,7 +171,7 @@ public:
     //
     // The direction of a single motor
     //
-    static __attribute__((always_inline)) inline bool motor_direction();
+    static FORCE_INLINE bool motor_direction();
 
     //
     // Set direction bits for all steppers
@@ -152,7 +196,7 @@ private:
     static long counter_MOTOR;
     static volatile uint32_t step_events_completed; // The number of step events executed in the current block
 
-    static __attribute__((always_inline)) inline unsigned short calc_timer(unsigned short step_rate);
+    static FORCE_INLINE unsigned short calc_timer(unsigned short step_rate);
 
     //
     // Positions of stepper motors, in step units
@@ -174,7 +218,7 @@ private:
 
     // Initialize the trapezoid generator from the current block.
     // Called whenever a new block begins.
-    static __attribute__((always_inline)) inline void trapezoid_generator_reset();
+    static FORCE_INLINE void trapezoid_generator_reset();
     static volatile long endstops_trigsteps;
 };
 

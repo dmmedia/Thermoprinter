@@ -7,6 +7,7 @@
 
 #include "CommandParser.h"
 #include "main.h"
+#include "serial.h"
 
 #if ENABLED(FASTER_COMMAND_PARSER)
   // Optimized Parameters
@@ -108,3 +109,11 @@ void CommandParser::parse(char *p) {
       break;
   }
 }
+
+void CommandParser::unknown_command_error() {
+  SERIAL_ECHO_START();
+  SERIAL_ECHOPAIR("Unknown command: \"", command_ptr);
+  SERIAL_CHAR('"');
+  SERIAL_EOL();
+}
+

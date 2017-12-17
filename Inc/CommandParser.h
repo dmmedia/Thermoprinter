@@ -88,6 +88,7 @@ public:
   // The code value pointer was set
   FORCE_INLINE static bool has_value() { return value_ptr != NULL; }
 
+  void unknown_command_error();
 };
 
 extern CommandParser parser;

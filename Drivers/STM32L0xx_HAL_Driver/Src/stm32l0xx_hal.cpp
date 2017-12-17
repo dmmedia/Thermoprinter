@@ -68,19 +68,6 @@
   * @{
   */
 
-
-/** @defgroup SysTick System Tick
-  * @{
-  */
-/**
- * @brief uwTick_variable uwTick variable
- */
-__IO uint32_t uwTick;
-
-/**
-  * @}
-  */
-
 /** @defgroup HAL_Version HAL Version
   * @{
   */
@@ -281,7 +268,6 @@ __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
                       ##### HAL Control functions #####
  ===============================================================================
     [..]  This section provides functions allowing to:
-      (+) Provide a tick value in millisecond
       (+) Provide a blocking delay in millisecond
       (+) Suspend the time base source interrupt
       (+) Resume the time base source interrupt
@@ -294,31 +280,6 @@ __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 @endverbatim
   * @{
   */
-
-/**
-  * @brief This function is called to increment  a global variable "uwTick"
-  *        used as application time base.
-  * @note In the default implementation, this variable is incremented each 1ms
-  *       in Systick ISR.
- * @note This function is declared as __weak to be overwritten in case of other 
-  *      implementations in user file.
-  * @retval None
-  */
-__weak void HAL_IncTick(void)
-{
-  uwTick++;
-}
-
-/**
-  * @brief Provides a tick value in millisecond.
-  * @note This function is declared as __weak to be overwritten in case of other 
-  *       implementations in user file.
-  * @retval tick value
-  */
-__weak uint32_t HAL_GetTick(void)
-{
-  return uwTick;
-}
 
 /**
   * @brief This function provides accurate delay (in ms) based on a variable incremented.

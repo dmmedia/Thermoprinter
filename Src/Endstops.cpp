@@ -6,10 +6,11 @@
  */
 
 #include "Endstops.h"
-#include <stm32l0xx_hal.h>
+#include "gpio.h"
 #include "Configuration.h"
 #include "macros.h"
 #include "Conditionals.h"
+#include "main.h"
 #include "Stepper.h"
 #include "Planner.h"
 
@@ -31,14 +32,14 @@ void Endstops::init() {
   setInput(OVER_HEAT_PORT, OVER_HEAT_PIN, GPIO_MODE_IT_RISING_FALLING);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+  NVIC_SetPriority(EXTI0_1_IRQn, 0);
+  NVIC_EnableIRQ(EXTI0_1_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI2_3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+  NVIC_SetPriority(EXTI2_3_IRQn, 0);
+  NVIC_EnableIRQ(EXTI2_3_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+  NVIC_SetPriority(EXTI4_15_IRQn, 0);
+  NVIC_EnableIRQ(EXTI4_15_IRQn);
 } // Endstops::init
 
 // Check endstops - Called from ISR!
@@ -82,7 +83,7 @@ void Endstops::update() {
 
 // Use one Routine to handle each group
 // One ISR for all EXT-Interrupts
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   e_hit = 2; // Because the detection of a e-stop hit has a 1 step debouncer it has to be called at least twice.
 }

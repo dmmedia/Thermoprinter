@@ -8,8 +8,7 @@
 #ifndef SREGEMULATION_H_
 #define SREGEMULATION_H_
 
-//#include <stm32l053xx.h>
-#include <core_cm0plus.h>
+#include <stm32l053xx.h>
 #include <cmsis_gcc.h>
 #include <sys/cdefs.h>
 
@@ -21,7 +20,7 @@
  *
  * @see noInterrupts()
  */
-static inline __always_inline void interrupts() {
+static FORCE_INLINE void interrupts() {
 	__enable_irq();
 }
 
@@ -35,7 +34,7 @@ static inline __always_inline void interrupts() {
  *
  * @see interrupts()
  */
-static inline __always_inline void noInterrupts() {
+static FORCE_INLINE void noInterrupts() {
 	__disable_irq();
 }
 
