@@ -14,10 +14,10 @@
 #include "Stepper.h"
 #include "Planner.h"
 
-Endstops endstops;
+Endstops endstops { };
 
-bool Endstops::enabled, Endstops::enabled_globally; // Initialized by settings.load()
-volatile char Endstops::endstop_hit_bits; // use MOTOR_FAULT, LOW_BAT, VH_ON_CTRL, HEAD_UP, PAPER_END and OVER_HEAT as BIT value
+bool Endstops::enabled { }, Endstops::enabled_globally { }; // Initialized by settings.load()
+volatile char Endstops::endstop_hit_bits { }; // use MOTOR_FAULT, LOW_BAT, VH_ON_CTRL, HEAD_UP, PAPER_END and OVER_HEAT as BIT value
 
 uint8_t Endstops::current_endstop_bits = 0;
 

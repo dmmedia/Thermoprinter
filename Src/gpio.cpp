@@ -184,7 +184,7 @@ void GpioDeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin)
 }
 
 void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode) {
-  GpioInit_t GPIO_InitStruct;
+  GpioInit_t GPIO_InitStruct { };
 
   GPIO_InitStruct.Pin = pin;
   GPIO_InitStruct.Mode = mode;
@@ -193,7 +193,7 @@ void setInput(GPIO_TypeDef  *port, uint32_t pin, uint32_t mode) {
 }  // set to input, which allows it to be pulled high by pullups
 
 void setOutput(GPIO_TypeDef  *port, uint32_t pin) {
-  GpioInit_t GPIO_InitStruct;
+  GpioInit_t GPIO_InitStruct { };
 
   GPIO_InitStruct.Pin = pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;

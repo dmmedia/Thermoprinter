@@ -11,21 +11,21 @@
 
 #if ENABLED(FASTER_COMMAND_PARSER)
   // Optimized Parameters
-  uint8_t CommandParser::codebits[4];   // found bits
-  uint8_t CommandParser::param[26];  // parameter offsets from command_ptr
+  uint8_t CommandParser::codebits[4] { };   // found bits
+  uint8_t CommandParser::param[26] { };  // parameter offsets from command_ptr
 #else
   char *CommandParser::command_args; // start of parameters
 #endif
 
 // Create a global instance of the GCode parser singleton
-CommandParser parser;
+CommandParser parser { };
 
-char *CommandParser::command_ptr,
-     *CommandParser::string_arg,
-     *CommandParser::int_arg,
-     *CommandParser::value_ptr;
-char CommandParser::command_letter;
-uint8_t CommandParser::codenum;
+char *CommandParser::command_ptr { },
+     *CommandParser::string_arg { },
+     *CommandParser::int_arg { },
+     *CommandParser::value_ptr { };
+char CommandParser::command_letter { };
+uint8_t CommandParser::codenum { };
 
 /**
  * Clear all code-seen (and value pointers)
@@ -53,7 +53,7 @@ void CommandParser::parse(char *p) {
   command_ptr = p;
 
   // Get the command letter, which must be M, or P
-  const char letter = *p++;
+  const char letter { *p++ };
 
   // Bail if the letter is not M, or P
   switch (letter) { case 'M': case 'P': break; default: return; }
@@ -95,7 +95,7 @@ void CommandParser::parse(char *p) {
   	  switch (codenum) {
   	    case 0: {
   	      string_arg = nullptr;
-  	      const bool has_num = DECIMAL_SIGNED(*p);  // The parameter has a number [-+0-9.]
+  	      const bool has_num { DECIMAL_SIGNED(*p) };  // The parameter has a number [-+0-9.]
   	      if (has_num) {
             int_arg = p;
   	      }

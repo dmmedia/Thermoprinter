@@ -8,6 +8,26 @@
 #ifndef TIM_H_
 #define TIM_H_
 
+#define TIM_ENABLE_IT(__HANDLE__, __INTERRUPT__)    ((__HANDLE__)->Instance->DIER |= (__INTERRUPT__))
+#define TIM_DISABLE_IT(__HANDLE__, __INTERRUPT__)   ((__HANDLE__)->Instance->DIER &= ~(__INTERRUPT__))
+
+/**
+  * @brief  Sets the TIM Counter Register value on runtime.
+  * @param  __HANDLE__ : TIM handle.
+  * @param  __COUNTER__: specifies the Counter register new value.
+  * @retval None
+  */
+#define TIM_SET_COUNTER(__HANDLE__, __COUNTER__)  ((__HANDLE__)->Instance->CNT = (__COUNTER__))
+
+#define TIM_RESET_COUNTER(__HANDLE__) TIM_SET_COUNTER(__HANDLE__, 0)
+
+/**
+  * @brief  Gets the TIM Counter Register value on runtime.
+  * @param  __HANDLE__ : TIM handle.
+  * @retval None
+  */
+#define TIM_GET_COUNTER(__HANDLE__) ((__HANDLE__)->Instance->CNT)
+
 /**
   * @brief  Time Base configuration
   * @param  TIMx : TIM peripheral

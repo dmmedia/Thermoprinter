@@ -43,7 +43,6 @@
 #include "Configuration.h"
 #include "Planner.h"
 #include "SREGEmulation.h"
-#include "Stopwatch.h"
 #include "CommandParser.h"
 #include "Stepper.h"
 #include "Settings.h"
@@ -58,9 +57,9 @@
 uint8_t commands_in_queue = 0; // Count of commands in the queue
 static uint8_t cmd_queue_index_r = 0, // Ring buffer read position
                cmd_queue_index_w = 0; // Ring buffer write position
-static char command_queue[BUFSIZE][MAX_CMD_SIZE];
+static char command_queue[BUFSIZE][MAX_CMD_SIZE] { };
 
-bool Running = true;
+bool Running { true };
 
 /**
  * Cartesian Current Position
@@ -68,7 +67,7 @@ bool Running = true;
  *   Used by 'line_to_current_position' to do a move after changing it.
  *   Used by 'SYNC_PLAN_POSITION_KINEMATIC' to update 'planner.position'.
  */
-long int current_position = 0;
+long int current_position { 0 };
 
 /**
  * Cartesian Destination
@@ -76,27 +75,24 @@ long int current_position = 0;
  *   Set with 'gcode_get_destination' or 'set_destination_to_current'.
  *   'line_to_destination' sets 'current_position' to 'destination'.
  */
-long int destination = 0;
+long int destination { 0 };
 
 // Initialized by settings.load()
-#define AXIS_RELATIVE_MODES false
-bool axis_relative_modes = AXIS_RELATIVE_MODES;
+bool axis_relative_modes { false };
 
 // Relative Mode.
-static bool relative_mode = false;
+static bool relative_mode { false };
 
 float feedrate_mm_s = MMM_TO_MMS(1500.0);
 
-int16_t feedrate_percentage = 100, saved_feedrate_percentage;
+int16_t feedrate_percentage = 100, saved_feedrate_percentage { };
 
 // Number of characters read in the current line of serial input
-static int serial_count = 0;
-
-Stopwatch print_job_timer = Stopwatch();
+static int serial_count { 0 };
 
 millis_t previous_cmd_ms = 0;
 
-static bool send_ok[BUFSIZE];
+static bool send_ok[BUFSIZE] { };
 
 /* USER CODE END PV */
 
@@ -119,7 +115,6 @@ static void MX_GPIO_Init(void);
 void sync_plan_position() {
   planner.set_position_mm(current_position);
 }
-#define SYNC_PLAN_POSITION_KINEMATIC() sync_plan_position()
 
 /**
  * Set destination and feedrate from the current GCode command
@@ -209,7 +204,7 @@ inline void line_to_current_position() {
  *  The final current_position may not be the one that was requested
  */
 void do_blocking_move_to(const float &lm, const float &fr_mm_s/*=0.0*/) {
-  const float old_feedrate_mm_s = feedrate_mm_s;
+	const float old_feedrate_mm_s { feedrate_mm_s };
 
   feedrate_mm_s = fr_mm_s;
   current_position = lm;
@@ -228,7 +223,7 @@ inline void gcode_G92() {
 
   current_position = 0;
 
-  SYNC_PLAN_POSITION_KINEMATIC();
+  sync_plan_position();
 }
 
 void lcd_setstatus(const char * const message) {
@@ -347,7 +342,7 @@ void setup() {
   current_position = 0;
 
   // Vital to init stepper/planner equivalent for current_position
-  SYNC_PLAN_POSITION_KINEMATIC();
+  sync_plan_position();
 
   thermalManager.init();    // Initialize temperature loop
 
@@ -407,7 +402,7 @@ inline bool _enqueuecommand(const char* cmd, bool say_ok=false) {
  * left on the serial port.
  */
 inline void get_serial_commands() {
-  static char serial_line_buffer[MAX_CMD_SIZE];
+  static char serial_line_buffer[MAX_CMD_SIZE] { };
 
   /**
    * Loop while serial characters are incoming and the queue is not full
@@ -514,8 +509,6 @@ int main(void)
 {
   Init();
   SystemClock_Config();
-  SysTick_Config(SystemCoreClock / 16000);
-  NVIC_EnableIRQ(SysTick_IRQn);
   MX_GPIO_Init();
   setup();
   while (true) {
@@ -1123,9 +1116,9 @@ StatusTypeDef RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit)
 void SystemClock_Config(void)
 {
 
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_PeriphCLKInitTypeDef PeriphClkInit;
+  RCC_OscInitTypeDef RCC_OscInitStruct { };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct { };
+  RCC_PeriphCLKInitTypeDef PeriphClkInit { };
 
     /**Configure the main internal regulator output voltage 
     */
@@ -1164,16 +1157,9 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the Systick interrupt time 
-    */
-  SysTick_Config(SystemCoreClock/1000);
-
     /**Configure the Systick 
     */
   SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-  /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, 0);
 }
 
 /** Configure pins as 

@@ -11,7 +11,7 @@
 #include "Planner.h"
 #include "Endstops.h"
 
-Settings settings;
+Settings settings { };
 
 #if defined(EEPROM_SETTINGS)
 /**

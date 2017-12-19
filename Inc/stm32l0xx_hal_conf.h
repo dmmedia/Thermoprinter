@@ -55,25 +55,15 @@
 /*#define HAL_CRYP_MODULE_ENABLED   */
 /*#define HAL_COMP_MODULE_ENABLED   */
 /*#define HAL_CRC_MODULE_ENABLED   */
-/*#define HAL_CRYP_MODULE_ENABLED   */
-/*#define HAL_DAC_MODULE_ENABLED   */
-/*#define HAL_FIREWALL_MODULE_ENABLED   */
-/*#define HAL_I2S_MODULE_ENABLED   */
 /*#define HAL_IWDG_MODULE_ENABLED   */
-/*#define HAL_LCD_MODULE_ENABLED   */
 /*#define HAL_LPTIM_MODULE_ENABLED   */
 /*#define HAL_RNG_MODULE_ENABLED   */
 /*#define HAL_RTC_MODULE_ENABLED   */
 /*#define HAL_SPI_MODULE_ENABLED   */
 #define HAL_TIM_MODULE_ENABLED
-/*#define HAL_TSC_MODULE_ENABLED   */
 #define HAL_UART_MODULE_ENABLED
 /*#define HAL_USART_MODULE_ENABLED   */
-/*#define HAL_IRDA_MODULE_ENABLED   */
-/*#define HAL_SMARTCARD_MODULE_ENABLED   */
-/*#define HAL_SMBUS_MODULE_ENABLED   */
 /*#define HAL_WWDG_MODULE_ENABLED   */
-/*#define HAL_PCD_MODULE_ENABLED   */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
@@ -200,14 +190,6 @@
   #include "stm32l0xx_hal_cryp.h"
 #endif /* HAL_CRYP_MODULE_ENABLED */
 
-#ifdef HAL_DAC_MODULE_ENABLED
-  #include "stm32l0xx_hal_dac.h"
-#endif /* HAL_DAC_MODULE_ENABLED */
-
-#ifdef HAL_FIREWALL_MODULE_ENABLED
-  #include "stm32l0xx_hal_firewall.h"
-#endif /* HAL_FIREWALL_MODULE_ENABLED */
-
 #ifdef HAL_FLASH_MODULE_ENABLED
   #include "stm32l0xx_hal_flash.h"
 #endif /* HAL_FLASH_MODULE_ENABLED */
@@ -216,17 +198,9 @@
  #include "stm32l0xx_hal_i2c.h"
 #endif /* HAL_I2C_MODULE_ENABLED */
 
-#ifdef HAL_I2S_MODULE_ENABLED
- #include "stm32l0xx_hal_i2s.h"
-#endif /* HAL_I2S_MODULE_ENABLED */
-
 #ifdef HAL_IWDG_MODULE_ENABLED
  #include "stm32l0xx_hal_iwdg.h"
 #endif /* HAL_IWDG_MODULE_ENABLED */
-
-#ifdef HAL_LCD_MODULE_ENABLED
- #include "stm32l0xx_hal_lcd.h"
-#endif /* HAL_LCD_MODULE_ENABLED */
 
 #ifdef HAL_LPTIM_MODULE_ENABLED
 #include "stm32l0xx_hal_lptim.h"
@@ -253,10 +227,6 @@
  #include "stm32l0xx_hal_tim.h"
 #endif /* HAL_TIM_MODULE_ENABLED */
 
-#ifdef HAL_TSC_MODULE_ENABLED
- #include "stm32l0xx_hal_tsc.h"
-#endif /* HAL_TSC_MODULE_ENABLED */
-
 #ifdef HAL_UART_MODULE_ENABLED
  #include "stm32l0xx_hal_uart.h"
 #endif /* HAL_UART_MODULE_ENABLED */
@@ -265,42 +235,12 @@
  #include "stm32l0xx_hal_usart.h"
 #endif /* HAL_USART_MODULE_ENABLED */
 
-#ifdef HAL_IRDA_MODULE_ENABLED
- #include "stm32l0xx_hal_irda.h"
-#endif /* HAL_IRDA_MODULE_ENABLED */
-
-#ifdef HAL_SMARTCARD_MODULE_ENABLED
- #include "stm32l0xx_hal_smartcard.h"
-#endif /* HAL_SMARTCARD_MODULE_ENABLED */
-
-#ifdef HAL_SMBUS_MODULE_ENABLED
- #include "stm32l0xx_hal_smbus.h"
-#endif /* HAL_SMBUS_MODULE_ENABLED */
-
 #ifdef HAL_WWDG_MODULE_ENABLED
  #include "stm32l0xx_hal_wwdg.h"
 #endif /* HAL_WWDG_MODULE_ENABLED */
 
-#ifdef HAL_PCD_MODULE_ENABLED
- #include "stm32l0xx_hal_pcd.h"
-#endif /* HAL_PCD_MODULE_ENABLED */
-
 /* Exported macro ------------------------------------------------------------*/
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  The assert_param macro is used for function's parameters check.
-  * @param  expr: If expr is false, it calls assert_failed function
-  *         which reports the name of the source file and the source
-  *         line number of the call that failed. 
-  *         If expr is true, it returns no value.
-  * @retval None
-  */
-  #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
-/* Exported functions ------------------------------------------------------- */
-  void assert_failed(uint8_t* file, uint32_t line);
-#else
   #define assert_param(expr) ((void)0U)
-#endif /* USE_FULL_ASSERT */
 
 #ifdef __cplusplus
 }

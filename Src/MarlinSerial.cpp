@@ -15,10 +15,10 @@
 
 #if !defined(USBCON) && (defined(LPUART1) || defined(USART1) || defined(USART2))
 
-UartHandle hlpuart1;
-UartHandle huart2;
+UartHandle hlpuart1 { };
+UartHandle huart2 { };
 
-uint8_t rx_buf[RXBUF_LEN], tx_buf[TXBUF_LEN];
+uint8_t rx_buf[RXBUF_LEN] { }, tx_buf[TXBUF_LEN] { };
 /* xx_i - counter of input bytes (tx - pushed for transmit, rx - received)
    xx_o - counter of output bytes (tx - transmitted, rx - parsed)
    xx_e - counter of echoed bytes */
@@ -29,7 +29,7 @@ uint16_t rx_o = 0, rx_e = 0, tx_i = 0;
   ring_buffer_r rx_buffer = { { 0 }, 0, 0 };
   #if TX_BUFFER_SIZE > 0
     ring_buffer_t tx_buffer = { { 0 }, 0, 0 };
-    static bool _written;
+    static bool _written { };
   #endif
 #endif
 
@@ -70,7 +70,7 @@ uint8_t MarlinSerial::available(void) {
 }
 
 int MarlinSerial::read(void) {
-  int v;
+  int v { };
   CRITICAL_SECTION_START;
     const uint8_t t = rx_buffer.tail;
     if (rx_buffer.head == t)
@@ -85,7 +85,7 @@ int MarlinSerial::read(void) {
 
 void UartMspInit(UartHandle* huart)
 {
-  GpioInit_t GPIO_InitStruct;
+  GpioInit_t GPIO_InitStruct { };
   if(huart->Instance == LPUART1)
   {
     /* Peripheral clock enable */
@@ -999,7 +999,7 @@ void MarlinSerial::write(const uint8_t c) {
 }
 
 // Preinstantiate
-MarlinSerial customizedSerial;
+MarlinSerial customizedSerial { };
 
 #endif // !USBCON && (UBRRH || UBRR0H || UBRR1H || UBRR2H || UBRR3H)
 

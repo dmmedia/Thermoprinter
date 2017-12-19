@@ -13,7 +13,7 @@
 /**
  * @brief uwTick_variable uwTick variable
  */
-__IO uint32_t uwTick;
+__IO uint32_t uwTick { };
 
 /**
 * @brief This function configures the source of the time base.

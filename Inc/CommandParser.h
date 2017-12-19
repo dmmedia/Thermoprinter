@@ -46,7 +46,7 @@ public:
   static bool seen(const char c) {
     const uint8_t ind = LETTER_OFF(c);
     if (ind >= COUNT(param)) return false; // Only A-Z
-    const bool b = TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind));
+    const bool b { TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind)) };
     if (b) value_ptr = param[ind] ? command_ptr + param[ind] : (char*)NULL;
     return b;
   }
@@ -60,7 +60,7 @@ public:
     if (int_arg) {
       char *e = int_arg;
       for (;;) {
-        const char c = *e;
+        const char c { *e };
         if (c == '\0' || c == ' ') break;
         if (c == 'E' || c == 'e') {
           *e = '\0';

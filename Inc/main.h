@@ -213,9 +213,6 @@ extern long int current_position;
 
 void idle();
 
-class Stopwatch;
-extern Stopwatch print_job_timer;
-
 void ok_to_send();
 
 #define MSG_THERMOPRINTER "Thermoprinter"
