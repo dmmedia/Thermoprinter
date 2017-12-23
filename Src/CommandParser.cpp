@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 #include <cstdlib>
+#include <stm32l0xx.h>
+#include "typedefs.h"
 #include "CommandParser.h"
 #include "main.h"
 #include "serial.h"
@@ -16,16 +18,16 @@ namespace CommandParser {
 	char *value_ptr;           // Set by seen, used to fetch the value
 
 	#if ENABLED(FASTER_COMMAND_PARSER)
-		unsigned char codebits[4];        // Parameters pre-scanned
-		unsigned char param[26];       // For A-Z, offsets into command args
+		uint8_t codebits[4];        // Parameters pre-scanned
+		uint8_t param[26];       // For A-Z, offsets into command args
 	#else
 		char *command_args;      // Args start here, for slow scan
 	#endif
 
 	// Command line state
-	char *command_ptr,               // The command, so it can be echoed
-		 *string_arg,                // string of command line
-		 *int_arg;                   // signed integer of comman line
+	char *command_ptr;               // The command, so it can be echoed
+	char *string_arg;                // string of command line
+	char *int_arg;                   // signed integer of comman line
 
 	//	std::string stringArg;
 
@@ -87,6 +89,7 @@ namespace CommandParser {
 						string_arg = p;
 	//    				stringArg = p;
 						// sanity check
+						//lint -esym(586, strlen)
 						if (strlen(string_arg) != 96U) {
 	//    				if (stringArg.length() != 96U) {
 							// skip invalid argument
@@ -121,24 +124,29 @@ namespace CommandParser {
     // This allows "if (seen('A')||seen('B'))" to use the last-found value.
     bool seen(const char c) {
         const uint8_t ind = LETTER_OFF(c);
-        if (ind >= COUNT(param)) return false; // Only A-Z
-        const bool b { TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind)) };
-        if (b) value_ptr = param[ind] ? command_ptr + param[ind] : (char*)NULL;
+        bool b = false;
+        if (ind < COUNT(param)) // Only A-Z
+        {
+			b = TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind));
+			if (b) {
+				value_ptr = (param[ind] != 0U) ? (&command_ptr[param[ind]]) : nullptr;
+			}
+        }
+
         return b;
     }
 
     // The code value pointer was set
-    FORCE_INLINE bool has_value() { return value_ptr != NULL; }
+    FORCE_INLINE bool has_value() { return value_ptr != nullptr; }
 
-    bool seen_any() { return codebits[3] || codebits[2] || codebits[1] || codebits[0]; }
-
-    FORCE_INLINE int value_linear_units() { return value_int(); }
+    bool seen_any() {
+    	return (codebits[3U] != 0U) ||
+    			(codebits[2U] != 0U) ||
+				(codebits[1U] != 0U) ||
+				(codebits[0U] != 0U);
+    }
 
     // Seen a parameter with a value
     inline bool seenval(const char c) { return seen(c) && has_value(); }
-
-    FORCE_INLINE float linearval(const char c, const float dval)  { return seenval(c) ? value_linear_units() : dval; }
-
-    FORCE_INLINE float value_feedrate() { return value_linear_units(); }
 
 }

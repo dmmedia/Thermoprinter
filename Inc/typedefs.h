@@ -161,4 +161,7 @@ typedef struct
 __IO TIM_StateTypeDef  State;         /*!< TIM operation state               */
 } TIM_HandleTypeDef;
 
+typedef float float32_t;
+typedef double float64_t;
+
 #endif /* TYPEDEFS_H_ */

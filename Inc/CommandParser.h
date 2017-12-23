@@ -14,16 +14,16 @@ namespace CommandParser {
 	extern char *value_ptr;           // Set by seen, used to fetch the value
 
 #if ENABLED(FASTER_COMMAND_PARSER)
-    extern unsigned char codebits[4];        // Parameters pre-scanned
-    extern unsigned char param[26];       // For A-Z, offsets into command args
+    extern uint8_t codebits[4];        // Parameters pre-scanned
+    extern uint8_t param[26];       // For A-Z, offsets into command args
 #else
     extern char *command_args;      // Args start here, for slow scan
 #endif
 
 	// Command line state
-    extern char *command_ptr,               // The command, so it can be echoed
-	     *string_arg,                // string of command line
-	     *int_arg;                   // signed integer of comman line
+    extern char *command_ptr;               // The command, so it can be echoed
+	extern char *string_arg;                // string of command line
+	extern char *int_arg;                   // signed integer of comman line
 
 //	extern std::string stringArg;
 
@@ -37,7 +37,7 @@ namespace CommandParser {
 
 	#define PARAM_IND(N)  ((N) >> 3)
 	#define PARAM_BIT(N)  ((N) & 0x7)
-	#define LETTER_OFF(N) ((N) - 'A')
+	#define LETTER_OFF(N) (static_cast<uint8_t>(N) - static_cast<uint8_t>('A'))
 
     // Code seen bit was set. If not found, value_ptr is unchanged.
     // This allows "if (seen('A')||seen('B'))" to use the last-found value.
@@ -67,8 +67,8 @@ namespace CommandParser {
     	return 0;
     }
 
-    FORCE_INLINE int value_linear_units();
-    FORCE_INLINE int value_axis_units() { return value_int(); }
+    FORCE_INLINE int32_t value_linear_units() { return value_int(); }
+    FORCE_INLINE int32_t value_axis_units() { return value_int(); }
 
     // The code value pointer was set
     FORCE_INLINE bool has_value();
@@ -76,9 +76,9 @@ namespace CommandParser {
     // Seen a parameter with a value
     inline bool seenval(const char c);
 
-    FORCE_INLINE float linearval(const char c, const float dval=0.0);
+    FORCE_INLINE float32_t linearval(const char c, const float32_t dval = 0.0)  { return seenval(c) ? value_linear_units() : dval; }
 
-    FORCE_INLINE float value_feedrate();
+    FORCE_INLINE float32_t value_feedrate() { return value_linear_units(); }
 
     void unknown_command_error();
 }

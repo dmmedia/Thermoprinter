@@ -13,7 +13,7 @@
 
 extern const char * const echomagic;
 
-#define SERIAL_CHAR(x) ((void)MYSERIAL.write(x))
+#define SERIAL_CHAR(x) (MarlinSerial::write(x))
 #define SERIAL_EOL() SERIAL_CHAR(static_cast<uint8_t>('\n'))
 
 #define SERIAL_PROTOCOL(x)                  (MYSERIAL.print(x))
