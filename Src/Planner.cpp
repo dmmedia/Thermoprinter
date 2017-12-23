@@ -15,37 +15,37 @@
 #include "main.h"
 #include "Stepper.h"
 
-float Planner::max_feedrate_mm_s { }, // Max speeds in mm per second
-      Planner::axis_steps_per_mm { },
-      Planner::steps_to_mm { };
+float Planner::max_feedrate_mm_s, // Max speeds in mm per second
+      Planner::axis_steps_per_mm,
+      Planner::steps_to_mm;
 
-long Planner::position { 0 };
+long Planner::position = 0;
 
-uint32_t Planner::cutoff_long { };
+uint32_t Planner::cutoff_long;
 
-float Planner::previous_speed { },
-      Planner::previous_nominal_speed { };
+float Planner::previous_speed,
+      Planner::previous_nominal_speed;
 
-Planner planner { };
+Planner planner;
 
 /**
  * A ring buffer of moves described in steps
  */
-block_t Planner::block_buffer[BLOCK_BUFFER_SIZE] { };
-volatile uint8_t Planner::block_buffer_head { 0 },           // Index of the next block to be pushed
-                 Planner::block_buffer_tail { 0 };
+block_t Planner::block_buffer[BLOCK_BUFFER_SIZE];
+volatile uint8_t Planner::block_buffer_head = 0,           // Index of the next block to be pushed
+                 Planner::block_buffer_tail = 0;
 
 // Initialized by settings.load()
-float Planner::min_feedrate_mm_s { },
-      Planner::acceleration { },         // Normal acceleration mm/s^2  DEFAULT ACCELERATION for all printing moves. M204 SXXXX
-      Planner::travel_acceleration { },  // Travel acceleration mm/s^2  DEFAULT ACCELERATION for all NON printing moves. M204 MXXXX
-      Planner::max_jerk { },       // The largest speed change requiring no acceleration
-      Planner::min_travel_feedrate_mm_s { };
+float Planner::min_feedrate_mm_s,
+      Planner::acceleration,         // Normal acceleration mm/s^2  DEFAULT ACCELERATION for all printing moves. M204 SXXXX
+      Planner::travel_acceleration,  // Travel acceleration mm/s^2  DEFAULT ACCELERATION for all NON printing moves. M204 MXXXX
+      Planner::max_jerk,       // The largest speed change requiring no acceleration
+      Planner::min_travel_feedrate_mm_s;
 
-uint32_t Planner::max_acceleration_steps_per_s2 { },
-         Planner::max_acceleration_mm_per_s2 { };
+uint32_t Planner::max_acceleration_steps_per_s2,
+         Planner::max_acceleration_mm_per_s2;
 
-millis_t Planner::min_segment_time { };
+millis_t Planner::min_segment_time;
 
 /**
  * Class and Instance Methods
@@ -140,8 +140,8 @@ void Planner::forward_pass_kernel(const block_t* previous, block_t* const curren
   // If nominal length is true, max junction speed is guaranteed to be reached. No need to recheck.
   if (!TEST(previous->flag, BLOCK_BIT_NOMINAL_LENGTH)) {
     if (previous->entry_speed < current->entry_speed) {
-      float entry_speed { min(current->entry_speed,
-                               max_allowable_speed(-previous->acceleration, previous->entry_speed, previous->millimeters)) };
+      float entry_speed = min(current->entry_speed,
+                               max_allowable_speed(-previous->acceleration, previous->entry_speed, previous->millimeters));
       // Check for junction speed change
       if (current->entry_speed != entry_speed) {
         current->entry_speed = entry_speed;
@@ -174,7 +174,7 @@ void Planner::forward_pass() {
  */
 void Planner::recalculate_trapezoids() {
   int8_t block_index = block_buffer_tail;
-  block_t *current { }, *next = NULL;
+  block_t *current, *next = NULL;
 
   while (block_index != block_buffer_head) {
     current = next;
@@ -183,7 +183,7 @@ void Planner::recalculate_trapezoids() {
       // Recalculate if current block entry or exit junction speed has changed.
       if (TEST(current->flag, BLOCK_BIT_RECALCULATE) || TEST(next->flag, BLOCK_BIT_RECALCULATE)) {
         // NOTE: Entry and exit factors always > 0 by all previous logic operations.
-        float nom { current->nominal_speed };
+        float nom = current->nominal_speed;
         calculate_trapezoid_for_block(current, current->entry_speed / nom, next->entry_speed / nom);
         CBI(current->flag, BLOCK_BIT_RECALCULATE); // Reset current only to ensure next trapezoid is computed
       }
@@ -192,7 +192,7 @@ void Planner::recalculate_trapezoids() {
   }
   // Last/newest block in buffer. Exit speed is set with MINIMUM_PLANNER_SPEED. Always recalculated.
   if (next) {
-    float nom { next->nominal_speed };
+    float nom = next->nominal_speed;
     calculate_trapezoid_for_block(next, next->entry_speed / nom, (MINIMUM_PLANNER_SPEED) / nom);
     CBI(next->flag, BLOCK_BIT_RECALCULATE);
   }
@@ -245,7 +245,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   //this should be done after the wait, because otherwise a M92 code within the gcode disrupts this calculation somehow
   const long target = m;
 
-  const long dm { target - position };
+  const long dm = target - position;
 
   // Compute direction bit-mask for this block
   uint8_t dmask = 0;
@@ -286,7 +286,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   /**
    * This part of the code calculates the total length of the movement.
    */
-  float delta_mm { };
+  float delta_mm;
   delta_mm = dm * steps_to_mm;
 
   if (block->steps < MIN_STEPS_PER_SEGMENT) {
@@ -298,7 +298,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   float inverse_millimeters = 1.0 / block->millimeters;  // Inverse millimeters to remove multiple divides
 
   // Calculate moves/second for this move. No divide by zero due to previous checks.
-  float inverse_mm_s { fr_mm_s * inverse_millimeters };
+  float inverse_mm_s = fr_mm_s * inverse_millimeters;
 
   const uint8_t moves_queued = movesplanned();
 
@@ -316,7 +316,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   block->nominal_rate = CEIL(block->step_event_count * inverse_mm_s); // (step/sec) Always > 0
 
   // Calculate and limit speed in mm/sec for each axis
-  float current_speed { }, speed_factor = 1.0; // factor <1 decreases speed
+  float current_speed, speed_factor = 1.0; // factor <1 decreases speed
   const float cs = FABS(current_speed = delta_mm * inverse_mm_s);
   if (cs > max_feedrate_mm_s) NOMORE(speed_factor, max_feedrate_mm_s / cs);
 
@@ -328,8 +328,8 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   }
 
   // Compute and limit the acceleration rate for the trapezoid generator.
-  const float steps_per_mm { block->step_event_count * inverse_millimeters };
-  uint32_t accel { };
+  const float steps_per_mm = block->step_event_count * inverse_millimeters;
+  uint32_t accel;
   if (block->steps) {
     // Start with print or travel acceleration
     accel = CEIL((travel_acceleration) * steps_per_mm);
@@ -343,7 +343,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
     }
     else {
         if (block->steps && max_acceleration_steps_per_s2 < accel) {
-          const float comp { (float)max_acceleration_steps_per_s2 * (float)block->step_event_count };
+          const float comp = (float)max_acceleration_steps_per_s2 * (float)block->step_event_count;
           if ((float)accel * (float)block->steps > comp) accel = comp / (float)block->steps;
         }
     }
@@ -353,7 +353,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
   block->acceleration_rate = (long)(accel * 16777216.0 / (SystemCoreClock * 0.125));
 
   // Initial limit on the segment entry velocity
-  float vmax_junction { };
+  float vmax_junction;
 
   /**
    * Adapted from Průša MKS firmware
@@ -363,14 +363,14 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
    */
 
   // Exit speed limited by a jerk to full halt of a previous last segment
-  static float previous_safe_speed { };
+  static float previous_safe_speed;
 
-  float safe_speed { block->nominal_speed };
+  float safe_speed = block->nominal_speed;
   uint8_t limited = 0;
-  const float jerk = FABS(current_speed), maxj { max_jerk };
+  const float jerk = FABS(current_speed), maxj = max_jerk;
   if (jerk > maxj) {
     if (limited) {
-      const float mjerk { maxj * block->nominal_speed };
+      const float mjerk = maxj * block->nominal_speed;
       if (jerk * safe_speed > mjerk) safe_speed = mjerk / jerk;
     }
     else {
@@ -385,16 +385,16 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
     // then the machine is not coasting anymore and the safe entry / exit velocities shall be used.
 
     // The junction velocity will be shared between successive segments. Limit the junction velocity to their minimum.
-    bool prev_speed_larger { previous_nominal_speed > block->nominal_speed };
-    float smaller_speed_factor { prev_speed_larger ? (block->nominal_speed / previous_nominal_speed) : (previous_nominal_speed / block->nominal_speed) };
+    bool prev_speed_larger = previous_nominal_speed > block->nominal_speed;
+    float smaller_speed_factor = prev_speed_larger ? (block->nominal_speed / previous_nominal_speed) : (previous_nominal_speed / block->nominal_speed);
     // Pick the smaller of the nominal speeds. Higher speed shall not be achieved at the junction during coasting.
     vmax_junction = prev_speed_larger ? block->nominal_speed : previous_nominal_speed;
     // Factor to multiply the previous / current nominal velocities to get componentwise limited velocities.
-    float v_factor { 1.f };
+    float v_factor = 1.f;
     limited = 0;
     // Now limit the jerk in all axes.
     // Limit an axis. We have to differentiate: coasting, reversal of an axis, full stop.
-    float v_exit { previous_speed }, v_entry { current_speed };
+    float v_exit = previous_speed, v_entry = current_speed;
     if (prev_speed_larger) v_exit *= smaller_speed_factor;
     if (limited) {
       v_exit *= v_factor;
@@ -402,11 +402,11 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
     }
 
     // Calculate jerk depending on whether the axis is coasting in the same direction or reversing.
-    const float jerk { (v_exit > v_entry)
+    const float jerk = (v_exit > v_entry)
         ? //                                  coasting             axis reversal
           ( (v_entry > 0.f || v_exit < 0.f) ? (v_exit - v_entry) : max(v_exit, -v_entry) )
         : // v_exit <= v_entry                coasting             axis reversal
-          ( (v_entry < 0.f || v_exit > 0.f) ? (v_entry - v_exit) : max(-v_exit, v_entry) ) };
+          ( (v_entry < 0.f || v_exit > 0.f) ? (v_entry - v_exit) : max(-v_exit, v_entry) );
 
     if (jerk > max_jerk) {
       v_factor *= max_jerk / jerk;
@@ -415,7 +415,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
     if (limited) vmax_junction *= v_factor;
     // Now the transition velocity is known, which maximizes the shared exit / entry velocity while
     // respecting the jerk factors, it may be possible, that applying separate safe exit / entry velocities will achieve faster prints.
-    const float vmax_junction_threshold { vmax_junction * 0.99f };
+    const float vmax_junction_threshold = vmax_junction * 0.99f;
     if (previous_safe_speed > vmax_junction_threshold && safe_speed > vmax_junction_threshold) {
       // Not coasting. The machine will stop and start the movements anyway,
       // better to start the segment from start.
@@ -472,7 +472,7 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
  */
 
 void Planner::_set_position_mm(const long int &m) {
-  long nm { m }, position { m };
+  long nm = m, position = m;
   stepper.set_position(nm);
   previous_nominal_speed = 0.0; // Resets planner junction speeds. Assumes start from rest.
   previous_speed = 0.0;
@@ -528,7 +528,7 @@ void Planner::reverse_pass_kernel(block_t* const current, const block_t *next) {
   // If entry speed is already at the maximum entry speed, no need to recheck. Block is cruising.
   // If not, block in state of acceleration or deceleration. Reset entry speed to maximum and
   // check for maximum allowable speed reductions to ensure maximum possible planned speed.
-  float max_entry_speed { current->max_entry_speed };
+  float max_entry_speed = current->max_entry_speed;
   if (current->entry_speed != max_entry_speed) {
     // If nominal length true, max junction speed is guaranteed to be reached. Only compute
     // for max allowable speed if block is decelerating and nominal length is false.

@@ -43,12 +43,14 @@
 #include "Configuration.h"
 #include "Planner.h"
 #include "SREGEmulation.h"
+#include <cstdlib>
 #include "CommandParser.h"
 #include "Stepper.h"
 #include "Settings.h"
 #include "Temperature.h"
 #include "gpio.h"
 #include "rcc.h"
+#include <cstring>
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -123,9 +125,9 @@ void sync_plan_position() {
  *  - Set to current for non-movement commands
  */
 void gcode_get_destination() {
-	if (parser.command_letter == 'M') {
-	    destination = parser.value_axis_units() + current_position;
-	} else if (parser.command_letter == 'P') {
+	if (CommandParser::command_letter == 'M') {
+	    destination = CommandParser::value_axis_units() + current_position;
+	} else if (CommandParser::command_letter == 'P') {
 		destination = 2 + current_position;
 	} else {
 		destination = current_position;
@@ -235,7 +237,7 @@ void lcd_setstatus(const char * const message) {
 /**
  * M117: Set LCD Status Message
  */
-inline void gcode_M117() { lcd_setstatus(parser.string_arg); }
+inline void gcode_M117() { lcd_setstatus(CommandParser::string_arg); }
 
 inline void gcode_P0() {
 	// TODO: add parser.byte_arg to buffer
@@ -252,11 +254,11 @@ void process_next_command() {
   SERIAL_ECHOLN(current_command);
 
   // Parse the next command in the queue
-  parser.parse(current_command);
+  CommandParser::parse(current_command);
 
   // Handle a known M, or P
-  switch (parser.command_letter) {
-    case 'M': switch (parser.codenum) {
+  switch (CommandParser::command_letter) {
+    case 'M': switch (CommandParser::codenum) {
       case 0:
         gcode_M0();
         break;
@@ -274,7 +276,7 @@ void process_next_command() {
     }
     break;
 
-    case 'P': switch (parser.codenum) {
+    case 'P': switch (CommandParser::codenum) {
       case 0: // P0
     	gcode_P0();
     	break;
@@ -282,7 +284,7 @@ void process_next_command() {
     break;
 
     default:
-      parser.unknown_command_error();
+    	CommandParser::unknown_command_error();
   }
 
   ok_to_send();

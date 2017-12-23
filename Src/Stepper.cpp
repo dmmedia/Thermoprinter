@@ -8,6 +8,7 @@
 #include "gpio.h"
 #include "main.h"
 #include "macros.h"
+#include "Planner.h"
 #include "Stepper.h"
 #include <stddef.h>
 #include "SREGEmulation.h"
@@ -16,33 +17,33 @@
 #include "Endstops.h"
 #include "tim.h"
 
-Stepper stepper { }; // Singleton
+Stepper stepper; // Singleton
 
 block_t* Stepper::current_block = NULL;  // A pointer to the block currently being traced
 
-long Stepper::acceleration_time { }, Stepper::deceleration_time { };
+long Stepper::acceleration_time, Stepper::deceleration_time;
 
-volatile long Stepper::count_position { 0 };
+volatile long Stepper::count_position = 0;
 
 uint8_t Stepper::last_direction_bits = 0;        // The next stepping-bits to be output
 uint16_t Stepper::cleaning_buffer_counter = 0;
 
 volatile signed char Stepper::count_direction = 1;
 
-unsigned short Stepper::acc_step_rate { }; // needed for deceleration start point
-uint8_t Stepper::step_loops { }, Stepper::step_loops_nominal { };
-unsigned short Stepper::TIM6_ARR_nominal { };
+unsigned short Stepper::acc_step_rate; // needed for deceleration start point
+uint8_t Stepper::step_loops, Stepper::step_loops_nominal;
+unsigned short Stepper::TIM6_ARR_nominal;
 
-long Stepper::counter_MOTOR { 0 };
+long Stepper::counter_MOTOR = 0;
 volatile uint32_t Stepper::step_events_completed = 0; // The number of step events executed in the current block
 
-volatile long Stepper::endstops_trigsteps { };
+volatile long Stepper::endstops_trigsteps;
 
 #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
-  extern volatile uint8_t e_hit;
+  extern volatile uint8_t Endstops::e_hit;
 #endif
 
-TIM_HandleTypeDef htim6 { };
+TIM_HandleTypeDef htim6;
 
 #define MOTOR_APPLY_DIR(v,Q) MOTOR_DIR_WRITE(v)
 #define MOTOR_APPLY_STEP(v,Q) MOTOR_STEP_WRITE(v)
@@ -200,7 +201,7 @@ void TIM6_IRQHandler(void)
 
 void Stepper::isr() {
 
-  uint16_t ocr_val { };
+  uint16_t ocr_val;
 
   #define ENDSTOP_NOMINAL_OCR_VAL 3000    // check endstops every 1.5ms to guarantee two stepper ISRs within 5ms for BLTouch
   #define OCR_VAL_TOLERANCE 1000          // First max delay is 2.0ms, last min delay is 0.5ms, all others 1.5ms
@@ -235,7 +236,7 @@ void Stepper::isr() {
       step_events_completed = 0;
 
       #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
-        e_hit = 2; // Needed for the case an endstop is already triggered before the new move begins.
+        Endstops::e_hit = 2; // Needed for the case an endstop is already triggered before the new move begins.
                    // No 'change' can be detected.
       #endif
     }
@@ -248,16 +249,16 @@ void Stepper::isr() {
 
   // Update endstops state, if enabled
   #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
-    if (e_hit && endstops.enabled) {
-      endstops.update();
-      e_hit--;
+    if (Endstops::e_hit && Endstops::enabled) {
+      Endstops::update();
+      Endstops::e_hit--;
     }
   #else
     if (endstops.enabled) endstops.update();
   #endif
 
   // Take multiple steps per interrupt (For high speed moves)
-  bool all_steps_done { false };
+  bool all_steps_done = false;
   for (uint8_t i = step_loops; i--;) {
     #define _COUNTER() counter_MOTOR
     #define _APPLY_STEP() MOTOR_APPLY_STEP
@@ -346,7 +347,7 @@ void Stepper::isr() {
     acceleration_time += timer;
   }
   else if (step_events_completed > (uint32_t)current_block->decelerate_after) {
-    uint16_t step_rate { };
+    uint16_t step_rate;
     step_rate = MultiU24X32toH16(deceleration_time, current_block->acceleration_rate);
 
     if (step_rate < acc_step_rate) { // Still decelerating?
@@ -400,7 +401,7 @@ void Stepper::init() {
   if (!MOTOR_ENABLE_ON) GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO_PIN_SET);
 
   // Init endstops and pullups
-  endstops.init();
+  Endstops::init();
 
   // Init Step Pin
   SET_OUTPUT(MOTOR_STEP);
@@ -412,7 +413,7 @@ void Stepper::init() {
   // frequency on a 16MHz MCU. If you are going to change this, be
   // sure to regenerate speed_lookuptable.h with
   // create_speed_lookuptable.py
-  TIM_Base_InitTypeDef tim6_Init { };
+  TIM_Base_InitTypeDef tim6_Init;
   tim6_Init.Prescaler = 8;
   tim6_Init.CounterMode = TIM_COUNTERMODE_UP;
   // Init Stepper ISR to 122 Hz for quick starting
@@ -447,7 +448,7 @@ void Stepper::init() {
 
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
-  endstops.enable(true); // Start with endstops active. After homing they can be disabled
+  Endstops::enable(true); // Start with endstops active. After homing they can be disabled
   sei();
 
   set_directions(); // Init directions to last_direction_bits = 0
@@ -474,7 +475,7 @@ unsigned short MultiU16X8toH16(unsigned char charIn1, unsigned int intIn2) {
 }
 
 FORCE_INLINE unsigned short Stepper::calc_timer(unsigned short step_rate) {
-  unsigned short timer { };
+  unsigned short timer;
 
   NOMORE(step_rate, MAX_STEP_FREQUENCY);
 

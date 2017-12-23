@@ -11,15 +11,15 @@
 #include "MarlinSerial.h"
 #define MYSERIAL customizedSerial
 
-extern const char echomagic[];
+extern const char * const echomagic;
 
 #define SERIAL_CHAR(x) ((void)MYSERIAL.write(x))
-#define SERIAL_EOL() SERIAL_CHAR('\n')
+#define SERIAL_EOL() SERIAL_CHAR(static_cast<uint8_t>('\n'))
 
 #define SERIAL_PROTOCOL(x)                  (MYSERIAL.print(x))
 #define SERIAL_PROTOCOLLNPGM(x)             (serialprintPGM(PSTR(x "\n")))
 #define SERIAL_PROTOCOLLN(x)                do{ MYSERIAL.print(x); SERIAL_EOL(); }while(0)
-#define SERIAL_PROTOCOLPAIR(name, value)    (serial_echopair_P(PSTR(name),(value)))
+#define SERIAL_PROTOCOLPAIR(name, value)    (serial_echopair_P((name),(value)))
 #define SERIAL_PROTOCOLPGM(x)               (serialprintPGM(PSTR(x)))
 
 #define SERIAL_ECHO_START()            (serialprintPGM(echomagic))

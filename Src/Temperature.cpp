@@ -18,12 +18,12 @@
 #include "gpio.h"
 #include "rcc.h"
 
-Temperature thermalManager { };
+Temperature thermalManager;
 
-TIM_HandleTypeDef htim2 { };
+TIM_HandleTypeDef htim2;
 
 /* Variable containing ADC conversions results */
-__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE] { };
+__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
 
 /* Variable to report ADC sequencer status */
 uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
@@ -46,14 +46,16 @@ static uint8_t heater_ttbllen_map = PRINTHEAD_TEMPTABLE_LEN;
 static void* battery_ttbl_map = (void*)BATTERY_VOLTTABLE;
 static uint8_t battery_ttbllen_map = BATTERY_VOLTTABLE_LEN;
 
-volatile bool Temperature::sens_meas_ready { false };
+volatile bool Temperature::sens_meas_ready = false;
 
 uint16_t Temperature::raw_temp_value = 0;
 uint16_t Temperature::raw_volt_value = 0;
 
 int16_t Temperature::current_temperature_raw = 0, current_voltage_raw = 0;
 
-ADC_HandleTypeDef AdcHandle { };
+ADC_HandleTypeDef AdcHandle;
+
+extern volatile uint8_t Endstops::e_hit;
 
 #define ADC_SINGLE_ENDED                        (uint32_t)0x00000000U   /* dummy value */
 
@@ -290,7 +292,7 @@ void Temperature::init() {
   // frequency on a 16MHz MCU. If you are going to change this, be
   // sure to regenerate speed_lookuptable.h with
   // create_speed_lookuptable.py
-  TIM_Base_InitTypeDef tim2_Init { };
+  TIM_Base_InitTypeDef tim2_Init;
   tim2_Init.Prescaler = 64;
   tim2_Init.CounterMode = TIM_COUNTERMODE_UP;
   // Init Stepper ISR to 4 us Hz
@@ -1016,9 +1018,9 @@ void RCC_GetOscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct)
   */
 void ADC_MspInit(ADC_HandleTypeDef *hadc)
 {
-  GpioInit_t          GPIO_InitStruct { };
-  static DMA_HandleTypeDef  DmaHandle { };
-  RCC_OscInitTypeDef        RCC_OscInitStructure { };
+  GpioInit_t          GPIO_InitStruct;
+  static DMA_HandleTypeDef  DmaHandle;
+  RCC_OscInitTypeDef        RCC_OscInitStructure;
 
   /*##-1- Enable peripherals and GPIO Clocks #################################*/
   /* Enable clock of GPIO associated to the peripheral channels */
@@ -1896,7 +1898,7 @@ StatusTypeDef ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t L
   */
 void Temperature::ADC_Config(void)
 {
-  ADC_ChannelConfTypeDef   sConfig { };
+  ADC_ChannelConfTypeDef   sConfig;
 
   /* Configuration of AdcHandle init structure: ADC parameters and regular group */
   AdcHandle.Instance = ADC1;
@@ -1996,7 +1998,7 @@ void TIM2_IRQHandler(void)
 	Temperature::isr();
 }
 
-volatile bool Temperature::in_temp_isr { false };
+volatile bool Temperature::in_temp_isr = false;
 
 /**
   * @brief  Enable ADC, start conversion of regular group.
@@ -2147,8 +2149,8 @@ void Temperature::isr() {
     #define TEMPDIR() ((PRINTHEAD_RAW_LO_TEMP) > (PRINTHEAD_RAW_HI_TEMP) ? -1 : 1)
     #define VOLTDIR() ((BATTERY_RAW_LO_VOLT) > (BATTERY_RAW_HI_VOLT) ? -1 : 1)
 
-    int constexpr temp_dir { TEMPDIR() };
-    int constexpr volt_dir { VOLTDIR() };
+    int constexpr temp_dir = TEMPDIR();
+    int constexpr volt_dir = VOLTDIR();
 
     const int16_t tdir = temp_dir, rawtemp = current_temperature_raw * tdir;
     if (rawtemp > maxttemp_raw * tdir) max_sens_error();
@@ -2165,11 +2167,9 @@ void Temperature::isr() {
   // Go to the next state, up to SensorsReady
   adc_sensor_state = (ADCSensorState)((int(adc_sensor_state) + 1) % int(StartupDelay));
 
-  extern volatile uint8_t e_hit;
-
-  if (e_hit && endstops.enabled) {
-    endstops.update();  // call endstop update routine
-    e_hit--;
+  if (Endstops::e_hit && Endstops::enabled) {
+    Endstops::update();  // call endstop update routine
+    Endstops::e_hit--;
   }
 
   cli();
@@ -2182,7 +2182,7 @@ void Temperature::isr() {
 float Temperature::analog2temp(int raw) {
   if (heater_ttbl_map != NULL) {
     float celsius = 0;
-    uint8_t i { };
+    uint8_t i;
     short(*tt)[][2] = (short(*)[][2])(heater_ttbl_map);
 
     for (i = 1; i < heater_ttbllen_map; i++) {
@@ -2208,7 +2208,7 @@ float Temperature::analog2temp(int raw) {
 float Temperature::analog2volt(int raw) {
   if (battery_ttbl_map != NULL) {
     float voltage = 0;
-    uint8_t i { };
+    uint8_t i;
     short(*tt)[][2] = (short(*)[][2])(battery_ttbl_map);
 
     for (i = 1; i < battery_ttbllen_map; i++) {
@@ -2243,7 +2243,7 @@ void Temperature::set_current_sens_raw() {
 // Temperature Error Handlers
 //
 void Temperature::_sens_error(const char * const serial_msg, const char * const lcd_msg) {
-  static bool killed { false };
+  static bool killed = false;
   if (IsRunning()) {
 //    SERIAL_ERROR_START();
 //    serialprintPGM(serial_msg);
@@ -2268,4 +2268,3 @@ void Temperature::min_sens_error() {
 void Temperature::disable_all_heaters() {
   // for sure our print job has stopped
 }
-

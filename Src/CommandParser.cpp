@@ -1,119 +1,144 @@
-/*
- * CommandParser.cpp
- *
- *  Created on: 14. okt 2017
- *      Author: Den
- */
+//
+// CommandParser.cpp
+//
+//  Created on: 14. okt 2017
+//      Author: Den
+//
 
+#include <stdint.h>
+#include <cstdlib>
 #include "CommandParser.h"
 #include "main.h"
 #include "serial.h"
+#include <cstring>
 
-#if ENABLED(FASTER_COMMAND_PARSER)
-  // Optimized Parameters
-  uint8_t CommandParser::codebits[4] { };   // found bits
-  uint8_t CommandParser::param[26] { };  // parameter offsets from command_ptr
-#else
-  char *CommandParser::command_args; // start of parameters
-#endif
+namespace CommandParser {
+	char *value_ptr;           // Set by seen, used to fetch the value
 
-// Create a global instance of the GCode parser singleton
-CommandParser parser { };
+	#if ENABLED(FASTER_COMMAND_PARSER)
+		unsigned char codebits[4];        // Parameters pre-scanned
+		unsigned char param[26];       // For A-Z, offsets into command args
+	#else
+		char *command_args;      // Args start here, for slow scan
+	#endif
 
-char *CommandParser::command_ptr { },
-     *CommandParser::string_arg { },
-     *CommandParser::int_arg { },
-     *CommandParser::value_ptr { };
-char CommandParser::command_letter { };
-uint8_t CommandParser::codenum { };
+	// Command line state
+	char *command_ptr,               // The command, so it can be echoed
+		 *string_arg,                // string of command line
+		 *int_arg;                   // signed integer of comman line
 
-/**
- * Clear all code-seen (and value pointers)
- *
- * Since each param is set/cleared on seen codes,
- * this may be optimized by commenting out ZERO(param)
- */
-void CommandParser::reset() {
-  string_arg = NULL;                    // No whole line argument
-  command_letter = '?';                 // No command letter
-  codenum = 0;                          // No command code
-  #if ENABLED(FASTER_COMMAND_PARSER)
-    ZERO(codebits);                     // No codes yet
-  #endif
+	//	std::string stringArg;
+
+	char command_letter;             // M, or P
+	uint8_t codenum;                     // 123
+
+	//
+	// Clear all code-seen (and value pointers)
+	//
+	// Since each param is set/cleared on seen codes,
+	// this may be optimized by commenting out ZERO(param)
+	//
+	void reset() {
+	  string_arg = NULL;                    // No whole line argument
+	//  stringArg = "";
+	  command_letter = '?';                 // No command letter
+	  codenum = 0U;                         // No command code
+	  #if ENABLED(FASTER_COMMAND_PARSER)
+		ZERO(codebits);                     // No codes yet
+	  #endif
+	}
+
+	void parse(char *p) {
+		reset(); // No codes to report
+
+		// Skip spaces
+		while (*p == ' ') {++p;}
+
+		// *p now points to the current command, which should be M, or P
+		command_ptr = p;
+
+		// Get the command letter, which must be M, or P
+		const char letter = *p;
+		p++;
+
+		// Bail if the letter is not M, or P or if there's no command code number
+		if (((letter == 'M') || (letter == 'P')) && NUMERIC(*p)) {
+			// Save the command letter at this point
+			// A '?' signifies an unknown command
+			command_letter = letter;
+
+			// Get the code number - integer digits only
+			codenum = 0U;
+			do {
+				codenum *= 10U;
+				codenum += static_cast<uint8_t>(*p) - static_cast<uint8_t>('0');
+				p++;
+			} while (NUMERIC(*p));
+
+			// Skip all spaces to get to the first argument, or nul
+			while (*p == ' ') {p++;}
+
+			// The command parameters (if any) start here, for sure!
+			switch (letter) {
+				// Only use string_arg for these P codes
+				case 'P':
+					if (codenum == 0U) {
+						int_arg = nullptr;
+						string_arg = p;
+	//    				stringArg = p;
+						// sanity check
+						if (strlen(string_arg) != 96U) {
+	//    				if (stringArg.length() != 96U) {
+							// skip invalid argument
+						}
+					}
+					break;
+				case 'M':
+					if (codenum == 0U) {
+						string_arg = nullptr;
+	//	    			stringArg = "";
+						const bool has_num = DECIMAL_SIGNED(*p);  // The parameter has a number [-+0-9.]
+						if (has_num) {
+							int_arg = p;
+						}
+					}
+					break;
+				default:
+					// Skip any other commands
+					break;
+			}
+		}
+	}
+
+	void unknown_command_error() {
+	  SERIAL_ECHO_START();
+	  SERIAL_ECHOPAIR("Unknown command: \"", command_ptr);
+	  SERIAL_CHAR(static_cast<uint8_t>('"'));
+	  SERIAL_EOL();
+	}
+
+    // Code seen bit was set. If not found, value_ptr is unchanged.
+    // This allows "if (seen('A')||seen('B'))" to use the last-found value.
+    bool seen(const char c) {
+        const uint8_t ind = LETTER_OFF(c);
+        if (ind >= COUNT(param)) return false; // Only A-Z
+        const bool b { TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind)) };
+        if (b) value_ptr = param[ind] ? command_ptr + param[ind] : (char*)NULL;
+        return b;
+    }
+
+    // The code value pointer was set
+    FORCE_INLINE bool has_value() { return value_ptr != NULL; }
+
+    bool seen_any() { return codebits[3] || codebits[2] || codebits[1] || codebits[0]; }
+
+    FORCE_INLINE int value_linear_units() { return value_int(); }
+
+    // Seen a parameter with a value
+    inline bool seenval(const char c) { return seen(c) && has_value(); }
+
+    FORCE_INLINE float linearval(const char c, const float dval)  { return seenval(c) ? value_linear_units() : dval; }
+
+    FORCE_INLINE float value_feedrate() { return value_linear_units(); }
+
 }
-
-void CommandParser::parse(char *p) {
-
-  reset(); // No codes to report
-
-  // Skip spaces
-  while (*p == ' ') ++p;
-
-  // *p now points to the current command, which should be M, or P
-  command_ptr = p;
-
-  // Get the command letter, which must be M, or P
-  const char letter { *p++ };
-
-  // Bail if the letter is not M, or P
-  switch (letter) { case 'M': case 'P': break; default: return; }
-
-  // Bail if there's no command code number
-  if (!NUMERIC(*p)) return;
-
-  // Save the command letter at this point
-  // A '?' signifies an unknown command
-  command_letter = letter;
-
-  // Get the code number - integer digits only
-  codenum = 0;
-  do {
-    codenum *= 10, codenum += *p++ - '0';
-  } while (NUMERIC(*p));
-
-  // Skip all spaces to get to the first argument, or nul
-  while (*p == ' ') p++;
-
-  // The command parameters (if any) start here, for sure!
-  switch (letter) {
-    // Only use string_arg for these P codes
-    case 'P':
-  	  switch (codenum) {
-  	  	case 0:
-  	  	  int_arg = nullptr;
-          string_arg = p;
-  	  	  // sanity check
-  	  	  if (strlen(string_arg) != 96) {
-  	  		// skip invalid argument
-  	  	  }
-  	  	  return;
-  	  	default:
-  	  	  break;
-  	  }
-  	  break;
-  	case 'M':
-  	  switch (codenum) {
-  	    case 0: {
-  	      string_arg = nullptr;
-  	      const bool has_num { DECIMAL_SIGNED(*p) };  // The parameter has a number [-+0-9.]
-  	      if (has_num) {
-            int_arg = p;
-  	      }
-  	      return;
-  	    }
-  	    default:
-  	      break;
-  	  }
-  	  break;
-    default:
-      break;
-  }
-}
-
-void CommandParser::unknown_command_error() {
-  SERIAL_ECHO_START();
-  SERIAL_ECHOPAIR("Unknown command: \"", command_ptr);
-  SERIAL_CHAR('"');
-  SERIAL_EOL();
-}
-

@@ -8,7 +8,7 @@
 #include "macros.h"
 #include "serial.h"
 
-const char echomagic[] = "echo:";
+const char * const echomagic = "echo:";
 
 void serial_echopair_P(const char* s_P, const char *v)   { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, char v)          { serialprintPGM(s_P); SERIAL_CHAR(v); }

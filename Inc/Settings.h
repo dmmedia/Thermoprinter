@@ -13,7 +13,7 @@ public:
 	Settings() {}
 	virtual ~Settings() {}
 
-    static void reset();
+    static void reset(void);
 
 #if defined(EEPROM_SETTINGS)
   static bool load();

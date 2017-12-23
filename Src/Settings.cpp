@@ -11,7 +11,7 @@
 #include "Planner.h"
 #include "Endstops.h"
 
-Settings settings { };
+Settings settings;
 
 #if defined(EEPROM_SETTINGS)
 /**
@@ -92,7 +92,7 @@ bool Settings::load() {
 /**
  * M502 - Reset Configuration
  */
-void Settings::reset() {
+void Settings::reset(void) {
   planner.axis_steps_per_mm          = DEFAULT_STEPS_PER_UNIT;
   planner.max_feedrate_mm_s          = DEFAULT_MAX_FEEDRATE;
   planner.max_acceleration_mm_per_s2 = DEFAULT_MAX_ACCELERATION;
@@ -104,7 +104,7 @@ void Settings::reset() {
   planner.min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
   planner.max_jerk = DEFAULT_JERK;
 
-  endstops.enable_globally(true);
+  Endstops::enable_globally(true);
 
   postprocess();
 }

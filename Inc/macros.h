@@ -8,8 +8,6 @@
 #ifndef MACROS_H_
 #define MACROS_H_
 
-#include <string.h>
-
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
 #define UNUSED(x) ((void)(x))
@@ -86,16 +84,16 @@
 #define ENABLED(b) _CAT(SWITCH_ENABLED_, b)
 #define DISABLED(b) (!_CAT(SWITCH_ENABLED_, b))
 
-#define WITHIN(V,L,H) ((V) >= (L) && (V) <= (H))
+#define WITHIN(V,L,H) (((V) >= (L)) && ((V) <= (H)))
 #define NUMERIC(a) WITHIN(a, '0', '9')
-#define DECIMAL(a) (NUMERIC(a) || a == '.')
+#define DECIMAL(a) (NUMERIC(a) || (a == '.'))
 #define NUMERIC_SIGNED(a) (NUMERIC(a) || (a) == '-' || (a) == '+')
-#define DECIMAL_SIGNED(a) (DECIMAL(a) || (a) == '-' || (a) == '+')
+#define DECIMAL_SIGNED(a) (DECIMAL(a) || ((a) == '-') || ((a) == '+'))
 #define COUNT(a) (sizeof(a)/sizeof(*a))
 #define ZERO(a) memset(a,0,sizeof(a))
 #define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
 
-#define PSTR(s) ((const char *)(s))
+#define PSTR(s) (static_cast<const char *>(s))
 
 // Macros to contrain values
 #define NOLESS(v,n) do{ if (v < n) v = n; }while(0)

@@ -8,7 +8,6 @@
 #ifndef STEPPER_H_
 #define STEPPER_H_
 
-#include "Planner.h"
 #include <stddef.h>
 #include "typedefs.h"
 
