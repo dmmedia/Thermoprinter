@@ -41,13 +41,13 @@ namespace CommandParser {
 	// this may be optimized by commenting out ZERO(param)
 	//
 	void reset() {
-	  string_arg = NULL;                    // No whole line argument
+        string_arg = NULL;                    // No whole line argument
 	//  stringArg = "";
-	  command_letter = '?';                 // No command letter
-	  codenum = 0U;                         // No command code
-	  #if ENABLED(FASTER_COMMAND_PARSER)
-		ZERO(codebits);                     // No codes yet
-	  #endif
+	    command_letter = '?';                 // No command letter
+	    codenum = 0U;                         // No command code
+	    #if ENABLED(FASTER_COMMAND_PARSER)
+	    	memset(&codebits[0U], 0, 4U);   // No codes yet
+	    #endif
 	}
 
 	void parse(char *p) {
@@ -124,12 +124,16 @@ namespace CommandParser {
     // This allows "if (seen('A')||seen('B'))" to use the last-found value.
     bool seen(const char c) {
         const uint8_t ind = LETTER_OFF(c);
+        //lint -save -e1924
         bool b = false;
+        //lint -restore
         if (ind < COUNT(param)) // Only A-Z
         {
-			b = TEST(codebits[PARAM_IND(ind)], PARAM_BIT(ind));
+			b = TEST(codebits[(ind >> 3U)], (ind & 0x7U));
 			if (b) {
+				//lint -save -e1960
 				value_ptr = (param[ind] != 0U) ? (&command_ptr[param[ind]]) : nullptr;
+				//lint -restore
 			}
         }
 

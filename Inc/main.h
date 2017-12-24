@@ -49,7 +49,7 @@
 /* USER CODE BEGIN Private defines */
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
 // :{ 0:'Low', 1:'High' }
-#define MOTOR_ENABLE_ON GPIO_PIN_RESET
+#define MOTOR_ENABLE_ON GPIO::GPIO_PIN_RESET
 
 // The ASCII buffer for serial input
 #define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
@@ -170,7 +170,7 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 #define ENDSTOP_INTERRUPTS_FEATURE
 
 // By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
-#define INVERT_MOTOR_STEP_PIN GPIO_PIN_RESET
+#define INVERT_MOTOR_STEP_PIN GPIO::GPIO_PIN_RESET
 
 // The minimum pulse width (in µs) for stepping a stepper.
 // Set this if you find stepping unreliable, or if using a very fast CPU.

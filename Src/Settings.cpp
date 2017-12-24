@@ -9,6 +9,9 @@
 #include "Settings.h"
 #include "main.h"
 #include "Planner.h"
+#include "gpio.h"
+#include "Configuration.h"
+#include "Stepper.h"
 #include "Endstops.h"
 
 Settings settings;

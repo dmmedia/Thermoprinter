@@ -5,17 +5,19 @@
  *      Author: Den
  */
 
+#include "macros.h"
+#include "gpio.h"
 #include "Configuration.h"
 #include "Conditionals.h"
-#include "macros.h"
 #include <stm32l0xx.h>
 #include "main.h"
 #include "Temperature.h"
 #include "SREGEmulation.h"
+#include "Planner.h"
+#include "Stepper.h"
 #include "Endstops.h"
 #include "main.h"
 #include "tim.h"
-#include "gpio.h"
 #include "rcc.h"
 
 Temperature thermalManager;
@@ -695,8 +697,8 @@ void ADC_MspDeInit(ADC_HandleTypeDef *hadc)
 
   /*##-2- Disable peripherals and GPIO Clocks ################################*/
   /* De-initialize GPIO pin of the selected ADC channel */
-  GpioDeInit(ADC1_CHANNEL_VOLTAGE_GPIO_PORT, ADC1_CHANNEL_VOLTAGE_PIN);
-  GpioDeInit(ADC1_CHANNEL_TEMPERATURE_GPIO_PORT, ADC1_CHANNEL_TEMPERATURE_PIN);
+  GPIO::GpioDeInit(ADC1_CHANNEL_VOLTAGE_GPIO_PORT, ADC1_CHANNEL_VOLTAGE_PIN);
+  GPIO::GpioDeInit(ADC1_CHANNEL_TEMPERATURE_GPIO_PORT, ADC1_CHANNEL_TEMPERATURE_PIN);
 
   /*##-4- Disable the NVIC ###################################################*/
   /* Disable the NVIC configuration for ADC interrupt */
@@ -1018,7 +1020,7 @@ void RCC_GetOscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct)
   */
 void ADC_MspInit(ADC_HandleTypeDef *hadc)
 {
-  GpioInit_t          GPIO_InitStruct;
+  GPIO::GpioInit_t          GPIO_InitStruct;
   static DMA_HandleTypeDef  DmaHandle;
   RCC_OscInitTypeDef        RCC_OscInitStructure;
 
@@ -1047,14 +1049,14 @@ void ADC_MspInit(ADC_HandleTypeDef *hadc)
   GPIO_InitStruct.Pin = ADC1_CHANNEL_VOLTAGE_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GpioInit(ADC1_CHANNEL_VOLTAGE_GPIO_PORT, &GPIO_InitStruct);
+  GPIO::GpioInit(ADC1_CHANNEL_VOLTAGE_GPIO_PORT, &GPIO_InitStruct);
 
   /*##-2b- Configure peripheral GPIO ##########################################*/
   /* Configure GPIO pin of the selected ADC channel */
   GPIO_InitStruct.Pin = ADC1_CHANNEL_TEMPERATURE_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GpioInit(ADC1_CHANNEL_TEMPERATURE_GPIO_PORT, &GPIO_InitStruct);
+  GPIO::GpioInit(ADC1_CHANNEL_TEMPERATURE_GPIO_PORT, &GPIO_InitStruct);
 
   /*##-4- Configure the NVIC #################################################*/
 

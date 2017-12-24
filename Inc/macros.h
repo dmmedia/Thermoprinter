@@ -21,7 +21,7 @@
 #ifndef _BV
   #define _BV(PIN) (1UL << PIN)
 #endif
-#define TEST(n,b) (((n)&_BV(b))!=0)
+#define TEST(n,b) (((n)&_BV(b))!=0U)
 #define SBI(n,b) (n |= _BV(b))
 #define CBI(n,b) (n &= ~_BV(b))
 #define SET_BIT2(n,b,value) (n) ^= ((-value)^(n)) & (_BV(b))

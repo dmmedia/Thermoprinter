@@ -160,7 +160,7 @@
 #define TEMP_SENSOR_0 998 // DGlass3D = 5; RigidBot = 1; 3DSv6 = 5
 
 // Invert the stepper direction. Change (or reverse the motor connector) if an paper goes the wrong way.
-#define INVERT_MOTOR_DIR GPIO_PIN_RESET
+#define INVERT_MOTOR_DIR GPIO::GPIO_PIN_RESET
 
 
 

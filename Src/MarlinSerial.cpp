@@ -6,8 +6,8 @@
  */
 
 #include "main.h"
-#include "gpio.h"
 #include "macros.h"
+#include "gpio.h"
 #include <MarlinSerial.h>
 #include "Configuration.h"
 #include "SREGEmulation.h"
@@ -85,7 +85,7 @@ int MarlinSerial::read(void) {
 
 void UartMspInit(UartHandle* huart)
 {
-  GpioInit_t GPIO_InitStruct;
+  GPIO::GpioInit_t GPIO_InitStruct;
   if(huart->Instance == LPUART1)
   {
     /* Peripheral clock enable */
@@ -109,7 +109,7 @@ void UartMspInit(UartHandle* huart)
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_LPUART1;
-    GpioInit(GPIOC, &GPIO_InitStruct);
+    GPIO::GpioInit(GPIOC, &GPIO_InitStruct);
 
 //    GPIO_InitStruct.Pin = GPIO_PIN_1;
 //    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -136,7 +136,7 @@ void UartMspInit(UartHandle* huart)
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF4_USART2;
-    GpioInit(GPIOA, &GPIO_InitStruct);
+    GPIO::GpioInit(GPIOA, &GPIO_InitStruct);
 
     /* USART2 interrupt Init */
     NVIC_SetPriority(USART2_IRQn, 0);
@@ -789,7 +789,7 @@ void UartMspDeInit(UartHandle* huart)
     */
 //    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_6);
 
-    GpioDeInit(GPIOC, GPIO_PIN_4|GPIO_PIN_5);
+    GPIO::GpioDeInit(GPIOC, GPIO_PIN_4|GPIO_PIN_5);
 
 //    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_1);
 
@@ -805,7 +805,7 @@ void UartMspDeInit(UartHandle* huart)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX
     */
-    GpioDeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
+    GPIO::GpioDeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
 
     /* USART2 interrupt DeInit */
     NVIC_DisableIRQ(USART2_IRQn);

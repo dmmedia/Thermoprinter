@@ -5,9 +5,9 @@
  *      Author: Den
  */
 
+#include "macros.h"
 #include "gpio.h"
 #include "main.h"
-#include "macros.h"
 #include "Planner.h"
 #include "Stepper.h"
 #include <stddef.h>
@@ -166,7 +166,7 @@ void Stepper::set_directions() {
     MOTOR_APPLY_DIR(INVERT_MOTOR_DIR, false);
     count_direction = -1;
   } else {
-    MOTOR_APPLY_DIR(INVERT_MOTOR_DIR == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET, false);
+    MOTOR_APPLY_DIR(INVERT_MOTOR_DIR == GPIO::GPIO_PIN_RESET ? GPIO::GPIO_PIN_SET : GPIO::GPIO_PIN_RESET, false);
     count_direction = 1;
   }
 }
@@ -267,7 +267,7 @@ void Stepper::isr() {
     // Advance the Bresenham counter; start a pulse if the axis needs a step
     #define PULSE_START() \
       _COUNTER() += current_block->steps; \
-      if (_COUNTER() > 0) { _APPLY_STEP()(_INVERT_STEP_PIN() == GPIO_PIN_SET ? GPIO_PIN_RESET : GPIO_PIN_SET,0); }
+      if (_COUNTER() > 0) { _APPLY_STEP()(_INVERT_STEP_PIN() == GPIO::GPIO_PIN_SET ? GPIO::GPIO_PIN_RESET : GPIO::GPIO_PIN_SET,0); }
 
     // Stop an active pulse, reset the Bresenham counter, update the position
     #define PULSE_STOP() \
@@ -398,14 +398,14 @@ void Stepper::init() {
 
   // Init Enable Pin - stepper default to disabled.
   SET_OUTPUT(MOTOR_ENABLE);
-  if (!MOTOR_ENABLE_ON) GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO_PIN_SET);
+  if (!MOTOR_ENABLE_ON) GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, GPIO::GPIO_PIN_SET);
 
   // Init endstops and pullups
   Endstops::init();
 
   // Init Step Pin
   SET_OUTPUT(MOTOR_STEP);
-  WRITE(MOTOR_STEP, GPIO_PIN_RESET);
+  WRITE(MOTOR_STEP, GPIO::GPIO_PIN_RESET);
   disable_MOTOR();
 
   // Set the timer pre-scaler

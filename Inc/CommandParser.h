@@ -35,8 +35,6 @@ namespace CommandParser {
 
 	void parse(char * p);
 
-	#define PARAM_IND(N)  ((N) >> 3)
-	#define PARAM_BIT(N)  ((N) & 0x7)
 	#define LETTER_OFF(N) (static_cast<uint8_t>(N) - static_cast<uint8_t>('A'))
 
     // Code seen bit was set. If not found, value_ptr is unchanged.
