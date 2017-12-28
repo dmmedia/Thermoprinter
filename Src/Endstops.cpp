@@ -5,7 +5,10 @@
 //      Author: Den
 //
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
+#include "typedefs.h"
 #include "main.h"
 #include "gpio.h"
 #include "Configuration.h"
@@ -46,12 +49,12 @@ namespace Endstops {
 
     void init() {
 		//lint -save -e1924 -e835 -e9078 -e923
-		GPIO::setInput(MOTOR_FAULT_PORT, MOTOR_FAULT_PIN, GPIO_MODE_IT_RISING_FALLING);
-		GPIO::setInput(LO_BAT_PORT, LO_BAT_PIN, GPIO_MODE_IT_RISING_FALLING);
-		GPIO::setInput(VH_ON_CTRL_PORT, VH_ON_CTRL_PIN, GPIO_MODE_IT_RISING_FALLING);
-		GPIO::setInput(HEAD_UP_PORT, HEAD_UP_PIN, GPIO_MODE_IT_RISING_FALLING);
-		GPIO::setInput(PAPER_END_PORT, PAPER_END_PIN, GPIO_MODE_IT_RISING_FALLING);
-		GPIO::setInput(OVER_HEAT_PORT, OVER_HEAT_PIN, GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(MOTOR_FAULT_PORT, MOTOR_FAULT_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(LO_BAT_PORT, LO_BAT_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(VH_ON_CTRL_PORT, VH_ON_CTRL_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(HEAD_UP_PORT, HEAD_UP_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(PAPER_END_PORT, PAPER_END_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
+		GPIO::setInput(OVER_HEAT_PORT, OVER_HEAT_PIN, GPIO::GPIO_MODE_IT_RISING_FALLING);
 		//lint -restore
 
 		// EXTI interrupt init

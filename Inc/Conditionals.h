@@ -29,7 +29,8 @@
 // Power Signal Control Definitions
 // By default use ATX definition
 #ifndef POWER_SUPPLY
-  #define POWER_SUPPLY 0
+	#define POWER_SUPPLY 0
+	#define PS_ON_AWAKE		GPIO::GPIO_PIN_RESET
 #endif
 #if (POWER_SUPPLY == 1)     // 1 = ATX
   #define PS_ON_AWAKE  GPIO_PIN_RESET
@@ -38,7 +39,9 @@
   #define PS_ON_AWAKE  GPIO_PIN_SET
   #define PS_ON_ASLEEP GPIO_PIN_RESET
 #endif
-#define HAS_POWER_SWITCH (POWER_SUPPLY > 0 && PIN_EXISTS(PS_ON))
+constexpr bool hasPowerSwitch(void) {
+	return ((POWER_SUPPLY > 0) && GPIO::pinExists(PS_ON_PORT, PS_ON_PIN));
+}
 
 #define CYCLES_PER_MICROSECOND (SystemCoreClock / 1000000L) // 16 or 20
 

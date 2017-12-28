@@ -11,13 +11,15 @@
 #include "typedefs.h"
 #include "CommandParser.h"
 #include "main.h"
+#include "rcc.h"
+#include "SREGEmulation.h"
 #include "serial.h"
 #include <cstring>
 
 namespace CommandParser {
 	char *value_ptr;           // Set by seen, used to fetch the value
 
-	#if ENABLED(FASTER_COMMAND_PARSER)
+	#ifdef FASTER_COMMAND_PARSER
 		uint8_t codebits[4];        // Parameters pre-scanned
 		uint8_t param[26];       // For A-Z, offsets into command args
 	#else
@@ -45,7 +47,7 @@ namespace CommandParser {
 	//  stringArg = "";
 	    command_letter = '?';                 // No command letter
 	    codenum = 0U;                         // No command code
-	    #if ENABLED(FASTER_COMMAND_PARSER)
+	    #ifdef FASTER_COMMAND_PARSER
 	    	memset(&codebits[0U], 0, 4U);   // No codes yet
 	    #endif
 	}
@@ -149,8 +151,5 @@ namespace CommandParser {
 				(codebits[1U] != 0U) ||
 				(codebits[0U] != 0U);
     }
-
-    // Seen a parameter with a value
-    inline bool seenval(const char c) { return seen(c) && has_value(); }
 
 }

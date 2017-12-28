@@ -5,6 +5,8 @@
  *      Author: Den
  */
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
 #include "gpio.h"
 
@@ -275,7 +277,7 @@ extern "C" {
 	//
 	void EXTI0_1_IRQHandler(void)
 	{
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_1);
 	}
 
 	//
@@ -283,7 +285,7 @@ extern "C" {
 	//
 	void EXTI2_3_IRQHandler(void)
 	{
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_2);
 	}
 
 	//
@@ -291,9 +293,9 @@ extern "C" {
 	//
 	void EXTI4_15_IRQHandler(void)
 	{
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_4);
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_5);
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_6);
-		GPIO::GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_4);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_5);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_6);
+		GPIO::GPIO_EXTI_IRQHandler(GPIO::GPIO_PIN_13);
 	}
 }

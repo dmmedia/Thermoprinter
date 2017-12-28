@@ -306,7 +306,7 @@ private:
 
     static uint16_t raw_temp_value, raw_volt_value;
 
-    static void _sens_error(const char * const serial_msg, const char * const lcd_msg);
+    static void _sens_error(const char * const serial_msg);
     static void max_sens_error();
     static void min_sens_error();
 

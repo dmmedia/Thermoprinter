@@ -13,7 +13,7 @@
 namespace CommandParser {
 	extern char *value_ptr;           // Set by seen, used to fetch the value
 
-#if ENABLED(FASTER_COMMAND_PARSER)
+#ifdef FASTER_COMMAND_PARSER
     extern uint8_t codebits[4];        // Parameters pre-scanned
     extern uint8_t param[26];       // For A-Z, offsets into command args
 #else
@@ -72,7 +72,9 @@ namespace CommandParser {
     FORCE_INLINE bool has_value();
 
     // Seen a parameter with a value
-    inline bool seenval(const char c);
+    inline bool seenval(const char c) {
+    	return seen(c) && has_value();
+    }
 
     FORCE_INLINE float32_t linearval(const char c, const float32_t dval = 0.0)  { return seenval(c) ? value_linear_units() : dval; }
 

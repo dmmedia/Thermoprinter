@@ -9,39 +9,39 @@
 #define CONFIGURATION_H_
 
 #define MOTOR_STEP_PORT		GPIOA
-#define MOTOR_STEP_PIN		GPIO_PIN_2
+#define MOTOR_STEP_PIN		GPIO::GPIO_PIN_2
 #define MOTOR_DIR_PORT		GPIOA
-#define MOTOR_DIR_PIN		GPIO_PIN_3
+#define MOTOR_DIR_PIN		GPIO::GPIO_PIN_3
 #define MOTOR_ENABLE_PORT	GPIOA
-#define MOTOR_ENABLE_PIN	GPIO_PIN_1
+#define MOTOR_ENABLE_PIN	GPIO::GPIO_PIN_1
 
 //
 // Limit Switches
 //
-#define MOTOR_FAULT_PIN		GPIO_PIN_6
+#define MOTOR_FAULT_PIN		GPIO::GPIO_PIN_6
 #define MOTOR_FAULT_PORT	GPIOA
 
-#define OVER_HEAT_PIN		GPIO_PIN_4
+#define OVER_HEAT_PIN		GPIO::GPIO_PIN_4
 #define OVER_HEAT_PORT		GPIOC
 
-#define LO_BAT_PIN			GPIO_PIN_5
+#define LO_BAT_PIN			GPIO::GPIO_PIN_5
 #define LO_BAT_PORT		GPIOC
 
-#define VH_ON_CTRL_PIN		GPIO_PIN_13
+#define VH_ON_CTRL_PIN		GPIO::GPIO_PIN_13
 #define VH_ON_CTRL_PORT		GPIOC
 
-#define PAPER_END_PIN		GPIO_PIN_1
+#define PAPER_END_PIN		GPIO::GPIO_PIN_1
 #define PAPER_END_PORT		GPIOB
 
-#define HEAD_UP_PIN			GPIO_PIN_2
+#define HEAD_UP_PIN			GPIO::GPIO_PIN_2
 #define HEAD_UP_PORT		GPIOB
 
 //
 // Misc. Functions
 //
 #undef PS_ON_PIN
-#define PS_ON_PIN          -1
-#define PS_ON_PORT		   GPIOA
+#define PS_ON_PIN          GPIO::NO_PIN
+#define PS_ON_PORT		   GPIO::NO_PORT
 //#define PS_ON_PIN   GPIO_PIN_1
 //#define PS_ON_PORT	GPIOA
 //#define POWER_SUPPLY 0
@@ -64,10 +64,10 @@
 
 /* Definition of ADCx channels pins */
 #define ADC1_CHANNEL_VOLTAGE_GPIO_PORT         GPIOB
-#define ADC1_CHANNEL_VOLTAGE_PIN               GPIO_PIN_0
+#define ADC1_CHANNEL_VOLTAGE_PIN               GPIO::GPIO_PIN_0
 
 #define ADC1_CHANNEL_TEMPERATURE_GPIO_PORT         GPIOA
-#define ADC1_CHANNEL_TEMPERATURE_PIN               GPIO_PIN_5
+#define ADC1_CHANNEL_TEMPERATURE_PIN               GPIO::GPIO_PIN_5
 
 /* Definition of ADCx NVIC resources */
 #define ADC1_IRQn                       ADC1_COMP_IRQn
@@ -77,9 +77,9 @@
 #define FASTER_COMMAND_PARSER
 
 #define RXBUF_LEN            128 // must be power of 2
-#define TXBUF_LEN            128 // must be power of 2
+#define TXBUF_LEN            128U // must be power of 2
 #define RXBUF_MSK            (RXBUF_LEN-1)
-#define TXBUF_MSK            (TXBUF_LEN-1)
+#define TXBUF_MSK            (TXBUF_LEN - 1U)
 
 /**
  * Temperature sensors available:
@@ -162,6 +162,8 @@
 // Invert the stepper direction. Change (or reverse the motor connector) if an paper goes the wrong way.
 #define INVERT_MOTOR_DIR GPIO::GPIO_PIN_RESET
 
-
+// The ASCII buffer for serial input
+#define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
+#define BUFSIZE 4
 
 #endif /* CONFIGURATION_H_ */

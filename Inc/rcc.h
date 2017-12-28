@@ -71,11 +71,11 @@
 #define RCC_PLLSOURCE_HSE           RCC_CFGR_PLLSRC_HSE        /*!< HSE clock selected as PLL entry clock source */
 
 /* Defines used for Flags */
-#define CR_REG_INDEX                     ((uint8_t)1)
-#define CSR_REG_INDEX                    ((uint8_t)2)
-#define CRRCR_REG_INDEX                  ((uint8_t)3)
+constexpr uint8_t CR_REG_INDEX = 1U;
+constexpr uint8_t CSR_REG_INDEX = 2U;
+constexpr uint8_t CRRCR_REG_INDEX = 3U;
 
-#define RCC_FLAG_MASK                    ((uint8_t)0x1F)
+constexpr uint8_t RCC_FLAG_MASK = 0x1FU;
 
 /** @brief  Check RCC flag is set or not.
   * @param  __FLAG__ specifies the flag to check.
@@ -100,7 +100,21 @@
   * @retval The new state of __FLAG__ (TRUE or FALSE).
   */
 #if defined(RCC_HSI48_SUPPORT)
-#define RCC_GET_FLAG(__FLAG__) (((((((((__FLAG__) >> 5) == CR_REG_INDEX)? RCC->CR :((((__FLAG__) >> 5) == CSR_REG_INDEX) ? RCC->CSR :RCC->CRRCR)))) & ((uint32_t)1 << ((__FLAG__) & RCC_FLAG_MASK))) != 0 ) ? 1 : 0 )
+FORCE_INLINE uint8_t RCC_GetFlag(uint8_t flag) {
+	uint8_t res = 0U;
+	uint32_t reg;
+	if ((flag >> 5) == CR_REG_INDEX) {
+		reg = RCC->CR;
+	} else if ((flag >> 5) == CSR_REG_INDEX) {
+		reg = RCC->CSR;
+	} else {
+		reg = RCC->CRRCR;
+	}
+	if ((reg & (1U << (flag & RCC_FLAG_MASK))) != 0) {
+		res = 1U;
+	}
+	return res;
+}
 #else
 #define RCC_GET_FLAG(__FLAG__) (((((((((__FLAG__) >> 5) == CR_REG_INDEX)? RCC->CR : RCC->CSR))) & ((uint32_t)1 << ((__FLAG__) & RCC_FLAG_MASK))) != 0 ) ? 1 : 0 )
 #endif /* RCC_HSI48_SUPPORT */
@@ -116,28 +130,28 @@
   * @{
   */
 /* Flags in the CR register */
-#define RCC_FLAG_HSIRDY                  ((uint8_t)((CR_REG_INDEX << 5) | 2))     /*!< Internal High Speed clock ready flag */
-#define RCC_FLAG_HSIDIV                  ((uint8_t)((CR_REG_INDEX << 5) | 4))     /*!< HSI16 divider flag */
-#define RCC_FLAG_MSIRDY                  ((uint8_t)((CR_REG_INDEX << 5) | 9))     /*!< MSI clock ready flag */
-#define RCC_FLAG_HSERDY                  ((uint8_t)((CR_REG_INDEX << 5) | 17))    /*!< External High Speed clock ready flag */
-#define RCC_FLAG_PLLRDY                  ((uint8_t)((CR_REG_INDEX << 5) | 25))    /*!< PLL clock ready flag */
+constexpr uint8_t RCC_FLAG_HSIRDY 	= (CR_REG_INDEX << 5) | 2U;     /*!< Internal High Speed clock ready flag */
+constexpr uint8_t RCC_FLAG_HSIDIV 	= (CR_REG_INDEX << 5) | 4U;     /*!< HSI16 divider flag */
+constexpr uint8_t RCC_FLAG_MSIRDY 	= (CR_REG_INDEX << 5) | 9U;     /*!< MSI clock ready flag */
+constexpr uint8_t RCC_FLAG_HSERDY 	= (CR_REG_INDEX << 5) | 17U;    /*!< External High Speed clock ready flag */
+constexpr uint8_t RCC_FLAG_PLLRDY 	= (CR_REG_INDEX << 5) | 25U;    /*!< PLL clock ready flag */
 /* Flags in the CSR register */
-#define RCC_FLAG_LSIRDY                  ((uint8_t)((CSR_REG_INDEX << 5) | 1))    /*!< Internal Low Speed oscillator Ready */
-#define RCC_FLAG_LSERDY                  ((uint8_t)((CSR_REG_INDEX << 5) | 9)) /*!< External Low Speed oscillator Ready */
-#define RCC_FLAG_LSECSS                  ((uint8_t)((CSR_REG_INDEX << 5) | 14))   /*!< CSS on LSE failure Detection */
-#define RCC_FLAG_OBLRST                  ((uint8_t)((CSR_REG_INDEX << 5) | 25))   /*!< Options bytes loading reset flag */
-#define RCC_FLAG_PINRST                  ((uint8_t)((CSR_REG_INDEX << 5) | 26))   /*!< PIN reset flag */
-#define RCC_FLAG_PORRST                  ((uint8_t)((CSR_REG_INDEX << 5) | 27))   /*!< POR/PDR reset flag */
-#define RCC_FLAG_SFTRST                  ((uint8_t)((CSR_REG_INDEX << 5) | 28))   /*!< Software Reset flag */
-#define RCC_FLAG_IWDGRST                 ((uint8_t)((CSR_REG_INDEX << 5) | 29))   /*!< Independent Watchdog reset flag */
-#define RCC_FLAG_WWDGRST                 ((uint8_t)((CSR_REG_INDEX << 5) | 30))   /*!< Window watchdog reset flag */
-#define RCC_FLAG_LPWRRST                 ((uint8_t)((CSR_REG_INDEX << 5) | 31))   /*!< Low-Power reset flag */
+constexpr uint8_t RCC_FLAG_LSIRDY 	= (CSR_REG_INDEX << 5) | 1U;    /*!< Internal Low Speed oscillator Ready */
+constexpr uint8_t RCC_FLAG_LSERDY 	= (CSR_REG_INDEX << 5) | 9U; 	/*!< External Low Speed oscillator Ready */
+constexpr uint8_t RCC_FLAG_LSECSS 	= (CSR_REG_INDEX << 5) | 14U;   /*!< CSS on LSE failure Detection */
+constexpr uint8_t RCC_FLAG_OBLRST 	= (CSR_REG_INDEX << 5) | 25U;   /*!< Options bytes loading reset flag */
+constexpr uint8_t RCC_FLAG_PINRST 	= (CSR_REG_INDEX << 5) | 26U;   /*!< PIN reset flag */
+constexpr uint8_t RCC_FLAG_PORRST 	= (CSR_REG_INDEX << 5) | 27U;   /*!< POR/PDR reset flag */
+constexpr uint8_t RCC_FLAG_SFTRST 	= (CSR_REG_INDEX << 5) | 28U;   /*!< Software Reset flag */
+constexpr uint8_t RCC_FLAG_IWDGRST 	= (CSR_REG_INDEX << 5) | 29U;   /*!< Independent Watchdog reset flag */
+constexpr uint8_t RCC_FLAG_WWDGRST 	= (CSR_REG_INDEX << 5) | 30U;   /*!< Window watchdog reset flag */
+constexpr uint8_t RCC_FLAG_LPWRRST	= (CSR_REG_INDEX << 5) | 31U;   /*!< Low-Power reset flag */
 #if defined(RCC_CSR_FWRSTF)
-#define RCC_FLAG_FWRST                   ((uint8_t)((CSR_REG_INDEX << 5) |  8))   /*!< RCC flag FW reset */
+constexpr uint8_t RCC_FLAG_FWRST   	= (CSR_REG_INDEX << 5) |  8U;   /*!< RCC flag FW reset */
 #endif /* RCC_CSR_FWRSTF */
 /* Flags in the CRRCR register */
 #if defined(RCC_HSI48_SUPPORT)
-#define RCC_FLAG_HSI48RDY                ((uint8_t)((CRRCR_REG_INDEX << 5) | 1))  /*!< HSI48 clock ready flag */
+constexpr uint8_t RCC_FLAG_HSI48RDY = (CRRCR_REG_INDEX << 5) | 1U;	/*!< HSI48 clock ready flag */
 #endif /* RCC_HSI48_SUPPORT */
 
 /* ########################## Oscillator Values adaptation ####################*/
@@ -252,7 +266,7 @@
 #define FLASH_SET_LATENCY(__LATENCY__) \
                   MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (uint32_t)(__LATENCY__))
 
-#define  TICK_INT_PRIORITY            ((uint32_t)0U)    /*!< tick interrupt priority */
+#define  TICK_INT_PRIORITY            (0U)    /*!< tick interrupt priority */
 
 /**
 * @brief This function configures the source of the time base.
@@ -268,9 +282,8 @@
 *       The function is declared as __Weak  to be overwritten  in case of other
 *       implementation  in user file.
 * @param TickPriority: Tick interrupt priority.
-* @retval status
 */
-StatusTypeDef InitTick(uint32_t TickPriority);
+void InitTick(uint32_t TickPriority);
 
 /** @defgroup RCC_APB1_Clock_Enable_Disable APB1 Peripheral Clock Enable Disable
 * @brief  Enable or disable the Low Speed APB (APB1) peripheral clock.
@@ -836,5 +849,393 @@ StatusTypeDef RCC_OscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct);
                                           This parameter can be a value of @ref RCCEx_USB_Clock_Source */
   #endif /* USB */
   } RCC_PeriphCLKInitTypeDef;
+
+void RCC_ClearFlag(void);
+
+#define RCC_CLOCKTYPE_SYSCLK             ((uint32_t)0x00000001) //!< SYSCLK to configure
+#define RCC_CLOCKTYPE_HCLK               ((uint32_t)0x00000002) //!< HCLK to configure
+#define RCC_CLOCKTYPE_PCLK1              ((uint32_t)0x00000004) //!< PCLK1 to configure
+#define RCC_CLOCKTYPE_PCLK2              ((uint32_t)0x00000008) //!< PCLK2 to configure
+
+#define RCC_SYSCLKSOURCE_MSI             RCC_CFGR_SW_MSI //!< MSI selected as system clock
+#define RCC_SYSCLKSOURCE_HSI             RCC_CFGR_SW_HSI //!< HSI selected as system clock
+#define RCC_SYSCLKSOURCE_HSE             RCC_CFGR_SW_HSE //!< HSE selected as system clock
+#define RCC_SYSCLKSOURCE_PLLCLK          RCC_CFGR_SW_PLL //!< PLL selected as system clock
+
+// @defgroup RCC_APB1_APB2_Clock_Source APB1 APB2 Clock Source
+// @{
+//
+#define RCC_HCLK_DIV1                    RCC_CFGR_PPRE1_DIV1  //!< HCLK not divided
+#define RCC_HCLK_DIV2                    RCC_CFGR_PPRE1_DIV2  //!< HCLK divided by 2
+#define RCC_HCLK_DIV4                    RCC_CFGR_PPRE1_DIV4  //!< HCLK divided by 4
+#define RCC_HCLK_DIV8                    RCC_CFGR_PPRE1_DIV8  //!< HCLK divided by 8
+#define RCC_HCLK_DIV16                   RCC_CFGR_PPRE1_DIV16 //!< HCLK divided by 16
+
+//
+// @brief  Macro to configure the system clock source.
+// @param  __SYSCLKSOURCE__ specifies the system clock source.
+//          This parameter can be one of the following values:
+//              @arg @ref RCC_SYSCLKSOURCE_MSI MSI oscillator is used as system clock source.
+//              @arg @ref RCC_SYSCLKSOURCE_HSI HSI oscillator is used as system clock source.
+//              @arg @ref RCC_SYSCLKSOURCE_HSE HSE oscillator is used as system clock source.
+//              @arg @ref RCC_SYSCLKSOURCE_PLLCLK PLL output is used as system clock source.
+//
+#define RCC_SYSCLK_CONFIG(__SYSCLKSOURCE__) \
+                  MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, (__SYSCLKSOURCE__))
+
+//
+// @brief  Initializes the CPU, AHB and APB buses clocks according to the specified
+//         parameters in the RCC_ClkInitStruct.
+// @param  RCC_ClkInitStruct pointer to an RCC_OscInitTypeDef structure that
+//         contains the configuration information for the RCC peripheral.
+// @param  FLatency FLASH Latency
+//          The value of this parameter depend on device used within the same series
+// @note   The SystemCoreClock CMSIS variable is used to store System Clock Frequency
+//         and updated by @ref HAL_RCC_GetHCLKFreq() function called within this function
+//
+// @note   The MSI is used (enabled by hardware) as system clock source after
+//         start-up from Reset, wake-up from STOP and STANDBY mode, or in case
+//         of failure of the HSE used directly or indirectly as system clock
+//         (if the Clock Security System CSS is enabled).
+//
+// @note   A switch from one clock source to another occurs only if the target
+//         clock source is ready (clock stable after start-up delay or PLL locked).
+//         If a clock source which is not yet ready is selected, the switch will
+//         occur when the clock source will be ready.
+//         You can use @ref HAL_RCC_GetClockConfig() function to know which clock is
+//         currently used as system clock source.
+// @note   Depending on the device voltage range, the software has to set correctly
+//         HPRE[3:0] bits to ensure that HCLK not exceed the maximum allowed frequency
+//         (for more details refer to section above "Initialization/de-initialization functions")
+// @retval HAL status
+//
+StatusTypeDef RCC_ClockConfig(RCC_ClkInitTypeDef  *RCC_ClkInitStruct, uint32_t FLatency);
+
+// @brief  Macro to force the Backup domain reset.
+// @note   This function resets the RTC peripheral (including the backup registers)
+//         and the RTC clock source selection in RCC_CSR register.
+// @note   The BKPSRAM is not affected by this reset.
+//
+#define RCC_BACKUPRESET_FORCE()  SET_BIT(RCC->CSR, RCC_CSR_RTCRST)
+
+// @brief  Macros to release the Backup domain reset.
+//
+#define RCC_BACKUPRESET_RELEASE() CLEAR_BIT(RCC->CSR, RCC_CSR_RTCRST)
+
+// @brief Macro to configure the RTC clock (RTCCLK).
+// @note   As the RTC clock configuration bits are in the Backup domain and write
+//         access is denied to this domain after reset, you have to enable write
+//         access using the Power Backup Access macro before to configure
+//         the RTC clock source (to be done once after reset).
+// @note   Once the RTC clock is configured it cannot be changed unless the
+//         Backup domain is reset using @ref __HAL_RCC_BACKUPRESET_FORCE() macro, or by
+//         a Power On Reset (POR).
+// @note   RTC prescaler cannot be modified if HSE is enabled (HSEON = 1).
+//
+// @param  __RTC_CLKSOURCE__ specifies the RTC clock source.
+//          This parameter can be one of the following values:
+//             @arg @ref RCC_RTCCLKSOURCE_NO_CLK No clock selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_LSE LSE selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_LSI LSI selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_HSE_DIV2 HSE divided by 2 selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_HSE_DIV4 HSE divided by 4 selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_HSE_DIV8 HSE divided by 8 selected as RTC clock
+//             @arg @ref RCC_RTCCLKSOURCE_HSE_DIV16 HSE divided by 16 selected as RTC clock
+// @note   If the LSE or LSI is used as RTC clock source, the RTC continues to
+//         work in STOP and STANDBY modes, and can be used as wakeup source.
+//         However, when the HSE clock is used as RTC clock source, the RTC
+//         cannot be used in STOP and STANDBY modes.
+// @note   The maximum input clock frequency for RTC is 1MHz (when using HSE as
+//         RTC clock source).
+//
+#define RCC_RTC_CLKPRESCALER(__RTC_CLKSOURCE__) do { \
+            if(((__RTC_CLKSOURCE__) & RCC_CSR_RTCSEL_HSE) == RCC_CSR_RTCSEL_HSE)          \
+            {                                                                             \
+              MODIFY_REG(RCC->CR, RCC_CR_RTCPRE, ((__RTC_CLKSOURCE__) & RCC_CR_RTCPRE));  \
+            }                                                                             \
+          } while (0)
+
+#define RCC_RTC_CONFIG(__RTC_CLKSOURCE__) do { \
+                                      RCC_RTC_CLKPRESCALER(__RTC_CLKSOURCE__);      \
+                                      RCC->CSR |= ((__RTC_CLKSOURCE__) & RCC_CSR_RTCSEL); \
+                                    } while (0)
+
+#if defined (RCC_CCIPR_USART1SEL)
+// @brief Macro to configure the USART1 clock (USART1CLK).
+//
+// @param  __USART1_CLKSOURCE__ specifies the USART1 clock source.
+//          This parameter can be one of the following values:
+//            @arg @ref RCC_USART1CLKSOURCE_PCLK2 PCLK2 selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_HSI HSI selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_SYSCLK System Clock selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_LSE LSE selected as USART1 clock
+//
+#define RCC_USART1_CONFIG(__USART1_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_USART1SEL, (uint32_t)(__USART1_CLKSOURCE__))
+
+// @brief  Macro to get the USART1 clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_USART1CLKSOURCE_PCLK2 PCLK2 selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_HSI HSI selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_SYSCLK System Clock selected as USART1 clock
+//            @arg @ref RCC_USART1CLKSOURCE_LSE LSE selected as USART1 clock
+//
+#define RCC_GET_USART1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL)))
+#endif // RCC_CCIPR_USART1SEL
+
+// @brief Macro to configure the USART2 clock (USART2CLK).
+//
+// @param  __USART2_CLKSOURCE__ specifies the USART2 clock source.
+//          This parameter can be one of the following values:
+//            @arg @ref RCC_USART2CLKSOURCE_PCLK1 PCLK1 selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_HSI HSI selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_SYSCLK System Clock selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_LSE LSE selected as USART2 clock
+//
+#define RCC_USART2_CONFIG(__USART2_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_USART2SEL, (uint32_t)(__USART2_CLKSOURCE__))
+
+// @brief  Macro to get the USART2 clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_USART2CLKSOURCE_PCLK1 PCLK1 selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_HSI HSI selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_SYSCLK System Clock selected as USART2 clock
+//            @arg @ref RCC_USART2CLKSOURCE_LSE LSE selected as USART2 clock
+//
+#define RCC_GET_USART2_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_USART2SEL)))
+
+// @brief Macro to configure the LPUART1 clock (LPUART1CLK).
+//
+// @param  __LPUART1_CLKSOURCE__ specifies the LPUART1 clock source.
+//          This parameter can be one of the following values:
+//            @arg @ref RCC_LPUART1CLKSOURCE_PCLK1 PCLK1 selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_HSI HSI selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_SYSCLK System Clock selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_LSE LSE selected as LPUART1 clock
+//
+#define RCC_LPUART1_CONFIG(__LPUART1_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_LPUART1SEL, (uint32_t)(__LPUART1_CLKSOURCE__))
+
+// @brief  Macro to get the LPUART1 clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_LPUART1CLKSOURCE_PCLK1 PCLK1 selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_HSI HSI selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_SYSCLK System Clock selected as LPUART1 clock
+//            @arg @ref RCC_LPUART1CLKSOURCE_LSE LSE selected as LPUART1 clock
+//
+#define RCC_GET_LPUART1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_LPUART1SEL)))
+
+// @brief Macro to configure the I2C1 clock (I2C1CLK).
+//
+// @param  __I2C1_CLKSOURCE__ specifies the I2C1 clock source.
+//          This parameter can be one of the following values:
+//            @arg @ref RCC_I2C1CLKSOURCE_PCLK1 PCLK1 selected as I2C1 clock
+//            @arg @ref RCC_I2C1CLKSOURCE_HSI HSI selected as I2C1 clock
+//            @arg @ref RCC_I2C1CLKSOURCE_SYSCLK System Clock selected as I2C1 clock
+//
+#define RCC_I2C1_CONFIG(__I2C1_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_I2C1SEL, (uint32_t)(__I2C1_CLKSOURCE__))
+
+// @brief  Macro to get the I2C1 clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_I2C1CLKSOURCE_PCLK1 PCLK1 selected as I2C1 clock
+//            @arg @ref RCC_I2C1CLKSOURCE_HSI HSI selected as I2C1 clock
+//            @arg @ref RCC_I2C1CLKSOURCE_SYSCLK System Clock selected as I2C1 clock
+//
+#define RCC_GET_I2C1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_I2C1SEL)))
+
+// @brief Macro to configure the LPTIM1 clock (LPTIM1CLK).
+//
+// @param  __LPTIM1_CLKSOURCE__ specifies the LPTIM1 clock source.
+//          This parameter can be one of the following values:
+//            @arg @ref RCC_LPTIM1CLKSOURCE_PCLK PCLK selected as LPTIM1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_LSI  HSI  selected as LPTIM1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_HSI  LSI  selected as LPTIM1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_LSE  LSE  selected as LPTIM1 clock
+//
+#define RCC_LPTIM1_CONFIG(__LPTIM1_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_LPTIM1SEL, (uint32_t)(__LPTIM1_CLKSOURCE__))
+
+// @brief  Macro to get the LPTIM1 clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_LPTIM1CLKSOURCE_PCLK PCLK selected as LPUART1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_LSI  HSI selected as LPUART1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_HSI  System Clock selected as LPUART1 clock
+//            @arg @ref RCC_LPTIM1CLKSOURCE_LSE  LSE selected as LPUART1 clock
+//
+#define RCC_GET_LPTIM1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_LPTIM1SEL)))
+
+#if defined(USB)
+// @brief  Macro to configure the USB clock (USBCLK).
+// @param  __USB_CLKSOURCE__ specifies the USB clock source.
+//         This parameter can be one of the following values:
+//            @arg @ref RCC_USBCLKSOURCE_HSI48  HSI48 selected as USB clock
+//            @arg @ref RCC_USBCLKSOURCE_PLL PLL Clock selected as USB clock
+//
+#define RCC_USB_CONFIG(__USB_CLKSOURCE__) \
+                  MODIFY_REG(RCC->CCIPR, RCC_CCIPR_HSI48SEL, (uint32_t)(__USB_CLKSOURCE__))
+
+// @brief  Macro to get the USB clock source.
+// @retval The clock source can be one of the following values:
+//            @arg @ref RCC_USBCLKSOURCE_HSI48  HSI48 selected as USB clock
+//            @arg @ref RCC_USBCLKSOURCE_PLL PLL Clock selected as USB clock
+//
+#define RCC_GET_USB_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_HSI48SEL)))
+#endif // USB
+
+#define RCC_LPUART1CLKSOURCE_PCLK1        (0x00000000U)
+#define RCC_LPUART1CLKSOURCE_SYSCLK       RCC_CCIPR_LPUART1SEL_0
+#define RCC_LPUART1CLKSOURCE_HSI          RCC_CCIPR_LPUART1SEL_1
+#define RCC_LPUART1CLKSOURCE_LSE          (RCC_CCIPR_LPUART1SEL_0 | RCC_CCIPR_LPUART1SEL_1)
+
+#define RCC_USART1CLKSOURCE_PCLK2        (0x00000000U)
+#define RCC_USART1CLKSOURCE_SYSCLK       RCC_CCIPR_USART1SEL_0
+#define RCC_USART1CLKSOURCE_HSI          RCC_CCIPR_USART1SEL_1
+#define RCC_USART1CLKSOURCE_LSE          (RCC_CCIPR_USART1SEL_0 | RCC_CCIPR_USART1SEL_1)
+
+#define RCC_USART2CLKSOURCE_PCLK1        (0x00000000U)
+#define RCC_USART2CLKSOURCE_SYSCLK       RCC_CCIPR_USART2SEL_0
+#define RCC_USART2CLKSOURCE_HSI          RCC_CCIPR_USART2SEL_1
+#define RCC_USART2CLKSOURCE_LSE          (RCC_CCIPR_USART2SEL_0 | RCC_CCIPR_USART2SEL_1)
+
+/** @brief  Macro to get the LPUART1 clock source.
+  * @retval The clock source can be one of the following values:
+  *            @arg @ref RCC_LPUART1CLKSOURCE_PCLK1 PCLK1 selected as LPUART1 clock
+  *            @arg @ref RCC_LPUART1CLKSOURCE_HSI HSI selected as LPUART1 clock
+  *            @arg @ref RCC_LPUART1CLKSOURCE_SYSCLK System Clock selected as LPUART1 clock
+  *            @arg @ref RCC_LPUART1CLKSOURCE_LSE LSE selected as LPUART1 clock
+  */
+#define RCC_GET_LPUART1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_LPUART1SEL)))
+
+/** @brief  Macro to get the USART1 clock source.
+  * @retval The clock source can be one of the following values:
+  *            @arg @ref RCC_USART1CLKSOURCE_PCLK2 PCLK2 selected as USART1 clock
+  *            @arg @ref RCC_USART1CLKSOURCE_HSI HSI selected as USART1 clock
+  *            @arg @ref RCC_USART1CLKSOURCE_SYSCLK System Clock selected as USART1 clock
+  *            @arg @ref RCC_USART1CLKSOURCE_LSE LSE selected as USART1 clock
+  */
+#define RCC_GET_USART1_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL)))
+
+/** @brief  Macro to get the USART2 clock source.
+  * @retval The clock source can be one of the following values:
+  *            @arg @ref RCC_USART2CLKSOURCE_PCLK1 PCLK1 selected as USART2 clock
+  *            @arg @ref RCC_USART2CLKSOURCE_HSI HSI selected as USART2 clock
+  *            @arg @ref RCC_USART2CLKSOURCE_SYSCLK System Clock selected as USART2 clock
+  *            @arg @ref RCC_USART2CLKSOURCE_LSE LSE selected as USART2 clock
+  */
+#define RCC_GET_USART2_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_USART2SEL)))
+
+/** @brief  Macro to get the USB clock source.
+  * @retval The clock source can be one of the following values:
+  *            @arg @ref RCC_USBCLKSOURCE_HSI48  HSI48 selected as USB clock
+  *            @arg @ref RCC_USBCLKSOURCE_PLL PLL Clock selected as USB clock
+  */
+#define RCC_GET_USB_SOURCE() ((uint32_t)(READ_BIT(RCC->CCIPR, RCC_CCIPR_HSI48SEL)))
+
+#if defined(RCC_CCIPR_USART1SEL)
+#define RCC_PERIPHCLK_USART1           ((uint32_t)0x00000001)
+#endif /* RCC_CCIPR_USART1SEL */
+#define RCC_PERIPHCLK_USART2           ((uint32_t)0x00000002)
+#define RCC_PERIPHCLK_LPUART1          ((uint32_t)0x00000004)
+#define RCC_PERIPHCLK_I2C1             ((uint32_t)0x00000008)
+#define RCC_PERIPHCLK_I2C2             ((uint32_t)0x00000010)
+#define RCC_PERIPHCLK_RTC              ((uint32_t)0x00000020)
+#if defined(USB)
+#define RCC_PERIPHCLK_USB              ((uint32_t)0x00000040)
+#endif /* USB */
+#define RCC_PERIPHCLK_LPTIM1           ((uint32_t)0x00000080)
+#if defined(LCD)
+#define RCC_PERIPHCLK_LCD              ((uint32_t)0x00000800)
+#endif /* LCD */
+#if defined(RCC_CCIPR_I2C3SEL)
+#define RCC_PERIPHCLK_I2C3             ((uint32_t)0x00000100)
+#endif /* RCC_CCIPR_I2C3SEL */
+
+#if defined(USB)
+/** @defgroup RCCEx_USB_Clock_Source RCCEx USB Clock Source
+  * @{
+  */
+#define RCC_USBCLKSOURCE_HSI48           RCC_CCIPR_HSI48SEL
+#define RCC_USBCLKSOURCE_PLL             (0x00000000U)
+/**
+  * @}
+  */
+#endif /* USB */
+
+#define RCC_PERIPHCLK_USART2           ((uint32_t)0x00000002)
+
+//
+// @brief  Initializes the RCC extended peripherals clocks according to the specified
+//         parameters in the RCC_PeriphCLKInitTypeDef.
+// @param  PeriphClkInit pointer to an RCC_PeriphCLKInitTypeDef structure that
+//         contains the configuration information for the Extended Peripherals clocks(USART1,USART2, LPUART1,
+//         I2C1, I2C3, RTC, USB/RNG  and LPTIM1 clocks).
+// @retval status
+// @note   If STATUS_ERROR returned, first switch-OFF HSE clock oscillator with @ref RCC_OscConfig()
+//         to possibly update HSE divider.
+//
+StatusTypeDef RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
+
+// @defgroup CORTEX_SysTick_clock_source CORTEX SysTick Clock Source
+// @{
+//
+#define SYSTICK_CLKSOURCE_HCLK_DIV8    ((uint32_t)0x00000000U)
+#define SYSTICK_CLKSOURCE_HCLK         ((uint32_t)0x00000004U)
+#define IS_SYSTICK_CLK_SOURCE(__SOURCE__) (((__SOURCE__) == SYSTICK_CLKSOURCE_HCLK) || \
+									 ((__SOURCE__) == SYSTICK_CLKSOURCE_HCLK_DIV8))
+
+//
+// @brief  Configures the SysTick clock source.
+// @param  CLKSource: specifies the SysTick clock source.
+//          This parameter can be one of the following values:
+//             @arg SYSTICK_CLKSOURCE_HCLK_DIV8: AHB clock divided by 8 selected as SysTick clock source.
+//             @arg SYSTICK_CLKSOURCE_HCLK: AHB clock selected as SysTick clock source.
+// @retval None
+//
+void SYSTICK_CLKSourceConfig(uint32_t CLKSource);
+
+// System Clock Configuration
+//
+void SystemClock_Config(void);
+
+//
+// @brief  Returns the PCLK1 frequency
+// @note   Each time PCLK1 changes, this function must be called to update the
+//         right PCLK1 value. Otherwise, any configuration based on this function will be incorrect.
+// @retval PCLK1 frequency
+//
+uint32_t RCC_GetPCLK1Freq(void);
+
+/**
+  * @brief  Returns the PCLK2 frequency
+  * @note   Each time PCLK2 changes, this function must be called to update the
+  *         right PCLK2 value. Otherwise, any configuration based on this function will be incorrect.
+  * @retval PCLK2 frequency
+  */
+uint32_t RCC_GetPCLK2Freq(void);
+
+/**
+  * @brief  Return the peripheral clock frequency
+  * @note   Return 0 if peripheral clock is unknown
+  * @param  PeriphClk Peripheral clock identifier
+  *         This parameter can be one of the following values:
+  *            @arg @ref RCC_PERIPHCLK_RTC      RTC peripheral clock
+  *            @arg @ref RCC_PERIPHCLK_LCD      LCD peripheral clock (*)
+  *            @arg @ref RCC_PERIPHCLK_USB      USB or RNG peripheral clock (*)
+  *            @arg @ref RCC_PERIPHCLK_USART1   USART1 peripheral clock (*)
+  *            @arg @ref RCC_PERIPHCLK_USART2   USART2 peripheral clock
+  *            @arg @ref RCC_PERIPHCLK_LPUART1  LPUART1 peripheral clock
+  *            @arg @ref RCC_PERIPHCLK_I2C1     I2C1 peripheral clock
+  *            @arg @ref RCC_PERIPHCLK_I2C2     I2C2 peripheral clock (*)
+  *            @arg @ref RCC_PERIPHCLK_I2C3     I2C3 peripheral clock (*)
+  * @note   (*) means that this peripheral is not present on all the devices
+  * @retval Frequency in Hz (0: means that no available frequency for the peripheral)
+  */
+uint32_t RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
+
+#define RCC_LPUART1_CLK_ENABLE() SET_BIT(RCC->APB1ENR, (RCC_APB1ENR_LPUART1EN))
+#define RCC_USART2_CLK_ENABLE()  SET_BIT(RCC->APB1ENR, (RCC_APB1ENR_USART2EN))
+#define RCC_LPUART1_CLK_DISABLE() CLEAR_BIT(RCC->APB1ENR, (RCC_APB1ENR_LPUART1EN))
+#define RCC_USART2_CLK_DISABLE()  CLEAR_BIT(RCC->APB1ENR, (RCC_APB1ENR_USART2EN))
 
 #endif /* RCC_H_ */

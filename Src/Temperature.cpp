@@ -5,20 +5,22 @@
  *      Author: Den
  */
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
 #include "gpio.h"
 #include "Configuration.h"
 #include "Conditionals.h"
-#include <stm32l0xx.h>
+#include "typedefs.h"
 #include "main.h"
 #include "Temperature.h"
 #include "SREGEmulation.h"
 #include "Planner.h"
 #include "Stepper.h"
 #include "Endstops.h"
-#include "main.h"
 #include "tim.h"
 #include "rcc.h"
+#include "serial.h"
 
 Temperature thermalManager;
 
@@ -232,7 +234,7 @@ StatusTypeDef ADCEx_Calibration_Start(ADC_HandleTypeDef* hadc, uint32_t SingleDi
     tickstart = GetTick();
 
     /* Wait for calibration completion */
-    while(IS_BIT_SET(hadc->Instance->CR, ADC_CR_ADCAL))
+    while(isBitSet(hadc->Instance->CR, ADC_CR_ADCAL))
     {
       if((GetTick() - tickstart) > ADC_CALIBRATION_TIMEOUT)
       {
@@ -283,7 +285,7 @@ void Temperature::init() {
   if (ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != STATUS_OK)
   {
     /* Calibration Error */
-    Error_Handler();
+    Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
 
@@ -306,7 +308,7 @@ void Temperature::init() {
   htim2.Channel = TIM_ACTIVE_CHANNEL_CLEARED;
 
   if (STATUS_ERROR == TIM_Base_Init(&htim2)) {
-	  Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   // Set the timer pre-scaler
@@ -330,7 +332,7 @@ void Temperature::init() {
   NVIC_EnableIRQ(TIM2_IRQn);
 
   // Wait for temperature measurement to settle
-  Delay(250);
+  Timers::Delay(250);
 
   minttemp = PRINTHEAD_MINTEMP;
   while (analog2temp(minttemp_raw) < PRINTHEAD_MINTEMP) {
@@ -534,7 +536,7 @@ static StatusTypeDef ADC_ConversionStop(ADC_HandleTypeDef* hadc)
 
     /* Stop potential conversion on going on regular group */
     /* Software is allowed to set ADSTP only when ADSTART=1 and ADDIS=0 */
-    if (IS_BIT_SET(hadc->Instance->CR, ADC_CR_ADSTART) &&
+    if (isBitSet(hadc->Instance->CR, ADC_CR_ADSTART) &&
         IS_BIT_CLR(hadc->Instance->CR, ADC_CR_ADDIS)                  )
     {
       /* Stop conversions on regular group */
@@ -633,7 +635,7 @@ static StatusTypeDef ADC_Disable(ADC_HandleTypeDef* hadc)
     /* Get tick count */
     tickstart = GetTick();
 
-    while(IS_BIT_SET(hadc->Instance->CR, ADC_CR_ADEN))
+    while(isBitSet(hadc->Instance->CR, ADC_CR_ADEN))
     {
       if((GetTick() - tickstart) > ADC_DISABLE_TIMEOUT)
       {
@@ -899,8 +901,12 @@ StatusTypeDef ADC_DeInit(ADC_HandleTypeDef* hadc)
   */
 #define ADC_CFGR1_AUTO_OFF(_AUTOFF_) ((_AUTOFF_) << 15U)
 
-#define ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() RCC_GPIOB_CLK_ENABLE()
-#define ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() RCC_GPIOA_CLK_ENABLE()
+constexpr void ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() {
+	GPIO::RCC_GPIOB_CLK_ENABLE();
+}
+constexpr void ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() {
+	GPIO::RCC_GPIOA_CLK_ENABLE();
+}
 
 /** @brief  Macro to get the Internal 48Mhz High Speed oscillator (HSI48) state.
   * @retval The clock source can be one of the following values:
@@ -1047,14 +1053,14 @@ void ADC_MspInit(ADC_HandleTypeDef *hadc)
   /*##-2a- Configure peripheral GPIO ##########################################*/
   /* Configure GPIO pin of the selected ADC channel */
   GPIO_InitStruct.Pin = ADC1_CHANNEL_VOLTAGE_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Mode = GPIO::GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO::GpioInit(ADC1_CHANNEL_VOLTAGE_GPIO_PORT, &GPIO_InitStruct);
 
   /*##-2b- Configure peripheral GPIO ##########################################*/
   /* Configure GPIO pin of the selected ADC channel */
   GPIO_InitStruct.Pin = ADC1_CHANNEL_TEMPERATURE_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Mode = GPIO::GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO::GpioInit(ADC1_CHANNEL_TEMPERATURE_GPIO_PORT, &GPIO_InitStruct);
 
@@ -1128,7 +1134,7 @@ StatusTypeDef ADC_Init(ADC_HandleTypeDef* hadc)
   /* and if there is no conversion on going on regular group (ADC can be      */
   /* enabled anyway, in case of call of this function to update a parameter   */
   /* on the fly).                                                             */
-  if (IS_BIT_SET(hadc->State, ADC_STATE_ERROR_INTERNAL) ||
+  if (isBitSet(hadc->State, ADC_STATE_ERROR_INTERNAL) ||
      (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) != RESET)  )
   {
     /* Update ADC state machine to error */
@@ -1263,7 +1269,7 @@ StatusTypeDef ADC_Init(ADC_HandleTypeDef* hadc)
   }
   else
   {
-    if(IS_BIT_SET(hadc->Instance->CFGR2, ADC_CFGR2_OVSE))
+    if(isBitSet(hadc->Instance->CFGR2, ADC_CFGR2_OVSE))
     {
       /* Disable OverSampling mode if needed */
       hadc->Instance->CFGR2 &= ~ADC_CFGR2_OVSE;
@@ -1570,7 +1576,7 @@ void ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 void ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
   /* In case of ADC error, call main error handler */
-  Error_Handler();
+	Thermoprinter::Error_Handler(__FILE__, __LINE__);
 }
 
 /**
@@ -1908,7 +1914,7 @@ void Temperature::ADC_Config(void)
   if (ADC_DeInit(&AdcHandle) != STATUS_OK)
   {
     /* ADC initialization error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   AdcHandle.Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
@@ -1935,7 +1941,7 @@ void Temperature::ADC_Config(void)
   if (ADC_Init(&AdcHandle) != STATUS_OK)
   {
     /* ADC initialization error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   /* Configuration of channel on ADCx regular group on sequencer rank 1 */
@@ -1947,7 +1953,7 @@ void Temperature::ADC_Config(void)
   if (ADC_ConfigChannel(&AdcHandle, &sConfig) != STATUS_OK)
   {
     /* Channel Configuration Error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   /* Configuration of channel on ADCx regular group on sequencer rank 2 */
@@ -1962,7 +1968,7 @@ void Temperature::ADC_Config(void)
   if (ADC_ConfigChannel(&AdcHandle, &sConfig) != STATUS_OK)
   {
     /* Channel Configuration Error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   /*## Start ADC conversions #################################################*/
@@ -1974,14 +1980,14 @@ void Temperature::ADC_Config(void)
                        ) != STATUS_OK)
   {
     /* Start Error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   /* Run the ADC calibration in single-ended mode */
   if (ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != STATUS_OK)
   {
     /* Calibration Error */
-    Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -2116,7 +2122,7 @@ void Temperature::isr() {
       /*       active.                                                          */
       if (ADC_Start(&AdcHandle) != STATUS_OK)
       {
-        Error_Handler();
+    	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
       }
       break;
 
@@ -2244,27 +2250,27 @@ void Temperature::set_current_sens_raw() {
 //
 // Temperature Error Handlers
 //
-void Temperature::_sens_error(const char * const serial_msg, const char * const lcd_msg) {
+void Temperature::_sens_error(const char * const serial_msg) {
   static bool killed = false;
-  if (IsRunning()) {
-//    SERIAL_ERROR_START();
-//    serialprintPGM(serial_msg);
-//    SERIAL_ERRORPGM(MSG_STOPPED_HEATER);
+  if (Thermoprinter::IsRunning()) {
+    SERIAL_ERROR_START();
+    serialprintPGM(serial_msg);
+    SERIAL_ERRORPGM(MSG_STOPPED_HEATER);
   }
   if (!killed) {
-    Running = false;
+    Thermoprinter::Running = false;
     killed = true;
-    kill(lcd_msg);
+    Thermoprinter::kill();
   }
   else
     disable_all_heaters(); // paranoia
 }
 
 void Temperature::max_sens_error() {
-    _sens_error((const char *)(MSG_T_MAXTEMP), (const char *)(MSG_ERR_MAXTEMP));
+    _sens_error((const char *)(MSG_T_MAXTEMP));
 }
 void Temperature::min_sens_error() {
-    _sens_error((const char *)(MSG_T_MINTEMP), (const char *)(MSG_ERR_MINTEMP));
+    _sens_error((const char *)(MSG_T_MINTEMP));
 }
 
 void Temperature::disable_all_heaters() {

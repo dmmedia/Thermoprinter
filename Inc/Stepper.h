@@ -90,7 +90,9 @@ const uint16_t speed_lookuptable_slow[256][2] = {
 #define MOTOR_STEP_READ READ(MOTOR_STEP)
 
 #define  enable_MOTOR() GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
-#define disable_MOTOR() GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, (MOTOR_ENABLE_ON == GPIO::GPIO_PIN_SET) ? GPIO::GPIO_PIN_RESET : GPIO::GPIO_PIN_SET)
+FORCE_INLINE void disable_MOTOR() {
+	writePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, ((MOTOR_ENABLE_ON != GPIO::GPIO_PIN_RESET) ? GPIO::GPIO_PIN_RESET : GPIO::GPIO_PIN_SET));
+}
 
 /**
   * @brief  Sets the TIM Autoreload Register value on runtime without calling

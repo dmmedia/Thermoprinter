@@ -10,8 +10,6 @@
 
 #include <stdint.h>
 
-typedef unsigned long millis_t;
-
 enum BlockFlagBit {
   // Recalculate trapezoids on entry junction. For optimization.
   BLOCK_BIT_RECALCULATE,

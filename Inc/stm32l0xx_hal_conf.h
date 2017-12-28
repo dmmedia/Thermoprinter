@@ -36,8 +36,6 @@
 #ifndef __STM32L0xx_HAL_CONF_H
 #define __STM32L0xx_HAL_CONF_H
 
-#include "main.h"
-
 #ifdef __cplusplus
  extern "C" {
 #endif

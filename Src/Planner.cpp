@@ -6,7 +6,10 @@
  */
 
 #include <math.h>
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
+#include "typedefs.h"
 #include "Planner.h"
 #include "SREGEmulation.h"
 #include "gpio.h"
@@ -14,6 +17,7 @@
 #include <stdlib.h>
 #include "main.h"
 #include "Stepper.h"
+#include "CommandProcessor.h"
 
 float Planner::max_feedrate_mm_s, // Max speeds in mm per second
       Planner::axis_steps_per_mm,
@@ -92,14 +96,14 @@ void Planner::calculate_trapezoid_for_block(block_t* const block, const float &e
   // block->accelerate_until = accelerate_steps;
   // block->decelerate_after = accelerate_steps+plateau_steps;
 
-  CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
+  noInterrupts();  // Fill variables used by the stepper in a critical section
   if (!TEST(block->flag, BLOCK_BIT_BUSY)) { // Don't update variables if block is busy.
     block->accelerate_until = accelerate_steps;
     block->decelerate_after = accelerate_steps + plateau_steps;
     block->initial_rate = initial_rate;
     block->final_rate = final_rate;
   }
-  CRITICAL_SECTION_END;
+  interrupts();
 }
 
 /**
@@ -256,7 +260,9 @@ void Planner::_buffer_line(const long int &m, float fr_mm_s) {
 
   // If the buffer is full: good! That means we are well ahead of the robot.
   // Rest here until there is room in the buffer.
-  while (block_buffer_tail == next_buffer_head) idle();
+  while (block_buffer_tail == next_buffer_head) {
+	  Thermoprinter::idle();
+  }
 
   // Prepare to set up new block
   block_t* block = &block_buffer[block_buffer_head];
@@ -489,7 +495,7 @@ void Planner::reset_acceleration_rates() {
 // Recalculate position, steps_to_mm if axis_steps_per_mm changes!
 void Planner::refresh_positioning() {
   steps_to_mm = 1.0 / axis_steps_per_mm;
-  set_position_mm_kinematic(current_position);
+  set_position_mm_kinematic(CommandProcessor::current_position);
   reset_acceleration_rates();
 }
 

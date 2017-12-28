@@ -25,14 +25,10 @@
 #define SBI(n,b) (n |= _BV(b))
 #define CBI(n,b) (n &= ~_BV(b))
 #define SET_BIT2(n,b,value) (n) ^= ((-value)^(n)) & (_BV(b))
-#define SET_BIT(REG, BIT)     ((REG) |= (BIT))
-#define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))
-#define IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) != RESET)
+FORCE_INLINE bool isBitSet(uint32_t reg, uint32_t bit) {
+	return ((reg & bit) != RESET);
+}
 #define IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == RESET)
-#define WRITE_REG(REG, VAL)   ((REG) = (VAL))
-#define READ_REG(REG)         ((REG))
-#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(CLEARMASK))) | (SETMASK)))
-#define READ_BIT(REG, BIT)    ((REG) & (BIT))
 
 #define sq(x) ((x)*(x))
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -40,13 +36,7 @@
 #define MAX3(a, b, c)       max(max(a, b), c)
 #define MAX4(a, b, c, d)    max(MAX3(a, b, c), d)
 
-#define NOOP do{} while(0)
-
-// Bracket code that shouldn't be interrupted
-#ifndef CRITICAL_SECTION_START
-  #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
-  #define CRITICAL_SECTION_END    SREG = _sreg;
-#endif
+#define NOOP __asm("nop")
 
 #define LOW  0x0
 
@@ -74,15 +64,6 @@
 
 #define DELAY_10_NOP DELAY_5_NOP;  DELAY_5_NOP
 #define DELAY_20_NOP DELAY_10_NOP; DELAY_10_NOP
-
-#define _CAT(a, ...) a ## __VA_ARGS__
-#define SWITCH_ENABLED_false 0
-#define SWITCH_ENABLED_true  1
-#define SWITCH_ENABLED_0     0
-#define SWITCH_ENABLED_1     1
-#define SWITCH_ENABLED_      1
-#define ENABLED(b) _CAT(SWITCH_ENABLED_, b)
-#define DISABLED(b) (!_CAT(SWITCH_ENABLED_, b))
 
 #define WITHIN(V,L,H) (((V) >= (L)) && ((V) <= (H)))
 #define NUMERIC(a) WITHIN(a, '0', '9')

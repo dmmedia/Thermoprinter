@@ -51,10 +51,6 @@
 // :{ 0:'Low', 1:'High' }
 #define MOTOR_ENABLE_ON GPIO::GPIO_PIN_RESET
 
-// The ASCII buffer for serial input
-#define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
-#define BUFSIZE 4
-
 // Transfer Buffer Size
 // To save 386 bytes of PROGMEM (and TX_BUFFER_SIZE+3 bytes of RAM) set to 0.
 // To buffer a simple "ok" you need 4 bytes.
@@ -64,9 +60,44 @@
 // :[0, 2, 4, 8, 16, 32, 64, 128, 256]
 #define TX_BUFFER_SIZE 128
 
-extern bool Running;
-inline bool IsRunning() { return  Running; }
-inline bool IsStopped() { return !Running; }
+namespace Thermoprinter {
+	extern bool Running;
+	inline bool IsRunning() { return  Running; }
+	inline bool IsStopped() { return !Running; }
+
+	void idle();
+
+	namespace BSP {
+		void MX_GPIO_Init(void);
+		void setup_powerhold();
+		void setup();
+		void MspInit(void);
+		void Init(void);
+	}
+
+	void kill();
+
+	void Error_Handler(const char * const, const int32_t);
+
+	#if defined(HOST_KEEPALIVE_FEATURE) && (HOST_KEEPALIVE_FEATURE > 0)
+		MarlinBusyState busy_state = NOT_BUSY;
+		static millis_t next_busy_signal_ms = 0;
+		uint8_t host_keepalive_interval = DEFAULT_KEEPALIVE_INTERVAL;
+	#else
+	  	#define host_keepalive() NOOP
+	#endif
+
+}
+
+namespace RuntimeSettings {
+	extern bool axis_relative_modes;
+	extern bool relative_mode;
+
+	extern float32_t feedrate_mm_s;
+
+	extern int16_t feedrate_percentage;
+	extern int16_t saved_feedrate_percentage;
+}
 
 enum EndstopEnum {
     MOTOR_FAULT,
@@ -77,15 +108,12 @@ enum EndstopEnum {
 	OVER_HEAT
 };
 
-#define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
-#define MMS_SCALED(MM_S) ((MM_S)*feedrate_percentage*0.01)
+constexpr float MMM_TO_MMS(float32_t MM_M) {
+	return ((MM_M)/60.0);
+}
+#define MMS_SCALED(MM_S) ((MM_S)*RuntimeSettings::feedrate_percentage*0.01)
 
 #define IS_CARTESIAN 1
-
-typedef unsigned long millis_t;
-extern millis_t previous_cmd_ms;
-uint32_t millis();
-inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
@@ -196,8 +224,6 @@ inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
 // You should use MINVOLT for charger short/failure protection.
 #define BATTERY_MAXVOLT 8.5
 
-void kill(const char*);
-
 #define MSG_T_MAXTEMP                       "MAXTEMP triggered"
 #define MSG_T_MINTEMP                       "MINTEMP triggered"
 #ifndef MSG_ERR_MAXTEMP
@@ -207,31 +233,31 @@ void kill(const char*);
   #define MSG_ERR_MINTEMP                     "Err: MINTEMP"
 #endif
 
-void disable_all_steppers();
-
-extern long int current_position;
-
-void idle();
-
-void ok_to_send();
-
 #define MSG_THERMOPRINTER "Thermoprinter"
 
 #define SHORT_BUILD_VERSION "0.1"
 
 #define MSG_OK                              "ok"
 
+#define MSG_ERR_KILLED                      "Printer halted. kill() called!"
+
+#define MSG_RESEND                          "Resend: "
+
+#define MSG_ERR_LINE_NO                     "Line Number is not Last Line Number+1, Last Line: "
+
+#define MSG_STOPPED_HEATER                  ", system stopped! Heater_ID: "
+
 uint32_t GetTick(void);
 
-void Delay(__IO uint32_t Delay);
+namespace Timers {
+	void Delay(__IO uint32_t delay_ms);
+}
 
-void SysTick_Handler(void);
+extern "C" {
+	void SysTick_Handler(void);
+}
 
 /* USER CODE END Private defines */
-
-void _Error_Handler(const char *, int);
-
-#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 
 /**
   * @}

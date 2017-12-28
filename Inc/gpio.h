@@ -8,6 +8,7 @@
  */
 
 #include <stm32l0xx.h>
+#include <limits.h>
 
 namespace GPIO {
 	/** @defgroup GPIO_mode_define Mode definition
@@ -20,21 +21,21 @@ namespace GPIO {
 	  *           - Z  : IO Direction mode (Input, Output, Alternate or Analog)
 	  * @{
 	  */
-	#define  GPIO_MODE_INPUT                        (static_cast<uint32_t>(0x00000000U))   /*!< Input Floating Mode                   */
-	#define  GPIO_MODE_OUTPUT_PP                    (static_cast<uint32_t>(0x00000001U))   /*!< Output Push Pull Mode                 */
-	#define  GPIO_MODE_OUTPUT_OD                    (static_cast<uint32_t>(0x00000011U))   /*!< Output Open Drain Mode                */
-	#define  GPIO_MODE_AF_PP                        (static_cast<uint32_t>(0x00000002U))   /*!< Alternate Function Push Pull Mode     */
-	#define  GPIO_MODE_AF_OD                        (static_cast<uint32_t>(0x00000012U))   /*!< Alternate Function Open Drain Mode    */
+	constexpr uint32_t GPIO_MODE_INPUT 				= 0x00000000U;   /*!< Input Floating Mode                   */
+	constexpr uint32_t GPIO_MODE_OUTPUT_PP 			= 0x00000001U;   /*!< Output Push Pull Mode                 */
+	constexpr uint32_t GPIO_MODE_OUTPUT_OD 			= 0x00000011U;   /*!< Output Open Drain Mode                */
+	constexpr uint32_t GPIO_MODE_AF_PP 				= 0x00000002U;   /*!< Alternate Function Push Pull Mode     */
+	constexpr uint32_t GPIO_MODE_AF_OD 				= 0x00000012U;   /*!< Alternate Function Open Drain Mode    */
 
-	#define  GPIO_MODE_ANALOG                       (static_cast<uint32_t>(0x00000003U))   /*!< Analog Mode  */
+	constexpr uint32_t GPIO_MODE_ANALOG 			= 0x00000003U;   /*!< Analog Mode  */
 
-	#define  GPIO_MODE_IT_RISING                    (static_cast<uint32_t>(0x10110000U))   /*!< External Interrupt Mode with Rising edge trigger detection          */
-	#define  GPIO_MODE_IT_FALLING                   (static_cast<uint32_t>(0x10210000U))   /*!< External Interrupt Mode with Falling edge trigger detection         */
-	#define  GPIO_MODE_IT_RISING_FALLING            (static_cast<uint32_t>(0x10310000U))   /*!< External Interrupt Mode with Rising/Falling edge trigger detection  */
+	constexpr uint32_t GPIO_MODE_IT_RISING 			= 0x10110000U;   /*!< External Interrupt Mode with Rising edge trigger detection          */
+	constexpr uint32_t GPIO_MODE_IT_FALLING 		= 0x10210000U;   /*!< External Interrupt Mode with Falling edge trigger detection         */
+	constexpr uint32_t GPIO_MODE_IT_RISING_FALLING 	= 0x10310000U;   /*!< External Interrupt Mode with Rising/Falling edge trigger detection  */
 
-	#define  GPIO_MODE_EVT_RISING                   (static_cast<uint32_t>(0x10120000U))   /*!< External Event Mode with Rising edge trigger detection               */
-	#define  GPIO_MODE_EVT_FALLING                  (static_cast<uint32_t>(0x10220000U))   /*!< External Event Mode with Falling edge trigger detection              */
-	#define  GPIO_MODE_EVT_RISING_FALLING           (static_cast<uint32_t>(0x10320000U))   /*!< External Event Mode with Rising/Falling edge trigger detection       */
+	constexpr uint32_t GPIO_MODE_EVT_RISING 		= 0x10120000U;   /*!< External Event Mode with Rising edge trigger detection               */
+	constexpr uint32_t GPIO_MODE_EVT_FALLING		= 0x10220000U;   /*!< External Event Mode with Falling edge trigger detection              */
+	constexpr uint32_t GPIO_MODE_EVT_RISING_FALLING	= 0x10320000U;   /*!< External Event Mode with Rising/Falling edge trigger detection       */
 
 
 	#define GPIO_MODE             (static_cast<uint32_t>(0x00000003U))
@@ -56,23 +57,23 @@ namespace GPIO {
 	/** @defgroup GPIO_pins_define Pin definition
 	  * @{
 	  */
-	#define GPIO_PIN_0                 (static_cast<uint16_t>(0x0001U))  /* Pin 0 selected    */
-	#define GPIO_PIN_1                 (static_cast<uint16_t>(0x0002U))  /* Pin 1 selected    */
-	#define GPIO_PIN_2                 (static_cast<uint16_t>(0x0004U))  /* Pin 2 selected    */
-	#define GPIO_PIN_3                 (static_cast<uint16_t>(0x0008U))  /* Pin 3 selected    */
-	#define GPIO_PIN_4                 (static_cast<uint16_t>(0x0010U))  /* Pin 4 selected    */
-	#define GPIO_PIN_5                 (static_cast<uint16_t>(0x0020U))  /* Pin 5 selected    */
-	#define GPIO_PIN_6                 (static_cast<uint16_t>(0x0040U))  /* Pin 6 selected    */
-	#define GPIO_PIN_7                 (static_cast<uint16_t>(0x0080U))  /* Pin 7 selected    */
-	#define GPIO_PIN_8                 (static_cast<uint16_t>(0x0100U))  /* Pin 8 selected    */
-	#define GPIO_PIN_9                 (static_cast<uint16_t>(0x0200U))  /* Pin 9 selected    */
-	#define GPIO_PIN_10                (static_cast<uint16_t>(0x0400U))  /* Pin 10 selected   */
-	#define GPIO_PIN_11                (static_cast<uint16_t>(0x0800U))  /* Pin 11 selected   */
-	#define GPIO_PIN_12                (static_cast<uint16_t>(0x1000U))  /* Pin 12 selected   */
-	#define GPIO_PIN_13                (static_cast<uint16_t>(0x2000U))  /* Pin 13 selected   */
-	#define GPIO_PIN_14                (static_cast<uint16_t>(0x4000U))  /* Pin 14 selected   */
-	#define GPIO_PIN_15                (static_cast<uint16_t>(0x8000U))  /* Pin 15 selected   */
-	#define GPIO_PIN_All               (static_cast<uint16_t>(0xFFFFU))  /* All pins selected */
+	constexpr uint16_t GPIO_PIN_0 	= 0x0001U;
+	constexpr uint16_t GPIO_PIN_1 	= 0x0002U;  /* Pin 1 selected    */
+	constexpr uint16_t GPIO_PIN_2 	= 0x0004U;  /* Pin 2 selected    */
+	constexpr uint16_t GPIO_PIN_3 	= 0x0008U;  /* Pin 3 selected    */
+	constexpr uint16_t GPIO_PIN_4 	= 0x0010U;  /* Pin 4 selected    */
+	constexpr uint16_t GPIO_PIN_5 	= 0x0020U;  /* Pin 5 selected    */
+	constexpr uint16_t GPIO_PIN_6	= 0x0040U;  /* Pin 6 selected    */
+	constexpr uint16_t GPIO_PIN_7	= 0x0080U;  /* Pin 7 selected    */
+	constexpr uint16_t GPIO_PIN_8	= 0x0100U;  /* Pin 8 selected    */
+	constexpr uint16_t GPIO_PIN_9   = 0x0200U;  /* Pin 9 selected    */
+	constexpr uint16_t GPIO_PIN_10  = 0x0400U;  /* Pin 10 selected   */
+	constexpr uint16_t GPIO_PIN_11  = 0x0800U;  /* Pin 11 selected   */
+	constexpr uint16_t GPIO_PIN_12  = 0x1000U;  /* Pin 12 selected   */
+	constexpr uint16_t GPIO_PIN_13  = 0x2000U;  /* Pin 13 selected   */
+	constexpr uint16_t GPIO_PIN_14  = 0x4000U;  /* Pin 14 selected   */
+	constexpr uint16_t GPIO_PIN_15  = 0x8000U;  /* Pin 15 selected   */
+	constexpr uint16_t GPIO_PIN_All = 0xFFFFU;  /* All pins selected */
 
 	 /** @defgroup GPIO_pull_define Pull definition
 	   * @brief GPIO Pull-Up or Pull-Down Activation
@@ -243,6 +244,8 @@ namespace GPIO {
 	  */
 	void GpioDeInit(GPIO_TypeDef  * const GPIOx, const uint32_t GPIO_Pin);
 
+	void setOutput(GPIO_TypeDef  * const port, const uint32_t pin);
+
 	/** @defgroup GPIOEx_Pin_Available Pin available
 	 * @{
 	 */
@@ -252,37 +255,33 @@ namespace GPIO {
 	#define GPIOD_PIN_AVAILABLE  GPIO_PIN_2
 	#define GPIOH_PIN_AVAILABLE  GPIO_PIN_0 | GPIO_PIN_1
 
-	#define IS_GPIO_PIN_AVAILABLE(__INSTANCE__,__PIN__)  \
-					((((__INSTANCE__) == GPIOA) && (((__PIN__) & (GPIOA_PIN_AVAILABLE)) != 0U) && (((__PIN__) | (GPIOA_PIN_AVAILABLE)) == (GPIOA_PIN_AVAILABLE))) || \
-					 (((__INSTANCE__) == GPIOB) && (((__PIN__) & (GPIOB_PIN_AVAILABLE)) != 0U) && (((__PIN__) | (GPIOB_PIN_AVAILABLE)) == (GPIOB_PIN_AVAILABLE))) || \
-					 (((__INSTANCE__) == GPIOC) && (((__PIN__) & (GPIOC_PIN_AVAILABLE)) != 0U) && (((__PIN__) | (GPIOC_PIN_AVAILABLE)) == (GPIOC_PIN_AVAILABLE))) || \
-					 (((__INSTANCE__) == GPIOD) && (((__PIN__) & (GPIOD_PIN_AVAILABLE)) != 0U) && (((__PIN__) | (GPIOD_PIN_AVAILABLE)) == (GPIOD_PIN_AVAILABLE))) || \
-					 (((__INSTANCE__) == GPIOH) && (((__PIN__) & (GPIOH_PIN_AVAILABLE)) != 0U) && (((__PIN__) | (GPIOH_PIN_AVAILABLE)) == (GPIOH_PIN_AVAILABLE))))
+	constexpr bool IsGpioPinAvailable(GPIO_TypeDef * const GPIOx, const uint32_t GPIO_Pin) {
+		bool res = false;
+		if (GPIOx == GPIOA) {
+			res = (((GPIO_Pin & GPIOA_PIN_AVAILABLE) != 0U) && ((GPIO_Pin | GPIOA_PIN_AVAILABLE) == GPIOA_PIN_AVAILABLE));
+		} else if (GPIOx == GPIOB) {
+			res = (((GPIO_Pin & GPIOB_PIN_AVAILABLE) != 0U) && ((GPIO_Pin | GPIOB_PIN_AVAILABLE) == GPIOB_PIN_AVAILABLE));
+		} else if (GPIOx == GPIOC) {
+			res = (((GPIO_Pin & GPIOC_PIN_AVAILABLE) != 0U) && ((GPIO_Pin | GPIOC_PIN_AVAILABLE) == GPIOC_PIN_AVAILABLE));
+		} else if (GPIOx == GPIOD) {
+			res = (((GPIO_Pin & GPIOD_PIN_AVAILABLE) != 0U) && ((GPIO_Pin | GPIOD_PIN_AVAILABLE) == GPIOD_PIN_AVAILABLE));
+		} else if (GPIOx == GPIOH) {
+			res = (((GPIO_Pin & GPIOH_PIN_AVAILABLE) != 0U) && ((GPIO_Pin | GPIOH_PIN_AVAILABLE) == GPIOH_PIN_AVAILABLE));
+		} else {
+			res = false;
+		}
+		return res;
+	}
 
-	#define PIN_EXISTS(IO) IS_GPIO_PIN_AVAILABLE(IO ## _PORT, IO ## _PIN)
+	#define PIN_EXISTS(IO) IsGpioPinAvailable(IO ## _PORT, IO ## _PIN)
+	constexpr bool pinExists(GPIO_TypeDef * const GPIOx, const uint32_t GPIO_Pin) {
+		return IsGpioPinAvailable(GPIOx, GPIO_Pin);
+	}
 
 	#define SET_INPUT(IO) GPIO::setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_INPUT)
 	#define SET_INPUT_EXTI(IO) GPIO::setInput(IO ## _PORT, IO ## _PIN, GPIO_MODE_IT_RISING_FALLING)
 
 	#define SET_OUTPUT(IO) GPIO::setOutput(IO ## _PORT, IO ## _PIN)
-
-	#define WRITE(IO,V) GPIO_WRITE_PIN(IO ## _PORT, IO ## _PIN, V)
-	#define OUT_WRITE(IO, v) do{ SET_OUTPUT(IO); WRITE(IO, v); }while(0)
-
-	/**
-	  * @brief  Reads the specified input port pin.
-	  * @param  GPIOx: where x can be (A..E and H) to select the GPIO peripheral for STM32L0xx family devices.
-	  *                Note that GPIOE is not available on all devices.
-	  * @param  GPIO_Pin: specifies the port bit to read.
-	  *                   This parameter can be GPIO_PIN_x where x can be (0..15).
-	  *                   All port bits are not necessarily available on all GPIOs.
-	  * @retval The input port pin value.
-	  */
-	#define GPIO_READ_PIN(GPIOx, GPIO_PIN) (GPIOx->IDR & GPIO_PIN ? GPIO_PIN_SET : GPIO_PIN_RESET)
-
-	FORCE_INLINE GPIO_PinState read(GPIO_TypeDef* port, uint32_t pin) {
-		return GPIO_READ_PIN(port, pin);
-	}
 
 	/**
 	  * @brief  Sets or clears the selected data port bit.
@@ -302,7 +301,17 @@ namespace GPIO {
 	  *                        GPIO_PIN_SET: to set the port pin
 	  * @retval None
 	  */
-	#define GPIO_WRITE_PIN(GPIOx, GPIO_Pin, PinState) (PinState ? (GPIOx->BSRR = GPIO_Pin) : (GPIOx->BRR = GPIO_Pin))
+	#define GPIO_WRITE_PIN(GPIOx, GPIO_Pin, PinState) ((PinState != GPIO::GPIO_PIN_RESET) ? (GPIOx->BSRR = GPIO_Pin) : (GPIOx->BRR = GPIO_Pin))
+	FORCE_INLINE void writePin(GPIO_TypeDef* const port, uint32_t const pin, GPIO_PinState const state) {
+		switch (state) {
+			case GPIO_PIN_RESET:
+				port->BRR = pin;
+				break;
+			default:
+				port->BSRR = pin;
+				break;
+		}
+	}
 
 	/** @defgroup RCC_IOPORT_Clock_Enable_Disable IOPORT Peripheral Clock Enable Disable
 	  * @brief  Enable or disable the IOPORT peripheral clock.
@@ -311,37 +320,54 @@ namespace GPIO {
 	  *         using it.
 	  * @{
 	  */
-	#define RCC_GPIOA_CLK_ENABLE()   do { \
-											__IO uint32_t tmpreg; \
-											SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
-											/* Delay after an RCC peripheral clock enabling */ \
-											tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
-											UNUSED(tmpreg);\
-										  } while(0)
+	#define WRITE(IO,V) GPIO_WRITE_PIN(IO ## _PORT, IO ## _PIN, V)
+	#define OUT_WRITE(IO, v) do{ SET_OUTPUT(IO); WRITE(IO, v); }while(0)
+	FORCE_INLINE void outWrite(GPIO_TypeDef* const port, uint32_t const pin, GPIO_PinState const state) {
+		setOutput(port, pin);
+		writePin(port, pin, state);
+	}
 
-	#define RCC_GPIOB_CLK_ENABLE()   do { \
-											__IO uint32_t tmpreg; \
-											SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);\
-											/* Delay after an RCC peripheral clock enabling */ \
-											tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);\
-											UNUSED(tmpreg);\
-										  } while(0)
+	/**
+	  * @brief  Reads the specified input port pin.
+	  * @param  GPIOx: where x can be (A..E and H) to select the GPIO peripheral for STM32L0xx family devices.
+	  *                Note that GPIOE is not available on all devices.
+	  * @param  GPIO_Pin: specifies the port bit to read.
+	  *                   This parameter can be GPIO_PIN_x where x can be (0..15).
+	  *                   All port bits are not necessarily available on all GPIOs.
+	  * @retval The input port pin value.
+	  */
+	#define GPIO_READ_PIN(GPIOx, GPIO_PIN) (GPIOx->IDR & GPIO_PIN ? GPIO_PIN_SET : GPIO_PIN_RESET)
 
-	#define RCC_GPIOC_CLK_ENABLE()   do { \
-											__IO uint32_t tmpreg; \
-											SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN);\
-											/* Delay after an RCC peripheral clock enabling */ \
-											tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN);\
-											UNUSED(tmpreg);\
-										  } while(0)
+	FORCE_INLINE GPIO_PinState read(GPIO_TypeDef* port, uint32_t pin) {
+		return GPIO_READ_PIN(port, pin);
+	}
 
-	#define RCC_GPIOH_CLK_ENABLE()   do { \
-											__IO uint32_t tmpreg; \
-											SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN);\
-											/* Delay after an RCC peripheral clock enabling */ \
-											tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN);\
-										  } while(0)
-
+	constexpr void RCC_GPIOx_CLK_ENABLE(GPIO_TypeDef* const GPIOx) {
+		uint32_t bit = 0U;
+		if (GPIOx == GPIOA) {
+			bit = RCC_IOPENR_GPIOAEN;
+		} else if (GPIOx == GPIOB) {
+			bit = RCC_IOPENR_GPIOBEN;
+		} else if (GPIOx == GPIOC) {
+			bit = RCC_IOPENR_GPIOCEN;
+		} else if (GPIOx == GPIOD) {
+			bit = RCC_IOPENR_GPIODEN;
+		} else if (GPIOx == GPIOH) {
+			bit = RCC_IOPENR_GPIOHEN;
+		} else {
+			bit = 0U;
+		}
+		if (bit != 0U) {
+			SET_BIT(RCC->IOPENR, bit);
+			/* Delay after an RCC peripheral clock enabling */
+			__IO uint32_t tmpreg = READ_BIT(RCC->IOPENR, bit);
+			UNUSED(tmpreg);
+		}
+	}
+	constexpr void RCC_GPIOA_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOA);}
+	constexpr void RCC_GPIOB_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOB);}
+	constexpr void RCC_GPIOC_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOC);}
+	constexpr void RCC_GPIOH_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOH);}
 
 	#define RCC_GPIOA_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN)
 	#define RCC_GPIOB_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN)
@@ -349,8 +375,11 @@ namespace GPIO {
 	#define RCC_GPIOH_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN)
 
 	void setInput(GPIO_TypeDef  *const port, const uint32_t pin, const uint32_t mode);
-	void setOutput(GPIO_TypeDef  * const port, const uint32_t pin);
 
 	void GPIO_EXTI_IRQHandler(const uint16_t GPIO_Pin);
 	void GPIO_EXTI_Callback(const uint16_t GPIO_Pin);
+
+	constexpr uint32_t NO_PIN = UINT_MAX;
+	GPIO_TypeDef * const NO_PORT = nullptr;
+
 }

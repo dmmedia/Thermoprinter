@@ -5,8 +5,11 @@
  *      Author: Den
  */
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
 #include "Settings.h"
+#include "typedefs.h"
 #include "main.h"
 #include "Planner.h"
 #include "gpio.h"

@@ -5,14 +5,17 @@
  *      Author: Den
  */
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
 #include "gpio.h"
+#include "typedefs.h"
 #include "main.h"
 #include "Planner.h"
+#include "Configuration.h"
 #include "Stepper.h"
 #include <stddef.h>
 #include "SREGEmulation.h"
-#include "Configuration.h"
 #include "Temperature.h"
 #include "Endstops.h"
 #include "tim.h"
@@ -39,7 +42,7 @@ volatile uint32_t Stepper::step_events_completed = 0; // The number of step even
 
 volatile long Stepper::endstops_trigsteps;
 
-#if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+#ifdef ENDSTOP_INTERRUPTS_FEATURE
   extern volatile uint8_t Endstops::e_hit;
 #endif
 
@@ -138,7 +141,7 @@ void Stepper::wake_up() {
 /**
  * Block until all buffered steps are executed
  */
-void Stepper::synchronize() { while (planner.blocks_queued()) idle(); }
+void Stepper::synchronize() { while (planner.blocks_queued()) Thermoprinter::idle(); }
 
 /**
  * Set the stepper positions directly in steps
@@ -151,10 +154,10 @@ void Stepper::synchronize() { while (planner.blocks_queued()) idle(); }
 void Stepper::set_position(const long &a) {
   synchronize(); // Bad to set stepper counts in the middle of a move
 
-  CRITICAL_SECTION_START;
+  noInterrupts();
   // default planning
   count_position = a;
-  CRITICAL_SECTION_END;
+  interrupts();
 }
 
 /**
@@ -235,7 +238,7 @@ void Stepper::isr() {
 
       step_events_completed = 0;
 
-      #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+      #ifdef ENDSTOP_INTERRUPTS_FEATURE
         Endstops::e_hit = 2; // Needed for the case an endstop is already triggered before the new move begins.
                    // No 'change' can be detected.
       #endif
@@ -248,7 +251,7 @@ void Stepper::isr() {
   }
 
   // Update endstops state, if enabled
-  #if ENABLED(ENDSTOP_INTERRUPTS_FEATURE)
+  #ifdef ENDSTOP_INTERRUPTS_FEATURE
     if (Endstops::e_hit && Endstops::enabled) {
       Endstops::update();
       Endstops::e_hit--;
@@ -425,7 +428,7 @@ void Stepper::init() {
   htim6.Channel = TIM_ACTIVE_CHANNEL_CLEARED;
 
   if (STATUS_ERROR == TIM_Base_Init(&htim6)) {
-	  Error_Handler();
+	  Thermoprinter::Error_Handler(__FILE__, __LINE__);
   }
 
   // Set the timer pre-scaler

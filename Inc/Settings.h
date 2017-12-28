@@ -16,14 +16,15 @@ public:
     static void reset(void);
 
 #if defined(EEPROM_SETTINGS)
-  static bool load();
-
+    static void load(void);
 #else
-  FORCE_INLINE static bool load() { reset(); return true; }
+  	FORCE_INLINE static void load(void) {
+  		reset();
+  	}
 #endif
 
 private:
-  static void postprocess();
+  	static void postprocess();
 
 };
 

@@ -95,12 +95,12 @@
   */
 /** @defgroup HAL_Private HAL Private
   * @{
-  */ 
+  */
 
 
 /**
   * @}
-  */ 
+  */
 
 /** @addtogroup HAL_Exported_Functions HAL Exported Functions
   * @{
@@ -114,28 +114,28 @@
               ##### Initialization and de-initialization functions #####
  ===============================================================================
    [..]  This section provides functions allowing to:
-      (+) Initializes the Flash interface, the NVIC allocation and initial clock 
-          configuration. It initializes the source of time base also when timeout 
+      (+) Initializes the Flash interface, the NVIC allocation and initial clock
+          configuration. It initializes the source of time base also when timeout
           is needed and the backup domain when enabled.
       (+) de-Initializes common part of the HAL.
-      (+) Configure The time base source to have 1ms time base with a dedicated 
-          Tick interrupt priority. 
-        (++) Systick timer is used by default as source of time base, but user 
-             can eventually implement his proper time base source (a general purpose 
-             timer for example or other time source), keeping in mind that Time base 
-             duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and 
+      (+) Configure The time base source to have 1ms time base with a dedicated
+          Tick interrupt priority.
+        (++) Systick timer is used by default as source of time base, but user
+             can eventually implement his proper time base source (a general purpose
+             timer for example or other time source), keeping in mind that Time base
+             duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and
              handled in milliseconds basis.
-        (++) Time base configuration function (HAL_InitTick ()) is called automatically 
-             at the beginning of the program after reset by HAL_Init() or at any time 
-             when clock is configured, by HAL_RCC_ClockConfig(). 
-        (++) Source of time base is configured  to generate interrupts at regular 
-             time intervals. Care must be taken if HAL_Delay() is called from a 
-             peripheral ISR process, the Tick interrupt line must have higher priority 
-            (numerically lower) than the peripheral interrupt. Otherwise the caller 
-            ISR process will be blocked. 
-       (++) functions affecting time base configurations are declared as __weak  
+        (++) Time base configuration function (HAL_InitTick ()) is called automatically
+             at the beginning of the program after reset by HAL_Init() or at any time
+             when clock is configured, by HAL_RCC_ClockConfig().
+        (++) Source of time base is configured  to generate interrupts at regular
+             time intervals. Care must be taken if HAL_Delay() is called from a
+             peripheral ISR process, the Tick interrupt line must have higher priority
+            (numerically lower) than the peripheral interrupt. Otherwise the caller
+            ISR process will be blocked.
+       (++) functions affecting time base configurations are declared as __weak
              to make  override possible  in case of other  implementations in user file.
- 
+
 @endverbatim
   * @{
   */
@@ -143,7 +143,7 @@
 /**
   * @brief This function configures the Flash prefetch, Flash preread and Buffer cache,
   *        Configures time base source, NVIC and Low level hardware
-  * @note This function is called at the beginning of program after reset and before 
+  * @note This function is called at the beginning of program after reset and before
   *       the clock configuration
   * @note The time base configuration is based on MSI clock when exiting from Reset.
   *       Once done, time base tick start incrementing.
@@ -153,7 +153,7 @@
   */
 HAL_StatusTypeDef HAL_Init(void)
 {
-  /* Configure Buffer cache, Flash prefetch,  Flash preread */ 
+  /* Configure Buffer cache, Flash prefetch,  Flash preread */
 #if (BUFFER_CACHE_DISABLE != 0)
   __HAL_FLASH_BUFFER_CACHE_DISABLE();
 #endif /* BUFFER_CACHE_DISABLE */
@@ -200,7 +200,7 @@ HAL_StatusTypeDef HAL_DeInit(void)
 
   /* De-Init the low level hardware */
   HAL_MspDeInit();
-    
+
   /* Return function status */
   return HAL_OK;
 }
@@ -229,15 +229,15 @@ __weak void HAL_MspDeInit(void)
 
 
 /**
-  * @brief This function configures the source of the time base. 
-  *        The time source is configured  to have 1ms time base with a dedicated 
+  * @brief This function configures the source of the time base.
+  *        The time source is configured  to have 1ms time base with a dedicated
   *        Tick interrupt priority.
   * @note This function is called  automatically at the beginning of program after
-  *       reset by HAL_Init() or at any time when clock is reconfigured  by HAL_RCC_ClockConfig(). 
-  * @note In the default implementation, SysTick timer is the source of time base. 
-  *       It is used to generate interrupts at regular time intervals. 
-  *       Care must be taken if HAL_Delay() is called from a peripheral ISR process, 
-  *       The the SysTick interrupt must have higher priority (numerically lower) 
+  *       reset by HAL_Init() or at any time when clock is reconfigured  by HAL_RCC_ClockConfig().
+  * @note In the default implementation, SysTick timer is the source of time base.
+  *       It is used to generate interrupts at regular time intervals.
+  *       Care must be taken if HAL_Delay() is called from a peripheral ISR process,
+  *       The the SysTick interrupt must have higher priority (numerically lower)
   *       than the peripheral interrupt. Otherwise the caller ISR process will be blocked.
   *       The function is declared as __Weak  to be overwritten  in case of other
   *       implementation  in user file.

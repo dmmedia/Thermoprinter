@@ -377,10 +377,10 @@ void HAL_MspInit(void);
 void HAL_MspDeInit(void);
 HAL_StatusTypeDef HAL_InitTick (uint32_t TickPriority);
 
-/**                  
+/**
   * @}
   */
-  
+
  /** @defgroup HAL_Exported_Functions_Group2 Peripheral Control functions 
   *  @brief    Peripheral Control functions
   * @{
@@ -409,7 +409,7 @@ void HAL_SYSCFG_VREFINT_OutputSelect(uint32_t SYSCFG_Vrefint_OUTPUT);
 /**                  
   * @}
   */
-/**                  
+/**
   * @}
   */
 
@@ -426,12 +426,12 @@ void HAL_SYSCFG_VREFINT_OutputSelect(uint32_t SYSCFG_Vrefint_OUTPUT);
 
 /**
   * @}
-  */ 
+  */
 
 /**
   * @}
-  */ 
-  
+  */
+
 #ifdef __cplusplus
 }
 #endif
