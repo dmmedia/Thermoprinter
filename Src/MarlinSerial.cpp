@@ -32,7 +32,7 @@ namespace MarlinSerial {
 	uint16_t tx_i = 0U;
 
 	ring_buffer_r rx_buffer = { { 0U }, 0U, 0U };
-	#if TX_BUFFER_SIZE > 0
+	#if TX_BUFFER_SIZE > 0U
 		ring_buffer_t tx_buffer = { { 0U }, 0U, 0U };
 		bool written;
 	#endif
@@ -270,6 +270,7 @@ namespace MarlinSerial {
 					tmpreg = (uint32_t) LSE_VALUE;
 					break;
 				case UART_CLOCKSOURCE_UNDEFINED:
+				case UART_CLOCKSOURCE_PCLK2:
 				default:
 					ret = STATUS_ERROR;
 					break;
@@ -385,17 +386,18 @@ namespace MarlinSerial {
 	{
 		StatusTypeDef res = STATUS_OK;
 		// Wait until flag is set
-		while((UART_GET_FLAG(huart, Flag) ? SET : RESET) == Status)
+		while(Status == UART_GetFlagStatus(huart, Flag))
 		{
 			// Check for the Timeout
 			if(Timeout != UART_MAX_DELAY)
 			{
-				uint32_t elapsedTime = GetTick() - Tickstart;
+				uint32_t const elapsedTime = GetTick() - Tickstart;
 				if((Timeout == 0U) || (elapsedTime > Timeout))
 				{
 					// Disable TXE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts for the interrupt process
 					CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE));
-					CLEAR_BIT(huart->Instance->CR3, static_cast<uint32_t>(USART_CR3_EIE));
+					constexpr uint8_t USART_CR3_EIE_BIT = USART_CR3_EIE;
+					CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE_BIT);
 
 					huart->gState  = UART_STATE_READY;
 					huart->RxState = UART_STATE_READY;
@@ -417,6 +419,8 @@ namespace MarlinSerial {
 	///
 	StatusTypeDef UART_CheckIdleState(UartHandle * const huart)
 	{
+		StatusTypeDef res = STATUS_OK;
+
 		// Initialize the UART ErrorCode
 		huart->ErrorCode = UART_ERROR_NONE;
 
@@ -424,34 +428,48 @@ namespace MarlinSerial {
 		uint32_t const tickstart = GetTick();
 
 		// Check if the Transmitter is enabled
-		if((huart->Instance->CR1 & static_cast<uint32_t>(USART_CR1_TE)) == static_cast<uint32_t>(USART_CR1_TE))
+		constexpr uint8_t USART_CR1_TE_BIT = USART_CR1_TE;
+		if((huart->Instance->CR1 & USART_CR1_TE_BIT) == USART_CR1_TE_BIT)
 		{
 			// Wait until TEACK flag is set
-			if(UART_WaitOnFlagUntilTimeout(huart, static_cast<uint32_t>(USART_ISR_TEACK), RESET, tickstart, HAL_UART_TIMEOUT_VALUE) != STATUS_OK)
+			//lint -save -e9031
+			// some error in lint
+			constexpr uint32_t USART_ISR_TEACK_BIT = USART_ISR_TEACK;
+			//lint -restore
+			if(UART_WaitOnFlagUntilTimeout(huart, USART_ISR_TEACK_BIT, RESET, tickstart, HAL_UART_TIMEOUT_VALUE) != STATUS_OK)
 			{
 				// Timeout occurred
-				return STATUS_TIMEOUT;
+				res = STATUS_TIMEOUT;
 			}
 		}
 		// Check if the Receiver is enabled
-		if((huart->Instance->CR1 & static_cast<uint32_t>(USART_CR1_RE)) == static_cast<uint32_t>(USART_CR1_RE))
-		{
-			// Wait until REACK flag is set
-			if(UART_WaitOnFlagUntilTimeout(huart, static_cast<uint32_t>(USART_ISR_REACK), RESET, tickstart, HAL_UART_TIMEOUT_VALUE) != STATUS_OK)
+		constexpr uint8_t USART_CR1_RE_BIT = USART_CR1_RE;
+		if (res == STATUS_OK) {
+			if ((huart->Instance->CR1 & USART_CR1_RE_BIT) == USART_CR1_RE_BIT)
 			{
-				// Timeout occurred
-				return STATUS_TIMEOUT;
+				// Wait until REACK flag is set
+				//lint -save -e9031
+				// error in lint
+				constexpr uint32_t USART_ISR_REACK_BIT = USART_ISR_REACK;
+				//lint -restore
+				if(UART_WaitOnFlagUntilTimeout(huart, USART_ISR_REACK_BIT, RESET, tickstart, HAL_UART_TIMEOUT_VALUE) != STATUS_OK)
+				{
+					// Timeout occurred
+					res = STATUS_TIMEOUT;
+				}
 			}
 		}
 
-		// Initialize the UART State
-		huart->gState  = UART_STATE_READY;
-		huart->RxState = UART_STATE_READY;
+		if (res == STATUS_OK) {
+			// Initialize the UART State
+			huart->gState  = UART_STATE_READY;
+			huart->RxState = UART_STATE_READY;
 
-		// Process Unlocked
-		UART_UnlockHandle(huart);
+			// Process Unlocked
+			UART_UnlockHandle(huart);
+		}
 
-		return STATUS_OK;
+		return res;
 	}
 
 	//
@@ -559,7 +577,7 @@ namespace MarlinSerial {
 		UartEnableIT(&huart2, UART_IT_RXNE);
 		//	UartEnableIT(&hlpuart1, UART_IT_RXNE);
 
-	  	#if TX_BUFFER_SIZE > 0
+	  	#if TX_BUFFER_SIZE > 0U
 			UartEnableIT(&huart2, UART_IT_TXE);
 			UartEnableIT(&huart2, UART_IT_TC);
 			//	UartEnableIT(&hlpuart1, UART_IT_TXE);
@@ -651,7 +669,9 @@ namespace MarlinSerial {
 	}
 
 	void end() {
-		UartDeInit(&huart2);
+		if (UartDeInit(&huart2) != STATUS_OK) {
+			Thermoprinter::Error_Handler(__FILE__, __LINE__);
+		}
 		//	UartDeInit(&hlpuart1);
 	}
 
@@ -665,29 +685,31 @@ namespace MarlinSerial {
 	}
 
 	void UartDisableIT(const UartHandle * const huart, const uint32_t source) {
+		uint32_t const bitToClear = ((uint32_t)1U << (source & UART_IT_MASK));
 		if (((source & 0xFFU) >> 5U) == 1U) {
-			huart->Instance->CR1 &= ~(1U << (source & UART_IT_MASK));
+			CLEAR_BIT(huart->Instance->CR1, bitToClear);
 		}
 		else if (((source & 0xFFU) >> 5U) == 2U) {
-			huart->Instance->CR2 &= ~(1U << (source & UART_IT_MASK));
+			CLEAR_BIT(huart->Instance->CR2, bitToClear);
 		} else {
-			huart->Instance->CR3 &= ~(1U << (source & UART_IT_MASK));
+			CLEAR_BIT(huart->Instance->CR3, bitToClear);
 		}
 	}
 
 	void UartEnableIT(const UartHandle * const huart, const uint32_t source) {
+		uint32_t const bitToSet = (uint32_t)1U << (source & UART_IT_MASK);
 		if (((source & 0xFFU) >> 5U) == 1U) {
-			huart->Instance->CR1 |= (1U << (source & UART_IT_MASK));
+			SET_BIT(huart->Instance->CR1, bitToSet);
 		} else if (((source & 0xFFU) >> 5U) == 2U) {
-			huart->Instance->CR2 |= (1U << (source & UART_IT_MASK));
+			SET_BIT(huart->Instance->CR2, bitToSet);
 		} else {
-			huart->Instance->CR3 |= (1U << (source & UART_IT_MASK));
+			SET_BIT(huart->Instance->CR3, bitToSet);
 		}
 	}
 
 	ITStatus UartGetITSource(const UartHandle * const huart, uint32_t const source) {
 		ITStatus res = RESET;
-		uint32_t const srcMaskCheck = static_cast<uint32_t>(1U << ((source & 0xFFFFU) & UART_IT_MASK));
+		uint32_t const srcMaskCheck = (uint32_t)1U << ((source & 0xFFFFU) & UART_IT_MASK);
 		uint32_t reg;
 		if (((source & 0xFFU) >> 5U) == 1U) {
 			reg = huart->Instance->CR1;
@@ -697,7 +719,7 @@ namespace MarlinSerial {
 			reg = huart->Instance->CR3;
 		}
 		uint32_t const regSrc = reg & srcMaskCheck;
-		if (regSrc > 0) {
+		if (regSrc > 0U) {
 			res = SET;
 		}
 		return res;
@@ -705,7 +727,7 @@ namespace MarlinSerial {
 
 	ITStatus UartGetIT(const UartHandle * const huart, uint32_t const source) {
 		ITStatus res = RESET;
-		if ((huart->Instance->ISR & static_cast<uint32_t>(1U << (source >> 0x08U))) > 0) {
+		if ((huart->Instance->ISR & ((uint32_t)1U << (source >> 0x08U))) > 0U) {
 			res = SET;
 		}
 		return  res;
@@ -729,8 +751,8 @@ namespace MarlinSerial {
 
 	void printNumber(uint32_t n, uint8_t const base) {
 		if (n != 0U) {
-			uint8_t buf[8 * sizeof(uint32_t)]; // Enough space for base 2
-			uint8_t i = 0;
+			uint8_t buf[8U * sizeof(uint32_t)]; // Enough space for base 2
+			uint8_t i = 0U;
 			while (n != 0U) {
 				buf[i] = static_cast<uint8_t>(n % base);
 				i++;
@@ -738,7 +760,12 @@ namespace MarlinSerial {
 			}
 			while (i != 0U) {
 				i--;
-				print(static_cast<char>(buf[i] + (buf[i] < 10 ? '0' : 'A' - 10)));
+				const bool buf_i_lt_10 = buf[i] < 10U;
+				int16_t const c0 = static_cast<int16_t>('0');
+				const uint8_t c = static_cast<uint8_t>((buf_i_lt_10 ?
+					static_cast<uint16_t>(c0) :
+					static_cast<uint16_t>('A' - 10)) & 0x00FFU);
+				print(static_cast<uint8_t>(buf[i] + c));
 			}
 		} else {
 			print('0');
@@ -750,8 +777,16 @@ namespace MarlinSerial {
 	}
 
 	void print(char const c, int32_t const base) {
-		print(static_cast<uint32_t>(c), base);
+		int16_t const e = static_cast<int16_t>(c);
+		uint8_t const f = static_cast<uint8_t>(static_cast<uint16_t>(e) & 0x00FFU);
+		print(f, base);
 	}
+
+
+	void print(uint8_t const b, int32_t const base) {
+		print(static_cast<uint32_t>(b), base);
+	}
+
 }
 
 extern "C" {
@@ -761,45 +796,53 @@ extern "C" {
 	void AES_RNG_LPUART1_IRQHandler(void)
 	{
 		// USER CODE BEGIN AES_RNG_LPUART1_IRQn 0
-		if((MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_RXNE) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_RXNE) != RESET))
-		{
-			// read only of no errors, else skip byte
-			if (
-				(MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_NE) == RESET) &&
-				(MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_FE) == RESET) &&
-				(MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_PE) == RESET)
-			) {
-				MarlinSerial::store_char((uint8_t)(MarlinSerial::hlpuart1.Instance->RDR & 0x00FFU));
-			} else {
-				MarlinSerial::hlpuart1.Instance->RDR;
-			}
-			// Clear RXNE interrupt flag
-			MarlinSerial::UartSendReq(&MarlinSerial::hlpuart1, UART_RXDATA_FLUSH_REQUEST);
-		}
-		if((MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_TXE) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_TXE) != RESET))
-		{
-			if (MarlinSerial::tx_buffer.head == MarlinSerial::tx_buffer.tail) {
-				MarlinSerial::UartDisableIT(&MarlinSerial::hlpuart1, UART_IT_TXE);
-				MarlinSerial::UartEnableIT(&MarlinSerial::hlpuart1, UART_IT_TC);
-			} else {
-				// If interrupts are enabled, there must be more data in the output
-				// buffer. Send the next byte
-				const uint8_t t = MarlinSerial::tx_buffer.tail;
-				const uint8_t c = MarlinSerial::tx_buffer.buffer[t];
-				MarlinSerial::tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
-
-				MarlinSerial::hlpuart1.Instance->TDR = c;
+		if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_RXNE) != RESET) {
+			if (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_RXNE) != RESET)
+			{
+				// read only of no errors, else skip byte
+				bool hasErrorBitSet = false;
+				if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_NE) != RESET) {
+					hasErrorBitSet = true;
+				} else if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_FE) != RESET) {
+					hasErrorBitSet = true;
+				} else if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_PE) != RESET) {
+					hasErrorBitSet = true;
+				} else {
+					hasErrorBitSet = false;
+				}
+				if (hasErrorBitSet) {
+					MarlinSerial::store_char((uint8_t)(MarlinSerial::hlpuart1.Instance->RDR & 0x00FFU));
+				} else {
+					UNUSED(MarlinSerial::hlpuart1.Instance->RDR);
+				}
+				// Clear RXNE interrupt flag
+				MarlinSerial::UartSendReq(&MarlinSerial::hlpuart1, MarlinSerial::UART_RXDATA_FLUSH_REQUEST);
 			}
 		}
-		if((MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_TC) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_TC) != RESET))
-		{
-			MarlinSerial::UartDisableIT(&MarlinSerial::hlpuart1, UART_IT_TC);
-		}
+		if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_TXE) != RESET) {
+		    if (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_TXE) != RESET)
+			{
+		    	uint8_t const tail = MarlinSerial::tx_buffer.tail;
+				if (MarlinSerial::tx_buffer.head == tail) {
+					MarlinSerial::UartDisableIT(&MarlinSerial::hlpuart1, UART_IT_TXE);
+					MarlinSerial::UartEnableIT(&MarlinSerial::hlpuart1, UART_IT_TC);
+				} else {
+					// If interrupts are enabled, there must be more data in the output
+					// buffer. Send the next byte
+					const uint8_t t = MarlinSerial::tx_buffer.tail;
+					const uint8_t c = MarlinSerial::tx_buffer.buffer[t];
+					MarlinSerial::tx_buffer.tail = (t + 1U) & static_cast<uint8_t>(TX_BUFFER_SIZE - 1U);
 
-		return;
+					MarlinSerial::hlpuart1.Instance->TDR = c;
+				}
+			}
+		}
+		if (MarlinSerial::UartGetIT(&MarlinSerial::hlpuart1, UART_IT_TC) != RESET) {
+		    if (MarlinSerial::UartGetITSource(&MarlinSerial::hlpuart1, UART_IT_TC) != RESET)
+			{
+				MarlinSerial::UartDisableIT(&MarlinSerial::hlpuart1, UART_IT_TC);
+			}
+		}
 	}
 
 	//
@@ -807,44 +850,52 @@ extern "C" {
 	//
 	void USART2_IRQHandler(void)
 	{
-		if((MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_RXNE) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_RXNE) != RESET))
-		{
-			// read only of no errors, else skip byte
-			if (
-				(MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_NE) == RESET) &&
-				(MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_FE) == RESET) &&
-				(MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_PE) == RESET)
-			) {
-				MarlinSerial::store_char((uint8_t)(MarlinSerial::huart2.Instance->RDR & 0x00FF));
-			} else {
-				MarlinSerial::huart2.Instance->RDR;
-			}
-			// Clear RXNE interrupt flag
-			MarlinSerial::UartSendReq(&MarlinSerial::huart2, UART_RXDATA_FLUSH_REQUEST);
-		}
-		if((MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_TXE) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_TXE) != RESET))
-		{
-			if (MarlinSerial::tx_buffer.head == MarlinSerial::tx_buffer.tail) {
-				MarlinSerial::UartDisableIT(&MarlinSerial::huart2, UART_IT_TXE);
-				MarlinSerial::UartEnableIT(&MarlinSerial::huart2, UART_IT_TC);
-			} else {
-				// If interrupts are enabled, there must be more data in the output
-				// buffer. Send the next byte
-				const uint8_t t = MarlinSerial::tx_buffer.tail;
-				uint8_t const c = MarlinSerial::tx_buffer.buffer[t];
-				MarlinSerial::tx_buffer.tail = (t + 1) & (TX_BUFFER_SIZE - 1);
-
-				MarlinSerial::huart2.Instance->TDR = c;
+		if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_RXNE) != RESET) {
+			if (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_RXNE) != RESET)
+			{
+				// read only of no errors, else skip byte
+				bool hasErrorBitSet = false;
+				if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_NE) != RESET) {
+					hasErrorBitSet = true;
+				} else if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_FE) != RESET) {
+					hasErrorBitSet = true;
+				} else if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_PE) != RESET) {
+					hasErrorBitSet = true;
+				} else {
+					hasErrorBitSet = false;
+				}
+				if (hasErrorBitSet) {
+					MarlinSerial::store_char((uint8_t)(MarlinSerial::huart2.Instance->RDR & 0x00FFU));
+				} else {
+					UNUSED(MarlinSerial::huart2.Instance->RDR);
+				}
+				// Clear RXNE interrupt flag
+				MarlinSerial::UartSendReq(&MarlinSerial::huart2, MarlinSerial::UART_RXDATA_FLUSH_REQUEST);
 			}
 		}
-		if((MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_TC) != RESET) &&
-		   (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_TC) != RESET))
-		{
-			MarlinSerial::UartDisableIT(&MarlinSerial::huart2, UART_IT_TC);
-		}
+		if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_TXE) != RESET) {
+			if (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_TXE) != RESET)
+			{
+				const uint8_t tail = MarlinSerial::tx_buffer.tail;
+				if (MarlinSerial::tx_buffer.head == tail) {
+					MarlinSerial::UartDisableIT(&MarlinSerial::huart2, UART_IT_TXE);
+					MarlinSerial::UartEnableIT(&MarlinSerial::huart2, UART_IT_TC);
+				} else {
+					// If interrupts are enabled, there must be more data in the output
+					// buffer. Send the next byte
+					const uint8_t t = MarlinSerial::tx_buffer.tail;
+					uint8_t const c = MarlinSerial::tx_buffer.buffer[t];
+					MarlinSerial::tx_buffer.tail = (t + 1U) & static_cast<uint8_t>(TX_BUFFER_SIZE - 1U);
 
-		return;
+					MarlinSerial::huart2.Instance->TDR = c;
+				}
+			}
+		}
+		if (MarlinSerial::UartGetIT(&MarlinSerial::huart2, UART_IT_TC) != RESET) {
+			if (MarlinSerial::UartGetITSource(&MarlinSerial::huart2, UART_IT_TC) != RESET)
+			{
+				MarlinSerial::UartDisableIT(&MarlinSerial::huart2, UART_IT_TC);
+			}
+		}
 	}
 }

@@ -29,11 +29,11 @@ namespace MarlinSerial {
 	#define UART_IT_NE                          ((uint32_t)0x0200)                  /*!< UART noise error interruption   */
 	#define UART_IT_FE                          ((uint32_t)0x0100)                  /*!< UART frame error interruption   */
 
-	#define UART_AUTOBAUD_REQUEST               ((uint32_t)USART_RQR_ABRRQ)        /*!< Auto-Baud Rate Request      */
-	#define UART_SENDBREAK_REQUEST              ((uint32_t)USART_RQR_SBKRQ)        /*!< Send Break Request          */
-	#define UART_MUTE_MODE_REQUEST              ((uint32_t)USART_RQR_MMRQ)         /*!< Mute Mode Request           */
-	#define UART_RXDATA_FLUSH_REQUEST           ((uint32_t)USART_RQR_RXFRQ)        /*!< Receive Data flush Request  */
-	#define UART_TXDATA_FLUSH_REQUEST           ((uint32_t)USART_RQR_TXFRQ)        /*!< Transmit data flush Request */
+	constexpr uint32_t UART_AUTOBAUD_REQUEST 		= USART_RQR_ABRRQ;        /*!< Auto-Baud Rate Request      */
+	constexpr uint32_t UART_SENDBREAK_REQUEST   	= USART_RQR_SBKRQ;        /*!< Send Break Request          */
+	constexpr uint32_t UART_MUTE_MODE_REQUEST   	= USART_RQR_MMRQ;         /*!< Mute Mode Request           */
+	constexpr uint32_t UART_RXDATA_FLUSH_REQUEST	= USART_RQR_RXFRQ;        /*!< Receive Data flush Request  */
+	constexpr uint32_t UART_TXDATA_FLUSH_REQUEST    = USART_RQR_TXFRQ;        /*!< Transmit data flush Request */
 
 	#define UART_IT_MASK                        ((uint32_t)0x001FU)                 /*!< UART interruptions flags mask */
 
@@ -268,7 +268,7 @@ namespace MarlinSerial {
 	constexpr uint32_t UART_OVERSAMPLING_16 = 0x00000000U;         /*!< Oversampling by 16 */
 	constexpr uint32_t UART_OVERSAMPLING_8  = USART_CR1_OVER8;     /*!< Oversampling by 8  */
 
-	#define HAL_UART_TIMEOUT_VALUE              0x1FFFFFF                           /*!< UART polling-based communications time-out value */
+	constexpr uint32_t HAL_UART_TIMEOUT_VALUE = 0x1FFFFFFU;                           /*!< UART polling-based communications time-out value */
 
 	#define UART_WORDLENGTH_7B                  ((uint32_t)USART_CR1_M1)   /*!< 7-bit long UART frame */
 	#define UART_WORDLENGTH_8B                  ((uint32_t)0x00000000U)    /*!< 8-bit long UART frame */
@@ -336,7 +336,9 @@ namespace MarlinSerial {
 	  *            @arg @ref UART_FLAG_PE    Parity Error flag
 	  * @retval The new state of __FLAG__ (TRUE or FALSE).
 	  */
-	#define UART_GET_FLAG(__HANDLE__, __FLAG__) (((__HANDLE__)->Instance->ISR & (__FLAG__)) == (__FLAG__))
+	FORCE_INLINE FlagStatus UART_GetFlagStatus(UartHandle *huart, uint32_t flag) {
+		return ((huart->Instance->ISR & flag) == flag) ? SET : RESET;
+	}
 
 	#define UART_MAX_DELAY      0xFFFFFFFFU
 
@@ -417,7 +419,7 @@ namespace MarlinSerial {
 		#define RX_BUFFER_SIZE 128U
 	#endif
 	#ifndef TX_BUFFER_SIZE
-		#define TX_BUFFER_SIZE 32
+		#define TX_BUFFER_SIZE 32U
 	#endif
 	#if !((RX_BUFFER_SIZE == 256) ||(RX_BUFFER_SIZE == 128) ||(RX_BUFFER_SIZE == 64) ||(RX_BUFFER_SIZE == 32) ||(RX_BUFFER_SIZE == 16) ||(RX_BUFFER_SIZE == 8) ||(RX_BUFFER_SIZE == 4) ||(RX_BUFFER_SIZE == 2))
 		#error "RX_BUFFER_SIZE has to be a power of 2 and >= 2"
@@ -479,7 +481,7 @@ namespace MarlinSerial {
     FORCE_INLINE void print(const char* str) { write(str); }
 
     void print(char const, int32_t const = BYTE);
-    void print(uint8_t, int32_t = BYTE);
+    void print(uint8_t const , int32_t const = BYTE);
     void print(int32_t const , int32_t const = DEC);
     void print(uint32_t const, int32_t const = DEC);
     void print(double, int = 2);

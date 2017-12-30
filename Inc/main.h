@@ -58,7 +58,7 @@
 // For debug-echo: 128 bytes for the optimal speed.
 // Other output doesn't need to be that speedy.
 // :[0, 2, 4, 8, 16, 32, 64, 128, 256]
-#define TX_BUFFER_SIZE 128
+constexpr uint8_t TX_BUFFER_SIZE = 128U;
 
 namespace Thermoprinter {
 	extern bool Running;
