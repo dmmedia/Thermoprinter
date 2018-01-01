@@ -99,16 +99,16 @@ bool Settings::load() {
  * M502 - Reset Configuration
  */
 void Settings::reset(void) {
-  planner.axis_steps_per_mm          = DEFAULT_STEPS_PER_UNIT;
-  planner.max_feedrate_mm_s          = DEFAULT_MAX_FEEDRATE;
-  planner.max_acceleration_mm_per_s2 = DEFAULT_MAX_ACCELERATION;
+  Planner::axis_steps_per_mm          = DEFAULT_STEPS_PER_UNIT;
+  Planner::max_feedrate_mm_s          = DEFAULT_MAX_FEEDRATE;
+  Planner::max_acceleration_mm_per_s2 = DEFAULT_MAX_ACCELERATION;
 
-  planner.acceleration = DEFAULT_ACCELERATION;
-  planner.travel_acceleration = DEFAULT_TRAVEL_ACCELERATION;
-  planner.min_feedrate_mm_s = DEFAULT_MINIMUMFEEDRATE;
-  planner.min_segment_time = DEFAULT_MINSEGMENTTIME;
-  planner.min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
-  planner.max_jerk = DEFAULT_JERK;
+  Planner::acceleration = DEFAULT_ACCELERATION;
+  Planner::travel_acceleration = DEFAULT_TRAVEL_ACCELERATION;
+  Planner::min_feedrate_mm_s = DEFAULT_MINIMUMFEEDRATE;
+  Planner::min_segment_time = DEFAULT_MINSEGMENTTIME;
+  Planner::min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
+  Planner::max_jerk = DEFAULT_JERK;
 
   Endstops::enable_globally(true);
 
@@ -120,9 +120,9 @@ void Settings::reset(void) {
  */
 void Settings::postprocess() {
   // steps per s2 needs to be updated to agree with units per s2
-  planner.reset_acceleration_rates();
+  Planner::reset_acceleration_rates();
 
   // Refresh steps_to_mm with the reciprocal of axis_steps_per_mm
   // and init stepper.count, planner.position with current_position
-  planner.refresh_positioning();
+  Planner::refresh_positioning();
 }

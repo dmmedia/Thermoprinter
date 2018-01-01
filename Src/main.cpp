@@ -99,6 +99,8 @@ namespace Thermoprinter {
 
 			RCC_ClearFlag();
 
+			Planner::init();
+
 			CommandProcessor::init();
 
 			// Load data from EEPROM if available (or use defaults)

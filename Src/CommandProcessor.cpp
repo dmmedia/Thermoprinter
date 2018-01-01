@@ -41,7 +41,7 @@ namespace CommandProcessor {
 	//   Used by 'line_to_current_position' to do a move after changing it.
 	//   Used by 'SYNC_PLAN_POSITION_KINEMATIC' to update 'planner.position'.
 	//
-	uint32_t current_position = 0;
+	uint32_t current_position = 0U;
 
 	//
 	// Cartesian Destination
@@ -51,7 +51,7 @@ namespace CommandProcessor {
 	//
 	uint32_t destination = 0;
 
-	millis_t previous_cmd_ms = 0;
+	uint32_t previous_cmd_ms = 0;
 
 	uint32_t gcode_LastN = 0;
 	uint32_t gcode_N = 0;
@@ -77,7 +77,7 @@ namespace CommandProcessor {
 	// used by M0 function to set a destination.
 	//
 	inline void line_to_destination(const float fr_mm_s) {
-	    planner.buffer_line(destination, fr_mm_s);
+	    Planner::buffer_line(destination, fr_mm_s);
 	}
 	inline void line_to_destination() { line_to_destination(RuntimeSettings::feedrate_mm_s); }
 
@@ -88,7 +88,7 @@ namespace CommandProcessor {
 	// no kinematic translation. Used for syncing.
 	//
 	void sync_plan_position() {
-	  planner.set_position_mm(current_position);
+	  Planner::set_position_mm(current_position);
 	}
 
 	//
@@ -145,7 +145,7 @@ namespace CommandProcessor {
 	// (or from wherever it has been told it is located).
 	//
 	inline void line_to_current_position() {
-	  planner.buffer_line(current_position, RuntimeSettings::feedrate_mm_s);
+	  Planner::buffer_line(current_position, RuntimeSettings::feedrate_mm_s);
 	}
 
 	//

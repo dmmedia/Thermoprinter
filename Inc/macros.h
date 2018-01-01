@@ -31,8 +31,8 @@ FORCE_INLINE bool isBitSet(uint32_t reg, uint32_t bit) {
 #define IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == RESET)
 
 #define sq(x) ((x)*(x))
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) (((a)<(b))?(a):(b))
+#define max(a,b) (((a)>(b))?(a):(b))
 #define MAX3(a, b, c)       max(max(a, b), c)
 #define MAX4(a, b, c, d)    max(MAX3(a, b, c), d)
 
@@ -77,7 +77,12 @@ FORCE_INLINE bool isBitSet(uint32_t reg, uint32_t bit) {
 #define PSTR(s) (static_cast<const char *>(s))
 
 // Macros to contrain values
-#define NOLESS(v,n) do{ if (v < n) v = n; }while(0)
+FORCE_INLINE uint32_t NOLESS(uint32_t v, uint32_t n) {
+	if (v < n) {
+		return n;
+	}
+	return v;
+}
 #define NOMORE(v,n) do{ if (v > n) v = n; }while(0)
 
 #endif /* MACROS_H_ */

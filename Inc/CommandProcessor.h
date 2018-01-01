@@ -44,7 +44,7 @@ namespace CommandProcessor {
 
 	void process(void);
 
-	extern millis_t previous_cmd_ms;
+	extern uint32_t previous_cmd_ms;
 	inline void refresh_cmd_timeout() { previous_cmd_ms = GetTick(); }
 
 } // namespace CommandProcessor

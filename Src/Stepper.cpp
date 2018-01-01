@@ -22,7 +22,7 @@
 
 Stepper stepper; // Singleton
 
-block_t* Stepper::current_block = NULL;  // A pointer to the block currently being traced
+Planner::block_t* Stepper::current_block = NULL;  // A pointer to the block currently being traced
 
 long Stepper::acceleration_time, Stepper::deceleration_time;
 
@@ -141,7 +141,7 @@ void Stepper::wake_up() {
 /**
  * Block until all buffered steps are executed
  */
-void Stepper::synchronize() { while (planner.blocks_queued()) Thermoprinter::idle(); }
+void Stepper::synchronize() { while (Planner::blocks_queued()) Thermoprinter::idle(); }
 
 /**
  * Set the stepper positions directly in steps
@@ -220,7 +220,7 @@ void Stepper::isr() {
   if (cleaning_buffer_counter) {
     --cleaning_buffer_counter;
     current_block = NULL;
-    planner.discard_current_block();
+    Planner::discard_current_block();
     TIM_SET_AUTORELOAD(&htim6, 200); // Run at max speed - 10 KHz
     _ENABLE_ISRs(); // re-enable ISRs
     return;
@@ -229,7 +229,7 @@ void Stepper::isr() {
   // If there is no current block, attempt to pop one from the buffer
   if (!current_block) {
     // Anything in the buffer?
-    current_block = planner.get_current_block();
+    current_block = Planner::get_current_block();
     if (current_block) {
       trapezoid_generator_reset();
 
@@ -382,7 +382,7 @@ void Stepper::isr() {
   // If current block is finished, reset pointer
   if (all_steps_done) {
     current_block = NULL;
-    planner.discard_current_block();
+    Planner::discard_current_block();
   }
   _ENABLE_ISRs(); // re-enable ISRs
 }

@@ -164,6 +164,4 @@ __IO TIM_StateTypeDef  State;         /*!< TIM operation state               */
 typedef float float32_t;
 typedef double float64_t;
 
-typedef unsigned long millis_t;
-
 #endif /* TYPEDEFS_H_ */

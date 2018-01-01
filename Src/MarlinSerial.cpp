@@ -773,13 +773,22 @@ namespace MarlinSerial {
 	}
 
 	void print(int32_t const n, int32_t const base) {
-		print(static_cast<uint32_t>(n), base);
+		int32_t num = n;
+		if (base == 0) {
+			write(static_cast<uint8_t>(num));
+		} else {
+			if (base == 10) {
+				if (num < 0) {
+					print('-');
+					num = -num;
+				}
+			}
+			printNumber(static_cast<uint32_t>(num), static_cast<uint8_t>(base));
+		}
 	}
 
 	void print(char const c, int32_t const base) {
-		int16_t const e = static_cast<int16_t>(c);
-		uint8_t const f = static_cast<uint8_t>(static_cast<uint16_t>(e) & 0x00FFU);
-		print(f, base);
+		print(static_cast<int32_t>(c), base);
 	}
 
 

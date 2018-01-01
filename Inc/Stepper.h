@@ -89,7 +89,9 @@ const uint16_t speed_lookuptable_slow[256][2] = {
 #define MOTOR_STEP_WRITE(STATE) WRITE(MOTOR_STEP,STATE)
 #define MOTOR_STEP_READ READ(MOTOR_STEP)
 
-#define  enable_MOTOR() GPIO_WRITE_PIN(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON)
+FORCE_INLINE void enable_MOTOR() {
+	writePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON);
+}
 FORCE_INLINE void disable_MOTOR() {
 	writePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, ((MOTOR_ENABLE_ON != GPIO::GPIO_PIN_RESET) ? GPIO::GPIO_PIN_RESET : GPIO::GPIO_PIN_SET));
 }
@@ -144,7 +146,7 @@ extern TIM_HandleTypeDef htim6;
 
 class Stepper {
 public:
-    static block_t* current_block;  // A pointer to the block currently being traced
+    static Planner::block_t* current_block;  // A pointer to the block currently being traced
 
     Stepper() {};
 
