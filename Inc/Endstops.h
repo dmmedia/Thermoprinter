@@ -125,9 +125,9 @@ namespace Endstops {
 
     FORCE_INLINE void updateEndstop(EndstopEnum es) {
 		SET_BIT2(current_endstop_bits, es, (GPIO::read(getPortByEndstop(es), getPinByEndstop(es)) != getEndstopInverting(es)));
-		if ((TEST(current_endstop_bits & old_endstop_bits, es)) && stepper.current_block->steps > 0) {
+		if ((TEST(current_endstop_bits & old_endstop_bits, es)) && Stepper::current_block->steps > 0) {
 			SBI(endstop_hit_bits, es);
-			stepper.endstop_triggered();
+			Stepper::endstop_triggered();
 		}
 	}
 

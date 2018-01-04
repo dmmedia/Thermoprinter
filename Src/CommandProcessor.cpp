@@ -159,7 +159,7 @@ namespace CommandProcessor {
 	  current_position = lm;
 	  line_to_current_position();
 
-	  stepper.synchronize();
+	  Stepper::synchronize();
 
 	  RuntimeSettings::feedrate_mm_s = old_feedrate_mm_s;
 	}
@@ -168,7 +168,7 @@ namespace CommandProcessor {
 	// G92: Set current position to 0
 	//
 	inline void gcode_G92() {
-	  stepper.synchronize();
+	  Stepper::synchronize();
 
 	  current_position = 0;
 

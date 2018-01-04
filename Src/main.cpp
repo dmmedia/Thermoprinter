@@ -107,7 +107,7 @@ namespace Thermoprinter {
 			// This also updates variables in the planner, elsewhere
 			Settings::load();
 
-			thermalManager.init();    // Initialize temperature loop
+			AdcManager::init();    // Initialize temperature loop
 
 		  	#if defined(USE_WATCHDOG) && (USE_WATCHDOG > 0)
 		    	watchdog_init();
@@ -197,14 +197,14 @@ namespace Thermoprinter {
 		SERIAL_ERROR_START();
 		SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
 
-		Temperature::disable_all_heaters();
-		disable_MOTOR();
+		AdcManager::disable_all_heaters();
+		Stepper::disable_MOTOR();
 
 		Timers::Delay(600U); // Wait a short time (allows messages to get out before shutting down.
 		cli(); // Stop interrupts
 
 		Timers::Delay(250U); //Wait to ensure all interrupts routines stopped
-		Temperature::disable_all_heaters(); //turn off heaters again
+		AdcManager::disable_all_heaters(); //turn off heaters again
 
 		if (hasPowerSwitch()) {
 			//lint -save -e1924 -e835 -e9078

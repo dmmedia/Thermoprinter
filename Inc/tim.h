@@ -74,4 +74,47 @@ static void TIM_Base_SetConfig(TIM_TypeDef *TIMx, TIM_Base_InitTypeDef *Structur
   */
 StatusTypeDef TIM_Base_Init(TIM_HandleTypeDef *htim);
 
+/**
+  * @brief  Sets the TIM Autoreload Register value on runtime without calling
+  *         another time any Init function.
+  * @param  __HANDLE__ : TIM handle.
+  * @param  __AUTORELOAD__: specifies the Counter register new value.
+  * @retval None
+  */
+#define TIM_SET_AUTORELOAD(__HANDLE__, __AUTORELOAD__) \
+						do{                                                    \
+							  (__HANDLE__)->Instance->ARR = (__AUTORELOAD__);  \
+							  (__HANDLE__)->Init.Period = (__AUTORELOAD__);    \
+						  } while(0)
+
+/**
+  * @brief  Gets the TIM Autoreload Register value on runtime
+  * @param  __HANDLE__ : TIM handle.
+  * @retval None
+  */
+#define TIM_GET_AUTORELOAD(__HANDLE__) ((__HANDLE__)->Instance->ARR)
+
+/**
+  * @brief  Gets the TIM Counter Register value on runtime.
+  * @param  __HANDLE__ : TIM handle.
+  * @retval None
+  */
+#define TIM_GET_COUNTER(__HANDLE__) ((__HANDLE__)->Instance->CNT)
+
+/** @defgroup TIM_Counter_Mode Counter mode
+  * @{
+  */
+#define TIM_COUNTERMODE_UP                 ((uint32_t)0x0000U)
+#define TIM_COUNTERMODE_DOWN               TIM_CR1_DIR
+#define TIM_COUNTERMODE_CENTERALIGNED1     TIM_CR1_CMS_0
+#define TIM_COUNTERMODE_CENTERALIGNED2     TIM_CR1_CMS_1
+#define TIM_COUNTERMODE_CENTERALIGNED3     TIM_CR1_CMS
+
+/** @defgroup TIM_ClockDivision Clock division
+  * @{
+  */
+#define TIM_CLOCKDIVISION_DIV1                       ((uint32_t)0x0000U)
+#define TIM_CLOCKDIVISION_DIV2                       (TIM_CR1_CKD_0)
+#define TIM_CLOCKDIVISION_DIV4                       (TIM_CR1_CKD_1)
+
 #endif /* TIM_H_ */

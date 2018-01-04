@@ -36,9 +36,8 @@ extern const char * const errormagic;
 void serial_echopair_P(const char* s_P, const char *v);
 void serial_echopair_P(const char* s_P, char v);
 void serial_echopair_P(const char* s_P, int32_t v);
-void serial_echopair_P(const char* s_P, long v);
-void serial_echopair_P(const char* s_P, float v);
-void serial_echopair_P(const char* s_P, double v);
+void serial_echopair_P(const char* s_P, float32_t v);
+void serial_echopair_P(const char* s_P, float64_t v);
 void serial_echopair_P(const char* s_P, uint32_t v);
 FORCE_INLINE void serial_echopair_P(const char* s_P, uint8_t v) { serial_echopair_P(s_P, static_cast<int32_t>(v)); }
 FORCE_INLINE void serial_echopair_P(const char* s_P, uint16_t v) { serial_echopair_P(s_P, static_cast<int32_t>(v)); }

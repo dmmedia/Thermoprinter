@@ -276,7 +276,7 @@ constexpr uint8_t RCC_FLAG_HSI48RDY = (CRRCR_REG_INDEX << 5) | 1U;	/*!< HSI48 cl
 *       reset by Init() or at any time when clock is reconfigured  by RCC_ClockConfig().
 * @note In the default implementation, SysTick timer is the source of time base.
 *       It is used to generate interrupts at regular time intervals.
-*       Care must be taken if HAL_Delay() is called from a peripheral ISR process,
+*       Care must be taken if Delay() is called from a peripheral ISR process,
 *       The the SysTick interrupt must have higher priority (numerically lower)
 *       than the peripheral interrupt. Otherwise the caller ISR process will be blocked.
 *       The function is declared as __Weak  to be overwritten  in case of other
