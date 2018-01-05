@@ -17,42 +17,50 @@
 #include <cstring>
 
 namespace CommandParser {
-	char *value_ptr;           // Set by seen, used to fetch the value
+	//
+	// Private variables
+	//
 
-	#ifdef FASTER_COMMAND_PARSER
-		uint8_t codebits[4];        // Parameters pre-scanned
-		uint8_t param[26];       // For A-Z, offsets into command args
-	#else
-		char *command_args;      // Args start here, for slow scan
-	#endif
+    // Command line state
+    static char *command_ptr;               // The command, so it can be echoed
+	static char *string_arg;                // string of command line
+	static char *int_arg;                   // signed integer of comman line
 
-	// Command line state
-	char *command_ptr;               // The command, so it can be echoed
-	char *string_arg;                // string of command line
-	char *int_arg;                   // signed integer of comman line
+	// static std::string stringArg;
 
-	//	std::string stringArg;
+	//
+	// Private function declarations
+	//
 
-	char command_letter;             // M, or P
-	uint8_t codenum;                     // 123
+	// Reset is done before parsing
+	static void reset();
+
+    inline int value_int();
+
+    //
+    // Public variable initialization
+    //
+
+	char command_letter = '\0';             // M, or P
+	uint8_t codenum = 0U;                     // 123
+
+    //
+	// Namespace body
+	//
 
 	//
 	// Clear all code-seen (and value pointers)
 	//
-	// Since each param is set/cleared on seen codes,
-	// this may be optimized by commenting out ZERO(param)
+	// Since each param is set/cleared on seen codes
 	//
-	void reset() {
+	static void reset() {
         string_arg = NULL;                    // No whole line argument
-	//  stringArg = "";
+        // stringArg = "";
 	    command_letter = '?';                 // No command letter
 	    codenum = 0U;                         // No command code
-	    #ifdef FASTER_COMMAND_PARSER
-	    	memset(&codebits[0U], 0, 4U);   // No codes yet
-	    #endif
 	}
 
-	void parse(char *p) {
+	void parse(char* p) {
 		reset(); // No codes to report
 
 		// Skip spaces
@@ -122,34 +130,30 @@ namespace CommandParser {
 	  SERIAL_EOL();
 	}
 
-    // Code seen bit was set. If not found, value_ptr is unchanged.
-    // This allows "if (seen('A')||seen('B'))" to use the last-found value.
-    bool seen(const char c) {
-        const uint8_t ind = LETTER_OFF(c);
-        //lint -save -e1924
-        bool b = false;
-        //lint -restore
-        if (ind < COUNT(param)) // Only A-Z
-        {
-			b = TEST(codebits[(ind >> 3U)], (ind & 0x7U));
-			if (b) {
-				//lint -save -e1960
-				value_ptr = (param[ind] != 0U) ? (&command_ptr[param[ind]]) : nullptr;
-				//lint -restore
-			}
-        }
-
-        return b;
+    int32_t value_axis_units() {
+    	return value_int();
     }
 
-    // The code value pointer was set
-    FORCE_INLINE bool has_value() { return value_ptr != nullptr; }
-
-    bool seen_any() {
-    	return (codebits[3U] != 0U) ||
-    			(codebits[2U] != 0U) ||
-				(codebits[1U] != 0U) ||
-				(codebits[0U] != 0U);
+    // Float removes 'E' to prevent scientific notation interpretation
+    inline int value_int() {
+    	if (int_arg) {
+    		char *e = int_arg;
+    		for (;;) {
+    			const char c { *e };
+    			if (c == '\0' || c == ' ') break;
+    			if (c == 'E' || c == 'e') {
+    				*e = '\0';
+    				const int ret = strtol(int_arg, NULL, 10);
+    				*e = c;
+    				return ret;
+    			}
+    			++e;
+    		}
+    		return strtol(int_arg, NULL, 10);
+    	}
+    	return 0;
     }
+
+    // End
 
 }

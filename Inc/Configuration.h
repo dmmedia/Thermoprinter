@@ -74,8 +74,6 @@
 #define ADC1_IRQHandler                 ADC1_COMP_IRQHandler
 
 
-#define FASTER_COMMAND_PARSER
-
 #define RXBUF_LEN            128 // must be power of 2
 #define TXBUF_LEN            128U // must be power of 2
 #define RXBUF_MSK            (RXBUF_LEN-1)
@@ -164,6 +162,6 @@
 
 // The ASCII buffer for serial input
 #define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
-#define BUFSIZE 4
+#define BUFSIZE 4U
 
 #endif /* CONFIGURATION_H_ */
