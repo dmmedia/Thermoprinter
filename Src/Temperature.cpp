@@ -872,10 +872,10 @@ namespace AdcManager {
 	#define ADC_CFGR1_AUTO_OFF(_AUTOFF_) ((_AUTOFF_) << 15U)
 
 	constexpr void ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() {
-		GPIO::RCC_GPIOB_CLK_ENABLE();
+		RCC_GPIOB_CLK_ENABLE();
 	}
 	constexpr void ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() {
-		GPIO::RCC_GPIOA_CLK_ENABLE();
+		RCC_GPIOA_CLK_ENABLE();
 	}
 
 	// @brief  Macro to get the Internal 48Mhz High Speed oscillator (HSI48) state.

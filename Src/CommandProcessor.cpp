@@ -28,6 +28,8 @@ namespace CommandProcessor {
 	// Private definitions
 	//
 
+	#define MMS_SCALED(MM_S) (((MM_S) * RuntimeSettings::feedrate_percentage) * 0.01)
+
 	//
 	// Private variables
 	//

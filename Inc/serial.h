@@ -10,6 +10,29 @@
 
 #include "MarlinSerial.h"
 
+#define MSG_T_MAXTEMP                       "MAXTEMP triggered"
+#define MSG_T_MINTEMP                       "MINTEMP triggered"
+#ifndef MSG_ERR_MAXTEMP
+  #define MSG_ERR_MAXTEMP                     "Err: MAXTEMP"
+#endif
+#ifndef MSG_ERR_MINTEMP
+  #define MSG_ERR_MINTEMP                     "Err: MINTEMP"
+#endif
+
+#define MSG_THERMOPRINTER "Thermoprinter"
+
+#define SHORT_BUILD_VERSION "0.1"
+
+#define MSG_OK                              "ok"
+
+#define MSG_ERR_KILLED                      "Printer halted. kill() called!"
+
+#define MSG_RESEND                          "Resend: "
+
+#define MSG_ERR_LINE_NO                     "Line Number is not Last Line Number+1, Last Line: "
+
+#define MSG_STOPPED_HEATER                  ", system stopped! Heater_ID: "
+
 extern const char * const echomagic;
 extern const char * const errormagic;
 

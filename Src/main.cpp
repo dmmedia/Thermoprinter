@@ -35,7 +35,6 @@
   *
   ******************************************************************************
   */
-// Includes ------------------------------------------------------------------
 #include <stm32l0xx.h>
 #include "typedefs.h"
 #include "main.h"
@@ -55,10 +54,6 @@
 #include <cstring>
 #include "CommandProcessor.h"
 
-// Private variables ---------------------------------------------------------
-
-// USER CODE BEGIN PV
-// Private variables ---------------------------------------------------------
 namespace Thermoprinter {
 	//lint -save -e1924
 	bool Running = true;
@@ -172,9 +167,9 @@ namespace Thermoprinter {
 		{
 			// GPIO Ports Clock Enable
 			//lint -save -e1924 -e9078 -e923 -e835 -e1960
-			GPIO::RCC_GPIOA_CLK_ENABLE();
-			GPIO::RCC_GPIOB_CLK_ENABLE();
-			GPIO::RCC_GPIOC_CLK_ENABLE();
+			RCC_GPIOA_CLK_ENABLE();
+			RCC_GPIOB_CLK_ENABLE();
+			RCC_GPIOC_CLK_ENABLE();
 			//lint -restore
 		}
 
@@ -268,6 +263,10 @@ namespace Thermoprinter {
 }
 
 namespace RuntimeSettings {
+	constexpr float MMM_TO_MMS(float32_t MM_M) {
+		return ((MM_M)/60.0);
+	}
+
 	// Initialized by settings.load()
 	//lint -save -e1924
 	bool axis_relative_modes = false;
@@ -328,5 +327,3 @@ namespace Timers {
 		}
 	}
 }
-
-//*********************** (C) COPYRIGHT STMicroelectronics *****END OF FILE***

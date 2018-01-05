@@ -1238,4 +1238,38 @@ uint32_t RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
 #define RCC_LPUART1_CLK_DISABLE() CLEAR_BIT(RCC->APB1ENR, (RCC_APB1ENR_LPUART1EN))
 #define RCC_USART2_CLK_DISABLE()  CLEAR_BIT(RCC->APB1ENR, (RCC_APB1ENR_USART2EN))
 
+#define RCC_SYSCFG_CLK_ENABLE()   SET_BIT(RCC->APB2ENR, (RCC_APB2ENR_SYSCFGEN))
+
+constexpr void RCC_GPIOx_CLK_ENABLE(GPIO_TypeDef* const GPIOx) {
+	uint32_t bit = 0U;
+	if (GPIOx == GPIOA) {
+		bit = RCC_IOPENR_GPIOAEN;
+	} else if (GPIOx == GPIOB) {
+		bit = RCC_IOPENR_GPIOBEN;
+	} else if (GPIOx == GPIOC) {
+		bit = RCC_IOPENR_GPIOCEN;
+	} else if (GPIOx == GPIOD) {
+		bit = RCC_IOPENR_GPIODEN;
+	} else if (GPIOx == GPIOH) {
+		bit = RCC_IOPENR_GPIOHEN;
+	} else {
+		bit = 0U;
+	}
+	if (bit != 0U) {
+		SET_BIT(RCC->IOPENR, bit);
+		/* Delay after an RCC peripheral clock enabling */
+		__IO uint32_t tmpreg = READ_BIT(RCC->IOPENR, bit);
+		UNUSED(tmpreg);
+	}
+}
+constexpr void RCC_GPIOA_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOA);}
+constexpr void RCC_GPIOB_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOB);}
+constexpr void RCC_GPIOC_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOC);}
+constexpr void RCC_GPIOH_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOH);}
+
+#define RCC_GPIOA_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN)
+#define RCC_GPIOB_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN)
+#define RCC_GPIOC_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN)
+#define RCC_GPIOH_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN)
+
 #endif /* RCC_H_ */
