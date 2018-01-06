@@ -35,7 +35,6 @@
   *
   ******************************************************************************
   */
-// Includes ------------------------------------------------------------------
 #include <stm32l0xx.h>
 #include "typedefs.h"
 #include "main.h"
@@ -55,10 +54,6 @@
 #include <cstring>
 #include "CommandProcessor.h"
 
-// Private variables ---------------------------------------------------------
-
-// USER CODE BEGIN PV
-// Private variables ---------------------------------------------------------
 namespace Thermoprinter {
 	//lint -save -e1924
 	bool Running = true;
@@ -107,7 +102,7 @@ namespace Thermoprinter {
 			// This also updates variables in the planner, elsewhere
 			Settings::load();
 
-			thermalManager.init();    // Initialize temperature loop
+			AdcManager::init();    // Initialize temperature loop
 
 		  	#if defined(USE_WATCHDOG) && (USE_WATCHDOG > 0)
 		    	watchdog_init();
@@ -172,9 +167,9 @@ namespace Thermoprinter {
 		{
 			// GPIO Ports Clock Enable
 			//lint -save -e1924 -e9078 -e923 -e835 -e1960
-			GPIO::RCC_GPIOA_CLK_ENABLE();
-			GPIO::RCC_GPIOB_CLK_ENABLE();
-			GPIO::RCC_GPIOC_CLK_ENABLE();
+			RCC_GPIOA_CLK_ENABLE();
+			RCC_GPIOB_CLK_ENABLE();
+			RCC_GPIOC_CLK_ENABLE();
 			//lint -restore
 		}
 
@@ -197,14 +192,14 @@ namespace Thermoprinter {
 		SERIAL_ERROR_START();
 		SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
 
-		Temperature::disable_all_heaters();
-		disable_MOTOR();
+		AdcManager::disable_all_heaters();
+		Stepper::disable_MOTOR();
 
 		Timers::Delay(600U); // Wait a short time (allows messages to get out before shutting down.
 		cli(); // Stop interrupts
 
 		Timers::Delay(250U); //Wait to ensure all interrupts routines stopped
-		Temperature::disable_all_heaters(); //turn off heaters again
+		AdcManager::disable_all_heaters(); //turn off heaters again
 
 		if (hasPowerSwitch()) {
 			//lint -save -e1924 -e835 -e9078
@@ -268,6 +263,10 @@ namespace Thermoprinter {
 }
 
 namespace RuntimeSettings {
+	constexpr float MMM_TO_MMS(float32_t MM_M) {
+		return ((MM_M)/60.0);
+	}
+
 	// Initialized by settings.load()
 	//lint -save -e1924
 	bool axis_relative_modes = false;
@@ -328,5 +327,3 @@ namespace Timers {
 		}
 	}
 }
-
-//*********************** (C) COPYRIGHT STMicroelectronics *****END OF FILE***

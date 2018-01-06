@@ -268,22 +268,22 @@ namespace Rcc {
 
 	#define  TICK_INT_PRIORITY            (0U)    /*!< tick interrupt priority */
 
-	/**
-	* @brief This function configures the source of the time base.
-	*        The time source is configured  to have 1ms time base with a dedicated
-	*        Tick interrupt priority.
-	* @note This function is called  automatically at the beginning of program after
-	*       reset by Init() or at any time when clock is reconfigured  by RCC_ClockConfig().
-	* @note In the default implementation, SysTick timer is the source of time base.
-	*       It is used to generate interrupts at regular time intervals.
-	*       Care must be taken if HAL_Delay() is called from a peripheral ISR process,
-	*       The the SysTick interrupt must have higher priority (numerically lower)
-	*       than the peripheral interrupt. Otherwise the caller ISR process will be blocked.
-	*       The function is declared as __Weak  to be overwritten  in case of other
-	*       implementation  in user file.
-	* @param TickPriority: Tick interrupt priority.
-	*/
-	void InitTick(uint32_t const TickPriority);
+/**
+* @brief This function configures the source of the time base.
+*        The time source is configured  to have 1ms time base with a dedicated
+*        Tick interrupt priority.
+* @note This function is called  automatically at the beginning of program after
+*       reset by Init() or at any time when clock is reconfigured  by RCC_ClockConfig().
+* @note In the default implementation, SysTick timer is the source of time base.
+*       It is used to generate interrupts at regular time intervals.
+*       Care must be taken if Delay() is called from a peripheral ISR process,
+*       The the SysTick interrupt must have higher priority (numerically lower)
+*       than the peripheral interrupt. Otherwise the caller ISR process will be blocked.
+*       The function is declared as __Weak  to be overwritten  in case of other
+*       implementation  in user file.
+* @param TickPriority: Tick interrupt priority.
+*/
+void InitTick(uint32_t TickPriority);
 
 	/** @defgroup RCC_APB1_Clock_Enable_Disable APB1 Peripheral Clock Enable Disable
 	* @brief  Enable or disable the Low Speed APB (APB1) peripheral clock.
@@ -1243,3 +1243,38 @@ namespace Rcc {
 	//
 	extern __IO uint32_t uwTick;
 }
+#define RCC_SYSCFG_CLK_ENABLE()   SET_BIT(RCC->APB2ENR, (RCC_APB2ENR_SYSCFGEN))
+
+constexpr void RCC_GPIOx_CLK_ENABLE(GPIO_TypeDef* const GPIOx) {
+	uint32_t bit = 0U;
+	if (GPIOx == GPIOA) {
+		bit = RCC_IOPENR_GPIOAEN;
+	} else if (GPIOx == GPIOB) {
+		bit = RCC_IOPENR_GPIOBEN;
+	} else if (GPIOx == GPIOC) {
+		bit = RCC_IOPENR_GPIOCEN;
+	} else if (GPIOx == GPIOD) {
+		bit = RCC_IOPENR_GPIODEN;
+	} else if (GPIOx == GPIOH) {
+		bit = RCC_IOPENR_GPIOHEN;
+	} else {
+		bit = 0U;
+	}
+	if (bit != 0U) {
+		SET_BIT(RCC->IOPENR, bit);
+		/* Delay after an RCC peripheral clock enabling */
+		__IO uint32_t tmpreg = READ_BIT(RCC->IOPENR, bit);
+		UNUSED(tmpreg);
+	}
+}
+constexpr void RCC_GPIOA_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOA);}
+constexpr void RCC_GPIOB_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOB);}
+constexpr void RCC_GPIOC_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOC);}
+constexpr void RCC_GPIOH_CLK_ENABLE() {RCC_GPIOx_CLK_ENABLE(GPIOH);}
+
+#define RCC_GPIOA_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN)
+#define RCC_GPIOB_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN)
+#define RCC_GPIOC_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN)
+#define RCC_GPIOH_CLK_DISABLE()        CLEAR_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN)
+
+#endif /* RCC_H_ */

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * macros.h
  *
@@ -5,18 +7,9 @@
  *      Author: Den
  */
 
-#ifndef MACROS_H_
-#define MACROS_H_
-
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
 #define UNUSED(x) ((void)(x))
-
-#define FABS(x)     fabs(x)
-#define SQRT(x)     sqrt(x)
-#define CEIL(x)     ceil(x)
-#define FLOOR(x)    floor(x)
-#define LROUND(x)   lround(x)
 
 #ifndef _BV
   #define _BV(PIN) (1UL << PIN)
@@ -74,8 +67,6 @@ FORCE_INLINE bool isBitSet(uint32_t reg, uint32_t bit) {
 #define ZERO(a) memset(a,0,sizeof(a))
 #define COPY(a,b) memcpy(a,b,min(sizeof(a),sizeof(b)))
 
-#define PSTR(s) (static_cast<const char *>(s))
-
 // Macros to contrain values
 FORCE_INLINE uint32_t NOLESS(uint32_t v, uint32_t n) {
 	if (v < n) {
@@ -84,5 +75,3 @@ FORCE_INLINE uint32_t NOLESS(uint32_t v, uint32_t n) {
 	return v;
 }
 #define NOMORE(v,n) do{ if (v > n) v = n; }while(0)
-
-#endif /* MACROS_H_ */

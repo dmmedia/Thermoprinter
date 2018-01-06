@@ -1,12 +1,11 @@
+#pragma once
+
 /*
  * Conditionals.h
  *
  *  Created on: 7. nov 2017
  *      Author: Den
  */
-
-#ifndef CONDITIONALS_H_
-#define CONDITIONALS_H_
 
 #define MOTOR_ENABLE_INIT SET_OUTPUT(MOTOR_ENABLE)
 #define MOTOR_ENABLE_WRITE(STATE)   HAL_GPIO_WritePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, STATE)
@@ -67,5 +66,3 @@ constexpr bool hasPowerSwitch(void) {
 
 #define THERMISTORHEATER_0 TEMP_SENSOR_0
 #define HEATER_0_USES_THERMISTOR
-
-#endif /* CONDITIONALS_H_ */

@@ -1,12 +1,11 @@
+#pragma once
+
 /*
  * Configuration.h
  *
  *  Created on: 27. nov 2017
  *      Author: Den
  */
-
-#ifndef CONFIGURATION_H_
-#define CONFIGURATION_H_
 
 #define MOTOR_STEP_PORT		GPIOA
 #define MOTOR_STEP_PIN		GPIO::GPIO_PIN_2
@@ -73,8 +72,6 @@
 #define ADC1_IRQn                       ADC1_COMP_IRQn
 #define ADC1_IRQHandler                 ADC1_COMP_IRQHandler
 
-
-#define FASTER_COMMAND_PARSER
 
 #define RXBUF_LEN            128 // must be power of 2
 #define TXBUF_LEN            128U // must be power of 2
@@ -164,6 +161,124 @@
 
 // The ASCII buffer for serial input
 #define MAX_CMD_SIZE 128 // to fit 96 hex symbols + P0 command
-#define BUFSIZE 4
+#define BUFSIZE 4U
 
-#endif /* CONFIGURATION_H_ */
+// For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
+// :{ 0:'Low', 1:'High' }
+#define MOTOR_ENABLE_ON GPIO::GPIO_PIN_RESET
+
+// Transfer Buffer Size
+// To save 386 bytes of PROGMEM (and TX_BUFFER_SIZE+3 bytes of RAM) set to 0.
+// To buffer a simple "ok" you need 4 bytes.
+// For ADVANCED_OK (M105) you need 32 bytes.
+// For debug-echo: 128 bytes for the optimal speed.
+// Other output doesn't need to be that speedy.
+// :[0, 2, 4, 8, 16, 32, 64, 128, 256]
+constexpr uint8_t TX_BUFFER_SIZE = 128U;
+
+// Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
+// of the buffer and all stops. This should not be much greater than zero and should only be changed
+// if unwanted behavior is observed on a user's machine when running at very slow speeds.
+#define MINIMUM_PLANNER_SPEED 0.05F // (mm/sec)
+
+/**
+ * Select which serial port on the board will be used for communication with the host.
+ * This allows the connection of wireless adapters (for instance) to non-default port pins.
+ *
+ * :[0, 1, 2]
+ */
+#define SERIAL_PORT 0
+
+/**
+ * This setting determines the communication speed of the printer.
+ *
+ * 115200 works in most cases, but you might try a lower speed if
+ * you commonly experience drop-outs during host printing.
+ *
+ * :[2400, 9600, 19200, 38400, 57600, 115200]
+ */
+#define BAUDRATE 9600
+
+//#define EEPROM_SETTINGS   // Enable for M500 and M501 commands
+
+/**
+ * Default Steps Per Unit (steps/mm)
+ */
+ // default steps per unit for RigidBot with standard hardware
+#define DEFAULT_STEPS_PER_UNIT   16
+
+/**
+ * Default Max Feed Rate (mm/s)
+ */
+#define DEFAULT_MAX_FEEDRATE          62.5
+
+/**
+ * Default Max Acceleration (change/s) change = mm/s
+ * (Maximum start speed for accelerated moves)
+ */
+#define DEFAULT_MAX_ACCELERATION      11.75
+
+/**
+ * Default Acceleration (change/s) change = mm/s
+ */
+#define DEFAULT_ACCELERATION          10     // acceleration for printing moves
+#define DEFAULT_TRAVEL_ACCELERATION   10    // travel (non printing) moves
+
+#define DEFAULT_MINIMUMFEEDRATE       0.0     // minimum feedrate
+#define DEFAULT_MINTRAVELFEEDRATE     0.0
+
+// minimum time in microseconds that a movement needs to take if the buffer is emptied.
+#define DEFAULT_MINSEGMENTTIME        20000
+
+/**
+ * Default Jerk (mm/s)
+ *
+ * "Jerk" specifies the minimum speed change that requires acceleration.
+ * When changing speed and direction, if the difference is less than the
+ * value set here, it may happen instantaneously.
+ */
+#define DEFAULT_JERK                 2.0
+
+// If you want endstops to stay on (by default) even when not homing
+// enable this option. Override at any time with M120, M121.
+#define ENDSTOPS_ALWAYS_ON_DEFAULT
+
+// Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
+#define MOTOR_FAULT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define LO_BAT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define VH_ON_CTRL_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define HEAD_UP_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define PAPER_END_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+#define OVER_HEAT_ENDSTOP_INVERTING false // set to true to invert the logic of the endstop.
+
+// Enable this feature if all enabled endstop pins are interrupt-capable.
+// This will remove the need to poll the interrupt pins, saving many CPU cycles.
+#define ENDSTOP_INTERRUPTS_FEATURE
+
+// By default DRV step driver require an active high signal. However, some high power drivers require an active low signal as step.
+#define INVERT_MOTOR_STEP_PIN GPIO::GPIO_PIN_RESET
+
+// The minimum pulse width (in µs) for stepping a stepper.
+// Set this if you find stepping unreliable, or if using a very fast CPU.
+#define MINIMUM_STEPPER_PULSE 4 // (µs) The smallest stepper pulse allowed
+
+// The minimal temperature defines the temperature below which the printhead will not be enabled It is used
+// to check that the wiring to the thermistor is not broken.
+// Otherwise this would lead to the heater being powered on all the time.
+#define PRINTHEAD_MINTEMP -10
+
+// When temperature exceeds max temp, your printhead will be switched off.
+// This feature exists to protect your printhead from overheating accidentally, but *NOT* from thermistor short/failure!
+// You should use MINTEMP for thermistor short/failure protection.
+#define PRINTHEAD_MAXTEMP 65
+
+// The minimal voltage defines the voltage below which the printing will not be enabled It is used
+// to check that the wiring to the battery is not broken.
+// Otherwise this would lead to the printer being powered on all the time.
+#define BATTERY_MINVOLT 6
+
+// When battery exceeds max volt, your charger will be switched off.
+// TODO: fix the following text. This feature exists to protect your battery from overcharging accidentally, but *NOT* from charger short/failure!
+// You should use MINVOLT for charger short/failure protection.
+#define BATTERY_MAXVOLT 8.5
+

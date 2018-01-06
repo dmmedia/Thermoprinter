@@ -1054,15 +1054,6 @@
 /** @defgroup HAL_Aliased_Functions HAL Generic Aliased Functions maintained for legacy purpose
   * @{
   */
-#define HAL_EnableDBGSleepMode HAL_DBGMCU_EnableDBGSleepMode
-#define HAL_DisableDBGSleepMode HAL_DBGMCU_DisableDBGSleepMode
-#define HAL_EnableDBGStopMode HAL_DBGMCU_EnableDBGStopMode
-#define HAL_DisableDBGStopMode HAL_DBGMCU_DisableDBGStopMode
-#define HAL_EnableDBGStandbyMode HAL_DBGMCU_EnableDBGStandbyMode
-#define HAL_DisableDBGStandbyMode HAL_DBGMCU_DisableDBGStandbyMode
-#define HAL_DBG_LowPowerConfig(Periph, cmd) (((cmd)==ENABLE)? HAL_DBGMCU_DBG_EnableLowPowerConfig(Periph) : HAL_DBGMCU_DBG_DisableLowPowerConfig(Periph))
-#define HAL_VREFINT_OutputSelect  HAL_SYSCFG_VREFINT_OutputSelect
-#define HAL_Lock_Cmd(cmd) (((cmd)==ENABLE) ? HAL_SYSCFG_Enable_Lock_VREFINT() : HAL_SYSCFG_Disable_Lock_VREFINT())
 #if defined(STM32L0)
 #else
 #define HAL_VREFINT_Cmd(cmd) (((cmd)==ENABLE)? HAL_SYSCFG_EnableVREFINT() : HAL_SYSCFG_DisableVREFINT())

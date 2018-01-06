@@ -406,7 +406,7 @@ namespace Planner {
 
 			//enable active axes
 			if (block->steps != 0U) {
-				enable_MOTOR();
+				Stepper::enable_MOTOR();
 			}
 
 			float32_t const fr_mm_s_limited = max(fr_mm_s, min_travel_feedrate_mm_s);
