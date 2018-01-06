@@ -516,9 +516,9 @@ namespace MarlinSerial {
 
 	static void printNumber(uint32_t n, uint8_t const base);
 
-	static void print(char const c, int32_t const base);
+	static void print(char const c, int32_t const base = BYTE);
 
-	static void print(uint8_t const b, int32_t const base);
+	static void print(uint8_t const b, int32_t const base = BYTE);
 
 	// @brief  Disable UART.
 	// @param  __HANDLE__: specifies the UART Handle.
@@ -865,7 +865,7 @@ namespace MarlinSerial {
 
 		//-------------------------- USART BRR Configuration -----------------------
 		UART_ClockSourceTypeDef const clocksource = UART_GetClockSource(huart);
-		const uint32_t frequency = RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_USART2);
+		const uint32_t frequency = Rcc::RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_USART2);
 
 		// Check LPUART instance
 		if(UART_INSTANCE_LOWPOWER(huart) != RESET)
@@ -876,10 +876,10 @@ namespace MarlinSerial {
 			switch (clocksource)
 			{
 				case UART_CLOCKSOURCE_PCLK1:
-					tmpreg = RCC_GetPCLK1Freq();
+					tmpreg = Rcc::RCC_GetPCLK1Freq();
 					break;
 				case UART_CLOCKSOURCE_HSI:
-					if (RCC_GetFlag(RCC_FLAG_HSIDIV) != 0U)
+					if (Rcc::RCC_GetFlag(Rcc::RCC_FLAG_HSIDIV) != 0U)
 					{
 						tmpreg = (uint32_t) (HSI_VALUE >> 2U);
 					}
@@ -889,7 +889,7 @@ namespace MarlinSerial {
 					}
 					break;
 				case UART_CLOCKSOURCE_SYSCLK:
-					tmpreg = RCC_GetSysClockFreq();
+					tmpreg = Rcc::RCC_GetSysClockFreq();
 					break;
 				case UART_CLOCKSOURCE_LSE:
 					tmpreg = (uint32_t) LSE_VALUE;
@@ -934,10 +934,10 @@ namespace MarlinSerial {
 					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(frequency, huart->Init.BaudRate));
 					break;
 				case UART_CLOCKSOURCE_PCLK2:
-					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(RCC_GetPCLK2Freq(), huart->Init.BaudRate));
+					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(Rcc::RCC_GetPCLK2Freq(), huart->Init.BaudRate));
 					break;
 				case UART_CLOCKSOURCE_HSI:
-					if (RCC_GetFlag(RCC_FLAG_HSIDIV) != 0U)
+					if (Rcc::RCC_GetFlag(Rcc::RCC_FLAG_HSIDIV) != 0U)
 					{
 						usartdiv = (uint16_t)(UART_DIV_SAMPLING8((HSI_VALUE >> 2U), huart->Init.BaudRate));
 					}
@@ -947,7 +947,7 @@ namespace MarlinSerial {
 					}
 					break;
 				case UART_CLOCKSOURCE_SYSCLK:
-					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(RCC_GetSysClockFreq(), huart->Init.BaudRate));
+					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(Rcc::RCC_GetSysClockFreq(), huart->Init.BaudRate));
 					break;
 				case UART_CLOCKSOURCE_LSE:
 					usartdiv = (uint16_t)(UART_DIV_SAMPLING8(LSE_VALUE, huart->Init.BaudRate));
@@ -967,13 +967,13 @@ namespace MarlinSerial {
 			switch (clocksource)
 			{
 				case UART_CLOCKSOURCE_PCLK1:
-					huart->Instance->BRR = UART_DivSampling16(RCC_GetPCLK1Freq(), huart->Init.BaudRate);
+					huart->Instance->BRR = UART_DivSampling16(Rcc::RCC_GetPCLK1Freq(), huart->Init.BaudRate);
 					break;
 				case UART_CLOCKSOURCE_PCLK2:
-					huart->Instance->BRR = UART_DivSampling16(RCC_GetPCLK2Freq(), huart->Init.BaudRate);
+					huart->Instance->BRR = UART_DivSampling16(Rcc::RCC_GetPCLK2Freq(), huart->Init.BaudRate);
 					break;
 				case UART_CLOCKSOURCE_HSI:
-					if (RCC_GetFlag(RCC_FLAG_HSIDIV) != 0U)
+					if (Rcc::RCC_GetFlag(Rcc::RCC_FLAG_HSIDIV) != 0U)
 					{
 						huart->Instance->BRR = UART_DivSampling16((HSI_VALUE >> 2U), huart->Init.BaudRate);
 					}
@@ -983,7 +983,7 @@ namespace MarlinSerial {
 					}
 					break;
 				case UART_CLOCKSOURCE_SYSCLK:
-					huart->Instance->BRR = UART_DivSampling16(RCC_GetSysClockFreq(), huart->Init.BaudRate);
+					huart->Instance->BRR = UART_DivSampling16(Rcc::RCC_GetSysClockFreq(), huart->Init.BaudRate);
 					break;
 				case UART_CLOCKSOURCE_LSE:
 					huart->Instance->BRR = UART_DivSampling16(LSE_VALUE, huart->Init.BaudRate);
@@ -1021,7 +1021,7 @@ namespace MarlinSerial {
 			// Check for the Timeout
 			if(Timeout != UART_MAX_DELAY)
 			{
-				uint32_t const elapsedTime = GetTick() - Tickstart;
+				uint32_t const elapsedTime = Timers::GetTick() - Tickstart;
 				if((Timeout == 0U) || (elapsedTime > Timeout))
 				{
 					// Disable TXE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts for the interrupt process
@@ -1055,7 +1055,7 @@ namespace MarlinSerial {
 		huart->ErrorCode = UART_ERROR_NONE;
 
 		// Init tickstart for timeout managment
-		uint32_t const tickstart = GetTick();
+		uint32_t const tickstart = Timers::GetTick();
 
 		// Check if the Transmitter is enabled
 		constexpr uint8_t USART_CR1_TE_BIT = USART_CR1_TE;

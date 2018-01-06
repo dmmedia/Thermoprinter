@@ -201,12 +201,12 @@ namespace AdcManager {
 			// Start ADC calibration
 			hadc->Instance->CR |= ADC_CR_ADCAL;
 
-			tickstart = GetTick();
+			tickstart = Timers::GetTick();
 
 			// Wait for calibration completion
 			while(isBitSet(hadc->Instance->CR, ADC_CR_ADCAL))
 			{
-				if((GetTick() - tickstart) > ADC_CALIBRATION_TIMEOUT)
+				if((Timers::GetTick() - tickstart) > ADC_CALIBRATION_TIMEOUT)
 				{
 					// Update ADC state machine to error
 					ADC_STATE_CLR_SET(hadc->State,
@@ -515,11 +515,11 @@ namespace AdcManager {
 
 			// Wait for conversion effectively stopped
 			// Get tick count
-			tickstart = GetTick();
+			tickstart = Timers::GetTick();
 
 			while((hadc->Instance->CR & ADC_CR_ADSTART) != RESET)
 			{
-				if((GetTick() - tickstart) > ADC_STOP_CONVERSION_TIMEOUT)
+				if((Timers::GetTick() - tickstart) > ADC_STOP_CONVERSION_TIMEOUT)
 				{
 					// Update ADC state machine to error
 					SET_BIT(hadc->State, ADC_STATE_ERROR_INTERNAL);
@@ -603,11 +603,11 @@ namespace AdcManager {
 
 			// Wait for ADC effectively disabled
 			// Get tick count
-			tickstart = GetTick();
+			tickstart = Timers::GetTick();
 
 			while(isBitSet(hadc->Instance->CR, ADC_CR_ADEN))
 			{
-				if((GetTick() - tickstart) > ADC_DISABLE_TIMEOUT)
+				if((Timers::GetTick() - tickstart) > ADC_DISABLE_TIMEOUT)
 				{
 					// Update ADC state machine to error
 					SET_BIT(hadc->State, ADC_STATE_ERROR_INTERNAL);
@@ -872,120 +872,10 @@ namespace AdcManager {
 	#define ADC_CFGR1_AUTO_OFF(_AUTOFF_) ((_AUTOFF_) << 15U)
 
 	constexpr void ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() {
-		RCC_GPIOB_CLK_ENABLE();
+		Rcc::RCC_GPIOB_CLK_ENABLE();
 	}
 	constexpr void ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE() {
-		RCC_GPIOA_CLK_ENABLE();
-	}
-
-	// @brief  Macro to get the Internal 48Mhz High Speed oscillator (HSI48) state.
-	// @retval The clock source can be one of the following values:
-	//            @arg @ref RCC_HSI48_ON  HSI48 enabled
-	//            @arg @ref RCC_HSI48_OFF HSI48 disabled
-	//
-	#define __HAL_RCC_GET_HSI48_STATE() \
-					  (((uint32_t)(READ_BIT(RCC->CRRCR, RCC_CRRCR_HSI48ON)) != RESET) ? RCC_HSI48_ON : RCC_HSI48_OFF)
-
-	//
-	// @brief  Configures the RCC_OscInitStruct according to the internal
-	// RCC configuration registers.
-	// @param  RCC_OscInitStruct pointer to an RCC_OscInitTypeDef structure that
-	// will be configured.
-	// @retval None
-	//
-	void RCC_GetOscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct)
-	{
-		// Set all possible values for the Oscillator type parameter ---------------
-		RCC_OscInitStruct->OscillatorType = RCC_OSCILLATORTYPE_HSE |
-			RCC_OSCILLATORTYPE_HSI |
-			RCC_OSCILLATORTYPE_LSE |
-			RCC_OSCILLATORTYPE_LSI |
-			RCC_OSCILLATORTYPE_MSI;
-		#if defined(RCC_HSI48_SUPPORT)
-			RCC_OscInitStruct->OscillatorType |= RCC_OSCILLATORTYPE_HSI48;
-		#endif // RCC_HSI48_SUPPORT
-
-
-		// Get the HSE configuration -----------------------------------------------
-		if((RCC->CR &RCC_CR_HSEBYP) == RCC_CR_HSEBYP)
-		{
-			RCC_OscInitStruct->HSEState = RCC_HSE_BYPASS;
-		}
-		else if((RCC->CR &RCC_CR_HSEON) == RCC_CR_HSEON)
-		{
-			RCC_OscInitStruct->HSEState = RCC_HSE_ON;
-		}
-		else
-		{
-			RCC_OscInitStruct->HSEState = RCC_HSE_OFF;
-		}
-
-		// Get the HSI configuration -----------------------------------------------
-		if((RCC->CR &RCC_CR_HSION) == RCC_CR_HSION)
-		{
-			RCC_OscInitStruct->HSIState = RCC_HSI_ON;
-		}
-		else
-		{
-			RCC_OscInitStruct->HSIState = RCC_HSI_OFF;
-		}
-
-		RCC_OscInitStruct->HSICalibrationValue = (uint32_t)((RCC->ICSCR & RCC_ICSCR_HSITRIM) >> 8);
-
-		// Get the MSI configuration -----------------------------------------------
-		if((RCC->CR &RCC_CR_MSION) == RCC_CR_MSION)
-		{
-			RCC_OscInitStruct->MSIState = RCC_MSI_ON;
-		}
-		else
-		{
-			RCC_OscInitStruct->MSIState = RCC_MSI_OFF;
-		}
-
-		RCC_OscInitStruct->MSICalibrationValue = (uint32_t)((RCC->ICSCR & RCC_ICSCR_MSITRIM) >> RCC_ICSCR_MSITRIM_BITNUMBER);
-		RCC_OscInitStruct->MSIClockRange = (uint32_t)((RCC->ICSCR & RCC_ICSCR_MSIRANGE));
-
-		// Get the LSE configuration -----------------------------------------------
-		if((RCC->CSR &RCC_CSR_LSEBYP) == RCC_CSR_LSEBYP)
-		{
-			RCC_OscInitStruct->LSEState = RCC_LSE_BYPASS;
-		}
-		else if((RCC->CSR &RCC_CSR_LSEON) == RCC_CSR_LSEON)
-		{
-			RCC_OscInitStruct->LSEState = RCC_LSE_ON;
-		}
-		else
-		{
-			RCC_OscInitStruct->LSEState = RCC_LSE_OFF;
-		}
-
-		// Get the LSI configuration -----------------------------------------------
-		if((RCC->CSR &RCC_CSR_LSION) == RCC_CSR_LSION)
-		{
-			RCC_OscInitStruct->LSIState = RCC_LSI_ON;
-		}
-		else
-		{
-			RCC_OscInitStruct->LSIState = RCC_LSI_OFF;
-		}
-
-	  	#if defined(RCC_HSI48_SUPPORT)
-			// Get the HSI48 configuration if any-----------------------------------------
-	  	  	RCC_OscInitStruct->HSI48State = __HAL_RCC_GET_HSI48_STATE();
-	  	#endif // RCC_HSI48_SUPPORT
-
-	  	// Get the PLL configuration -----------------------------------------------
-	  	if((RCC->CR &RCC_CR_PLLON) == RCC_CR_PLLON)
-	  	{
-	  		RCC_OscInitStruct->PLL.PLLState = RCC_PLL_ON;
-	  	}
-	  	else
-	  	{
-	  		RCC_OscInitStruct->PLL.PLLState = RCC_PLL_OFF;
-	  	}
-	  	RCC_OscInitStruct->PLL.PLLSource = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLSRC);
-	  	RCC_OscInitStruct->PLL.PLLMUL = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLMUL);
-	  	RCC_OscInitStruct->PLL.PLLDIV = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLDIV);
+		Rcc::RCC_GPIOA_CLK_ENABLE();
 	}
 
 	//
@@ -1001,7 +891,7 @@ namespace AdcManager {
 	{
 		GPIO::GpioInit_t          GPIO_InitStruct;
 //		static DMA_HandleTypeDef  DmaHandle;
-		RCC_OscInitTypeDef        RCC_OscInitStructure;
+		Rcc::RCC_OscInitTypeDef        RCC_OscInitStructure;
 
 		//##-1- Enable peripherals and GPIO Clocks #################################
 		// Enable clock of GPIO associated to the peripheral channels
@@ -1017,11 +907,11 @@ namespace AdcManager {
 		//       "HAL_RCC_OscConfig()" (see comments in stm32l0xx_hal_adc.c header)
 
 		// Enable asynchronous clock source of ADCx
-		RCC_GetOscConfig(&RCC_OscInitStructure);
+		Rcc::RCC_GetOscConfig(&RCC_OscInitStructure);
 		RCC_OscInitStructure.OscillatorType = RCC_OSCILLATORTYPE_HSI;
 		RCC_OscInitStructure.HSICalibrationValue = 0x10;
 		RCC_OscInitStructure.HSIState = RCC_HSI_ON;
-		RCC_OscConfig(&RCC_OscInitStructure);
+		Rcc::RCC_OscConfig(&RCC_OscInitStructure);
 
 		//##-2a- Configure peripheral GPIO ##########################################
 		// Configure GPIO pin of the selected ADC channel
@@ -1487,12 +1377,12 @@ namespace AdcManager {
 			ADC_DelayMicroSecond(ADC_STAB_DELAY_US);
 
 			// Get tick count
-			tickstart = GetTick();
+			tickstart = Timers::GetTick();
 
 			// Wait for ADC effectively enabled
 			while(ADC_GET_FLAG(hadc, ADC_FLAG_RDY) == RESET)
 			{
-				if((GetTick() - tickstart) > ADC_ENABLE_TIMEOUT)
+				if((Timers::GetTick() - tickstart) > ADC_ENABLE_TIMEOUT)
 				{
 					// Update ADC state machine to error
 					SET_BIT(hadc->State, ADC_STATE_ERROR_INTERNAL);

@@ -417,7 +417,7 @@ namespace Planner {
 			float32_t const delta_mm = static_cast<float32_t>(dm) * steps_to_mm;
 
 			if (block->steps < MIN_STEPS_PER_SEGMENT) {
-				block->millimeters = FABS(delta_mm);
+				block->millimeters = fabs(delta_mm);
 			} else {
 				block->millimeters = delta_mm;
 			}

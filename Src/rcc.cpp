@@ -13,55 +13,6 @@
 
 namespace Rcc {
 	//
-	// @brief uwTick_variable uwTick variable
-	//
-	__IO uint32_t uwTick;
-
-	//
-	// @brief This function configures the source of the time base.
-	//        The time source is configured  to have 1ms time base with a dedicated
-	//        Tick interrupt priority.
-	// @note This function is called  automatically at the beginning of program after
-	//       reset by Init() or at any time when clock is reconfigured  by RCC_ClockConfig().
-	// @note In the default implementation, SysTick timer is the source of time base.
-	//       It is used to generate interrupts at regular time intervals.
-	//       Care must be taken if HAL_Delay() is called from a peripheral ISR process,
-	//       The the SysTick interrupt must have higher priority (numerically lower)
-	//       than the peripheral interrupt. Otherwise the caller ISR process will be blocked.
-	//       The function is declared as __Weak  to be overwritten  in case of other
-	//       implementation  in user file.
-	// @param TickPriority: Tick interrupt priority.
-	//
-	void InitTick(uint32_t const TickPriority) {
-		// Configure the SysTick to have interrupt in 1ms time basis
-		if (SysTick_Config(SystemCoreClock / 1000U) != 0U) {
-			Thermoprinter::Error_Handler(__FILE__, __LINE__);
-		}
-
-		// Configure the SysTick IRQ priority
-		NVIC_SetPriority(SysTick_IRQn, TickPriority);
-	}
-
-	//
-	// @brief Provides a tick value in millisecond.
-	// @retval tick value
-	//
-	uint32_t GetTick(void) {
-		return uwTick;
-	}
-
-	//
-	// @brief This function is called to increment  a global variable "uwTick"
-	//        used as application time base.
-	// @note In the default implementation, this variable is incremented each 1ms
-	//       in Systick ISR.
-	// @retval None
-	//
-	void IncTick(void) {
-		uwTick++;
-	}
-
-	//
 	// @brief  Returns the SYSCLK frequency
 	// @note   The system frequency computed by this function is not the real
 	//         frequency in the chip. It is calculated based on the predefined
@@ -183,21 +134,21 @@ namespace Rcc {
 				// Check the HSE State
 				if (RCC_OscInitStruct->HSEState != RCC_HSE_OFF) {
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till HSE is ready
 					while (RCC_GetFlag(RCC_FLAG_HSERDY) == RESET) {
-						if ((GetTick() - tickstart) > HSE_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > HSE_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
 				} else {
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till HSE is disabled
 					while (RCC_GetFlag(RCC_FLAG_HSERDY) != RESET) {
-						if ((GetTick() - tickstart) > HSE_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > HSE_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -227,11 +178,11 @@ namespace Rcc {
 					RCC_HSI_CONFIG(RCC_OscInitStruct->HSIState);
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till HSI is ready
 					while (RCC_GetFlag(RCC_FLAG_HSIRDY) == RESET) {
-						if ((GetTick() - tickstart) > HSI_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > HSI_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -243,11 +194,11 @@ namespace Rcc {
 					RCC_HSI_DISABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till HSI is disabled
 					while (RCC_GetFlag(RCC_FLAG_HSIRDY) != RESET) {
-						if ((GetTick() - tickstart) > HSI_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > HSI_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -300,7 +251,7 @@ namespace Rcc {
 						>> AHBPrescTable[((RCC->CFGR & RCC_CFGR_HPRE) >> RCC_CFGR_HPRE_BITNUMBER)];
 
 					// Configure the source of time base considering new system clocks settings
-					InitTick(TICK_INT_PRIORITY);
+					Timers::InitTick(TICK_INT_PRIORITY);
 				}
 			} else {
 				// Check the MSI State
@@ -309,11 +260,11 @@ namespace Rcc {
 					RCC_MSI_ENABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till MSI is ready
 					while (RCC_GetFlag(RCC_FLAG_MSIRDY) == RESET) {
-						if ((GetTick() - tickstart) > MSI_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > MSI_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -327,11 +278,11 @@ namespace Rcc {
 					RCC_MSI_DISABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till MSI is ready
 					while (RCC_GetFlag(RCC_FLAG_MSIRDY) != RESET) {
-						if ((GetTick() - tickstart) > MSI_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > MSI_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -346,11 +297,11 @@ namespace Rcc {
 				RCC_LSI_ENABLE();
 
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till LSI is ready
 				while (RCC_GetFlag(RCC_FLAG_LSIRDY) == RESET) {
-					if ((GetTick() - tickstart) > LSI_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > LSI_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -359,11 +310,11 @@ namespace Rcc {
 				RCC_LSI_DISABLE();
 
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till LSI is disabled
 				while (RCC_GetFlag(RCC_FLAG_LSIRDY) != RESET) {
-					if ((GetTick() - tickstart) > LSI_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > LSI_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -385,10 +336,10 @@ namespace Rcc {
 				SET_BIT(PWR->CR, PWR_CR_DBP);
 
 				// Wait for Backup domain Write protection disable
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				while (IS_BIT_CLR(PWR->CR, PWR_CR_DBP)) {
-					if ((GetTick() - tickstart) > RCC_DBP_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > RCC_DBP_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -399,21 +350,21 @@ namespace Rcc {
 			// Check the LSE State
 			if (RCC_OscInitStruct->LSEState != RCC_LSE_OFF) {
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till LSE is ready
 				while (RCC_GetFlag(RCC_FLAG_LSERDY) == RESET) {
-					if ((GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
 			} else {
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till LSE is disabled
 				while (RCC_GetFlag(RCC_FLAG_LSERDY) != RESET) {
-					if ((GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -436,11 +387,11 @@ namespace Rcc {
 				;
 
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till HSI48 is ready
 				while (RCC_GetFlag(RCC_FLAG_HSI48RDY) == RESET) {
-					if ((GetTick() - tickstart) > HSI48_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > HSI48_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -450,11 +401,11 @@ namespace Rcc {
 				;
 
 				// Get Start Tick
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				// Wait till HSI48 is ready
 				while (RCC_GetFlag(RCC_FLAG_HSI48RDY) != RESET) {
-					if ((GetTick() - tickstart) > HSI48_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > HSI48_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -471,11 +422,11 @@ namespace Rcc {
 					RCC_PLL_DISABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till PLL is disabled
 					while (RCC_GetFlag(RCC_FLAG_PLLRDY) != RESET) {
-						if ((GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -487,11 +438,11 @@ namespace Rcc {
 					RCC_PLL_ENABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till PLL is ready
 					while (RCC_GetFlag(RCC_FLAG_PLLRDY) == RESET) {
-						if ((GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -500,11 +451,11 @@ namespace Rcc {
 					RCC_PLL_DISABLE();
 
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till PLL is disabled
 					while (RCC_GetFlag(RCC_FLAG_PLLRDY) != RESET) {
-						if ((GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > PLL_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -605,29 +556,29 @@ namespace Rcc {
 			RCC_SYSCLK_CONFIG(RCC_ClkInitStruct->SYSCLKSource);
 
 			// Get Start Tick
-			tickstart = GetTick();
+			tickstart = Timers::GetTick();
 
 			if (RCC_ClkInitStruct->SYSCLKSource == RCC_SYSCLKSOURCE_HSE) {
 				while (RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_HSE) {
-					if ((GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
 			} else if (RCC_ClkInitStruct->SYSCLKSource == RCC_SYSCLKSOURCE_PLLCLK) {
 				while (RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_PLLCLK) {
-					if ((GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
 			} else if (RCC_ClkInitStruct->SYSCLKSource == RCC_SYSCLKSOURCE_HSI) {
 				while (RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_HSI) {
-					if ((GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
 			} else {
 				while (RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_MSI) {
-					if ((GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > CLOCKSWITCH_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -660,7 +611,7 @@ namespace Rcc {
 			>> AHBPrescTable[(RCC->CFGR & RCC_CFGR_HPRE) >> RCC_CFGR_HPRE_BITNUMBER];
 
 		// Configure the source of time base considering new system clocks settings
-		InitTick(TICK_INT_PRIORITY);
+		Timers::InitTick(TICK_INT_PRIORITY);
 
 		return STATUS_OK;
 	}
@@ -700,10 +651,10 @@ namespace Rcc {
 				SET_BIT(PWR->CR, PWR_CR_DBP);
 
 				// Wait for Backup domain Write protection disable
-				tickstart = GetTick();
+				tickstart = Timers::GetTick();
 
 				while (IS_BIT_CLR(PWR->CR, PWR_CR_DBP)) {
-					if ((GetTick() - tickstart) > RCC_DBP_TIMEOUT_VALUE) {
+					if ((Timers::GetTick() - tickstart) > RCC_DBP_TIMEOUT_VALUE) {
 						return STATUS_TIMEOUT;
 					}
 				}
@@ -749,11 +700,11 @@ namespace Rcc {
 				// Wait for LSERDY if LSE was enabled
 				if (isBitSet(temp_reg, RCC_CSR_LSEON)) {
 					// Get Start Tick
-					tickstart = GetTick();
+					tickstart = Timers::GetTick();
 
 					// Wait till LSE is ready
 					while (RCC_GetFlag(RCC_FLAG_LSERDY) == RESET) {
-						if ((GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
+						if ((Timers::GetTick() - tickstart) > RCC_LSE_TIMEOUT_VALUE) {
 							return STATUS_TIMEOUT;
 						}
 					}
@@ -1051,4 +1002,107 @@ namespace Rcc {
 		}
 		return (frequency);
 	}
+
+	//
+	// @brief  Configures the RCC_OscInitStruct according to the internal
+	// RCC configuration registers.
+	// @param  RCC_OscInitStruct pointer to an RCC_OscInitTypeDef structure that
+	// will be configured.
+	// @retval None
+	//
+	void RCC_GetOscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct)
+	{
+		// Set all possible values for the Oscillator type parameter ---------------
+		RCC_OscInitStruct->OscillatorType = RCC_OSCILLATORTYPE_HSE |
+			RCC_OSCILLATORTYPE_HSI |
+			RCC_OSCILLATORTYPE_LSE |
+			RCC_OSCILLATORTYPE_LSI |
+			RCC_OSCILLATORTYPE_MSI;
+		#if defined(RCC_HSI48_SUPPORT)
+			RCC_OscInitStruct->OscillatorType |= RCC_OSCILLATORTYPE_HSI48;
+		#endif // RCC_HSI48_SUPPORT
+
+
+		// Get the HSE configuration -----------------------------------------------
+		if((RCC->CR &RCC_CR_HSEBYP) == RCC_CR_HSEBYP)
+		{
+			RCC_OscInitStruct->HSEState = RCC_HSE_BYPASS;
+		}
+		else if((RCC->CR &RCC_CR_HSEON) == RCC_CR_HSEON)
+		{
+			RCC_OscInitStruct->HSEState = RCC_HSE_ON;
+		}
+		else
+		{
+			RCC_OscInitStruct->HSEState = RCC_HSE_OFF;
+		}
+
+		// Get the HSI configuration -----------------------------------------------
+		if((RCC->CR &RCC_CR_HSION) == RCC_CR_HSION)
+		{
+			RCC_OscInitStruct->HSIState = RCC_HSI_ON;
+		}
+		else
+		{
+			RCC_OscInitStruct->HSIState = RCC_HSI_OFF;
+		}
+
+		RCC_OscInitStruct->HSICalibrationValue = (uint32_t)((RCC->ICSCR & RCC_ICSCR_HSITRIM) >> 8);
+
+		// Get the MSI configuration -----------------------------------------------
+		if((RCC->CR &RCC_CR_MSION) == RCC_CR_MSION)
+		{
+			RCC_OscInitStruct->MSIState = RCC_MSI_ON;
+		}
+		else
+		{
+			RCC_OscInitStruct->MSIState = RCC_MSI_OFF;
+		}
+
+		RCC_OscInitStruct->MSICalibrationValue = (uint32_t)((RCC->ICSCR & RCC_ICSCR_MSITRIM) >> RCC_ICSCR_MSITRIM_BITNUMBER);
+		RCC_OscInitStruct->MSIClockRange = (uint32_t)((RCC->ICSCR & RCC_ICSCR_MSIRANGE));
+
+		// Get the LSE configuration -----------------------------------------------
+		if((RCC->CSR &RCC_CSR_LSEBYP) == RCC_CSR_LSEBYP)
+		{
+			RCC_OscInitStruct->LSEState = RCC_LSE_BYPASS;
+		}
+		else if((RCC->CSR &RCC_CSR_LSEON) == RCC_CSR_LSEON)
+		{
+			RCC_OscInitStruct->LSEState = RCC_LSE_ON;
+		}
+		else
+		{
+			RCC_OscInitStruct->LSEState = RCC_LSE_OFF;
+		}
+
+		// Get the LSI configuration -----------------------------------------------
+		if((RCC->CSR &RCC_CSR_LSION) == RCC_CSR_LSION)
+		{
+			RCC_OscInitStruct->LSIState = RCC_LSI_ON;
+		}
+		else
+		{
+			RCC_OscInitStruct->LSIState = RCC_LSI_OFF;
+		}
+
+	  	#if defined(RCC_HSI48_SUPPORT)
+			// Get the HSI48 configuration if any-----------------------------------------
+	  	  	RCC_OscInitStruct->HSI48State = RCC_GET_HSI48_STATE();
+	  	#endif // RCC_HSI48_SUPPORT
+
+	  	// Get the PLL configuration -----------------------------------------------
+	  	if((RCC->CR &RCC_CR_PLLON) == RCC_CR_PLLON)
+	  	{
+	  		RCC_OscInitStruct->PLL.PLLState = RCC_PLL_ON;
+	  	}
+	  	else
+	  	{
+	  		RCC_OscInitStruct->PLL.PLLState = RCC_PLL_OFF;
+	  	}
+	  	RCC_OscInitStruct->PLL.PLLSource = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLSRC);
+	  	RCC_OscInitStruct->PLL.PLLMUL = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLMUL);
+	  	RCC_OscInitStruct->PLL.PLLDIV = (uint32_t)(RCC->CFGR & RCC_CFGR_PLLDIV);
+	}
+
 }
