@@ -22,6 +22,136 @@
 //lint -restore
 
 namespace Planner {
+	enum BlockFlagBit {
+		// Recalculate trapezoids on entry junction. For optimization.
+		BLOCK_BIT_RECALCULATE,
+
+		// Nominal speed always reached.
+		// i.e., The segment is long enough, so the nominal speed is reachable if accelerating
+		// from a safe speed (in consideration of jerking from zero speed).
+		BLOCK_BIT_NOMINAL_LENGTH,
+
+		// Start from a halt at the start of this block, respecting the maximum allowed jerk.
+		BLOCK_BIT_START_FROM_FULL_HALT,
+
+		// The block is busy
+		BLOCK_BIT_BUSY
+	};
+
+	enum {
+		BLOCK_FLAG_RECALCULATE          = (1UL << BLOCK_BIT_RECALCULATE),
+		BLOCK_FLAG_NOMINAL_LENGTH       = (1UL << BLOCK_BIT_NOMINAL_LENGTH),
+		BLOCK_FLAG_START_FROM_FULL_HALT = (1UL << BLOCK_BIT_START_FROM_FULL_HALT),
+		BLOCK_FLAG_BUSY                 = (1UL << BLOCK_BIT_BUSY)
+	};
+
+	#define BLOCK_BUFFER_SIZE 16U // maximize block buffer
+
+	// Moves (or segments) with fewer steps than this will be joined with the next move
+	#define MIN_STEPS_PER_SEGMENT 6U
+
+	//
+	// A ring buffer of moves described in steps
+	//
+	static block_t block_buffer[BLOCK_BUFFER_SIZE];
+
+	static float32_t steps_to_mm;
+
+	static uint32_t max_acceleration_steps_per_s2;
+
+	//
+	// The current position of the tool in absolute steps
+	// Recalculated if any axis_steps_per_mm are changed by gcode
+	//
+	static int32_t position;
+
+	//
+	// Speed of previous path line segment
+	//
+	static float32_t previous_speed;
+
+	//
+	// Nominal speed of previous path line segment
+	//
+	static float32_t previous_nominal_speed;
+
+	//
+	// Limit where 64bit math is necessary for acceleration calculation
+	//
+	static uint32_t cutoff_long;
+
+	static volatile uint8_t block_buffer_head;  // Index of the next block to be pushed
+	static volatile uint8_t block_buffer_tail;
+
+	//
+	// Calculate the maximum allowable speed at this point, in order
+	// to reach 'target_velocity' using 'acceleration' within a given
+	// 'distance'.
+	//
+	static float32_t max_allowable_speed(
+		const float32_t &accel,
+		const float32_t &target_velocity,
+		const float32_t &distance
+	);
+
+	static void calculate_trapezoid_for_block(
+		block_t* const block,
+		const float32_t &entry_factor,
+		const float32_t &exit_factor
+	);
+
+	static void recalculate();
+
+	//
+	// Calculate the distance (not time) it takes to accelerate
+	// from initial_rate to target_rate using the given acceleration:
+	//
+	static float32_t estimate_acceleration_distance(
+		const float32_t &initial_rate,
+		const float32_t &target_rate,
+		const float32_t &accel
+	);
+
+	//
+	// Return the point at which you must start braking (at the rate of -'acceleration') if
+	// you start at 'initial_rate', accelerate (until reaching the point), and want to end at
+	// 'final_rate' after traveling 'distance'.
+	//
+	// This is used to compute the intersection point between acceleration and deceleration
+	// in cases where the "trapezoid" has no plateau (i.e., never reaches maximum speed)
+	//
+	static float32_t intersection_distance(
+		const float32_t &initial_rate,
+		const float32_t &final_rate,
+		const float32_t &accel,
+		const float32_t &distance
+	);
+
+	static void reverse_pass_kernel(block_t* const current, const block_t* const next);
+	static void forward_pass_kernel(const block_t *previous, block_t* const current);
+
+	static void reverse_pass();
+	static void forward_pass();
+
+	static void recalculate_trapezoids();
+
+	static bool isBlockFlagSet(uint8_t const flag, BlockFlagBit const bitName);
+	static void setBlockFlag(uint8_t &flag, BlockFlagBit const bitName);
+	static void clearBlockFlag(uint8_t &flag, BlockFlagBit const bitName);
+
+	//
+	// Get the index of the next / previous block in the ring buffer
+	//
+	static FORCE_INLINE uint8_t next_block_index(uint8_t block_index) { return BLOCK_MOD(block_index + 1U); }
+	static FORCE_INLINE uint8_t prev_block_index(uint8_t block_index) { return BLOCK_MOD(block_index - 1U); }
+
+	//
+	// Number of moves currently in the planner
+	//
+	FORCE_INLINE uint8_t movesplanned() {
+		return BLOCK_MOD(block_buffer_head - block_buffer_tail + BLOCK_BUFFER_SIZE);
+	}
+
 	float32_t max_feedrate_mm_s; // Max speeds in mm per second
 	float32_t axis_steps_per_mm;
 	float32_t steps_to_mm;
@@ -70,7 +200,7 @@ namespace Planner {
 	// Calculate trapezoid parameters, multiplying the entry- and exit-speeds
 	// by the provided factors.
 	//
-	void calculate_trapezoid_for_block(
+	static void calculate_trapezoid_for_block(
 		block_t* const block,
 		const float32_t &entry_factor,
 		const float32_t &exit_factor
@@ -138,7 +268,7 @@ namespace Planner {
 		interrupts();
 	}
 
-	bool isBlockFlagSet(uint8_t const flag, BlockFlagBit const bitName) {
+	static bool isBlockFlagSet(uint8_t const flag, BlockFlagBit const bitName) {
 		uint8_t bit;
 		switch (bitName) {
 			case BLOCK_BIT_RECALCULATE:
@@ -163,7 +293,7 @@ namespace Planner {
 	// recalculate() needs to go over the current plan twice.
 	// Once in reverse and once forward. This implements the reverse pass.
 	//
-	void reverse_pass() {
+	static void reverse_pass() {
 
 		if (movesplanned() > 3U) {
 
@@ -193,7 +323,7 @@ namespace Planner {
 	}
 
 	// The kernel called by recalculate() when scanning the plan from first to last entry.
-	void forward_pass_kernel(const block_t* const previous, block_t* const current) {
+	static void forward_pass_kernel(const block_t* const previous, block_t* const current) {
 		if (previous != nullptr) {
 			// If the previous block is an acceleration block, but it is not long enough to complete the
 			// full speed change within the block, we need to adjust the entry speed accordingly. Entry
@@ -217,7 +347,7 @@ namespace Planner {
 		}
 	}
 
-	void setBlockFlag(uint8_t &flag, BlockFlagBit const bitName) {
+	static void setBlockFlag(uint8_t &flag, BlockFlagBit const bitName) {
 		uint8_t bit;
 		switch (bitName) {
 			case BLOCK_BIT_RECALCULATE:
@@ -244,7 +374,7 @@ namespace Planner {
 	// recalculate() needs to go over the current plan twice.
 	// Once in reverse and once forward. This implements the forward pass.
 	//
-	void forward_pass() {
+	static void forward_pass() {
 		block_t* block[3] = { NULL, NULL, NULL };
 
 		for (uint8_t b = block_buffer_tail; b != block_buffer_head; b = next_block_index(b)) {
@@ -261,7 +391,7 @@ namespace Planner {
 	// according to the entry_factor for each junction. Must be called by
 	// recalculate() after updating the blocks.
 	//
-	void recalculate_trapezoids() {
+	static void recalculate_trapezoids() {
 		uint8_t block_index = block_buffer_tail;
 		block_t *current;
 		block_t *next = NULL;
@@ -299,7 +429,7 @@ namespace Planner {
 		}
 	}
 
-	void clearBlockFlag(uint8_t &flag, BlockFlagBit const bitName) {
+	static void clearBlockFlag(uint8_t &flag, BlockFlagBit const bitName) {
 		uint8_t bit;
 		switch (bitName) {
 			case BLOCK_BIT_RECALCULATE:
@@ -344,7 +474,7 @@ namespace Planner {
 	//
 	//   3. Recalculate "trapezoids" for all blocks.
 	//
-	void recalculate() {
+	static void recalculate() {
 		reverse_pass();
 		forward_pass();
 		recalculate_trapezoids();
@@ -670,7 +800,7 @@ namespace Planner {
 		reset_acceleration_rates();
 	}
 
-	float32_t intersection_distance(
+	static float32_t intersection_distance(
 		const float32_t &initial_rate,
 		const float32_t &final_rate,
 		const float32_t &accel,
@@ -683,7 +813,7 @@ namespace Planner {
 		return id;
 	}
 
-	float32_t estimate_acceleration_distance(
+	static float32_t estimate_acceleration_distance(
 		const float32_t &initial_rate,
 		const float32_t &target_rate,
 		const float32_t &accel
@@ -695,7 +825,7 @@ namespace Planner {
 		return ead;
 	}
 
-	float32_t max_allowable_speed(
+	static float32_t max_allowable_speed(
 		const float32_t &accel,
 		const float32_t &target_velocity,
 		const float32_t &distance
@@ -713,7 +843,7 @@ namespace Planner {
 	}
 
 	// The kernel called by recalculate() when scanning the plan from last to first entry.
-	void reverse_pass_kernel(block_t* const current, const block_t* const next) {
+	static void reverse_pass_kernel(block_t* const current, const block_t* const next) {
 		if ((current != nullptr) && (next != nullptr)) {
 			// If entry speed is already at the maximum entry speed, no need to recheck. Block is cruising.
 			// If not, block in state of acceleration or deceleration. Reset entry speed to maximum and
@@ -737,4 +867,26 @@ namespace Planner {
 			}
 		}
 	}
+
+	FORCE_INLINE uint8_t BLOCK_MOD(uint8_t n) {
+		return n & (BLOCK_BUFFER_SIZE - 1U);
+	}
+
+	//
+	// "Discards" the block and "releases" the memory.
+	// Called when the current block is no longer needed.
+	//
+	void discard_current_block() {
+		if (blocks_queued()) {
+			block_buffer_tail = BLOCK_MOD(block_buffer_tail + 1);
+		}
+	}
+
+	//
+	// Does the buffer have any blocks queued?
+	//
+	bool blocks_queued() {
+		return (block_buffer_head != block_buffer_tail);
+	}
+
 }

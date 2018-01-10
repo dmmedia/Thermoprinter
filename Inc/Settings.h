@@ -1,12 +1,11 @@
+#pragma once
+
 /*
  * Settings.h
  *
  *  Created on: 9. nov 2017
  *      Author: Den
  */
-
-#ifndef SETTINGS_H_
-#define SETTINGS_H_
 
 namespace Settings {
     void reset(void);
@@ -20,6 +19,14 @@ namespace Settings {
 #endif
 
   	void postprocess();
-};
+}
 
-#endif /* SETTINGS_H_ */
+namespace RuntimeSettings {
+	extern bool axis_relative_modes;
+	extern bool relative_mode;
+
+	extern float32_t feedrate_mm_s;
+
+	extern int16_t feedrate_percentage;
+	extern int16_t saved_feedrate_percentage;
+}
