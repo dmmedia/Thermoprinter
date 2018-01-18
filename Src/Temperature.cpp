@@ -21,6 +21,8 @@
 #include "tim.h"
 #include "rcc.h"
 #include "serial.h"
+#include "Timers.h"
+#include "Thermoprinter.h"
 
 namespace AdcManager {
 

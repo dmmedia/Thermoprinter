@@ -22,6 +22,8 @@
 #include "SREGEmulation.h"
 #include "serial.h"
 #include "string.h"
+#include "Settings.h"
+#include "Thermoprinter.h"
 
 namespace CommandProcessor {
 	//

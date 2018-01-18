@@ -19,6 +19,7 @@
 #include "Temperature.h"
 #include "Endstops.h"
 #include "tim.h"
+#include "Thermoprinter.h"
 
 namespace Stepper {
 

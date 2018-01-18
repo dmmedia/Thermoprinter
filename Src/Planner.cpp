@@ -19,6 +19,7 @@
 #include "main.h"
 #include "Stepper.h"
 #include "CommandProcessor.h"
+#include "Thermoprinter.h"
 //lint -restore
 
 namespace Planner {
@@ -63,7 +64,7 @@ namespace Planner {
 	// The current position of the tool in absolute steps
 	// Recalculated if any axis_steps_per_mm are changed by gcode
 	//
-	static int32_t position;
+	static int32_t position = 0;
 
 	//
 	// Speed of previous path line segment
@@ -80,8 +81,8 @@ namespace Planner {
 	//
 	static uint32_t cutoff_long;
 
-	static volatile uint8_t block_buffer_head;  // Index of the next block to be pushed
-	static volatile uint8_t block_buffer_tail;
+	static volatile uint8_t block_buffer_head = 0U;  // Index of the next block to be pushed
+	static volatile uint8_t block_buffer_tail = 0U;
 
 	//
 	// Calculate the maximum allowable speed at this point, in order
@@ -139,6 +140,10 @@ namespace Planner {
 	static void setBlockFlag(uint8_t &flag, BlockFlagBit const bitName);
 	static void clearBlockFlag(uint8_t &flag, BlockFlagBit const bitName);
 
+	FORCE_INLINE uint8_t BLOCK_MOD(uint8_t n) {
+		return n & (BLOCK_BUFFER_SIZE - 1U);
+	}
+
 	//
 	// Get the index of the next / previous block in the ring buffer
 	//
@@ -154,21 +159,6 @@ namespace Planner {
 
 	float32_t max_feedrate_mm_s; // Max speeds in mm per second
 	float32_t axis_steps_per_mm;
-	float32_t steps_to_mm;
-
-	int32_t position = 0;
-
-	uint32_t cutoff_long;
-
-	float32_t previous_speed;
-	float32_t previous_nominal_speed;
-
-	//
-	// A ring buffer of moves described in steps
-	//
-	block_t block_buffer[BLOCK_BUFFER_SIZE];
-	volatile uint8_t block_buffer_head = 0U;           // Index of the next block to be pushed
-	volatile uint8_t block_buffer_tail = 0U;
 
 	// Initialized by settings.load()
 	float32_t min_feedrate_mm_s;
@@ -177,7 +167,6 @@ namespace Planner {
 	float32_t max_jerk;       // The largest speed change requiring no acceleration
 	float32_t min_travel_feedrate_mm_s;
 
-	uint32_t max_acceleration_steps_per_s2;
 	uint32_t max_acceleration_mm_per_s2;
 
 	uint32_t min_segment_time;
@@ -866,10 +855,6 @@ namespace Planner {
 				setBlockFlag(current->flag, BLOCK_BIT_RECALCULATE);
 			}
 		}
-	}
-
-	FORCE_INLINE uint8_t BLOCK_MOD(uint8_t n) {
-		return n & (BLOCK_BUFFER_SIZE - 1U);
 	}
 
 	//

@@ -15,6 +15,8 @@
 #include "rcc.h"
 #include <stdint.h>
 #include <MarlinSerial.h>
+#include "Timers.h"
+#include "Thermoprinter.h"
 
 namespace MarlinSerial {
 	//
