@@ -10,6 +10,8 @@
 #include "macros.h"
 #include "main.h"
 #include "rcc.h"
+#include "Timers.h"
+#include "Thermoprinter.h"
 
 namespace Rcc {
 	//

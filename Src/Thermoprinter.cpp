@@ -5,14 +5,23 @@
  *      Author: Den
  */
 
+#include <stdint.h>
+#include <stm32l0xx.h>
 #include "macros.h"
 #include "Thermoprinter.h"
 #include "Configuration.h"
-#include "Conditionals.h"
 #include "gpio.h"
+#include "Conditionals.h"
+#include "typedefs.h"
 #include "serial.h"
 #include "rcc.h"
 #include "SREGEmulation.h"
+#include "Planner.h"
+#include "CommandProcessor.h"
+#include "Settings.h"
+#include "Temperature.h"
+#include "Stepper.h"
+#include "Timers.h"
 
 namespace Thermoprinter {
 	//lint -save -e1924

@@ -5,7 +5,9 @@
  *      Author: Den
  */
 
+#include <stm32l0xx.h>
 #include "Timers.h"
+#include "Thermoprinter.h"
 
 namespace Timers {
 	//

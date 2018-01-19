@@ -37,8 +37,11 @@
   */
 
 #include "main.h"
+#include <stm32l0xx.h>
+#include "typedefs.h"
 #include "rcc.h"
 #include "CommandProcessor.h"
+#include "Thermoprinter.h"
 
 //lint -save -e9075 -e970
 int main(void)
