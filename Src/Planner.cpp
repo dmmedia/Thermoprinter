@@ -12,7 +12,6 @@
 #include "macros.h"
 #include "typedefs.h"
 #include "Planner.h"
-#include "SREGEmulation.h"
 #include "gpio.h"
 #include "Configuration.h"
 #include <stdlib.h>
@@ -247,14 +246,14 @@ namespace Planner {
 		// block->accelerate_until = accelerate_steps;
 		// block->decelerate_after = accelerate_steps+plateau_steps;
 
-		noInterrupts();  // Fill variables used by the stepper in a critical section
+		__disable_irq();  // Fill variables used by the stepper in a critical section
 		if (!isBlockFlagSet(block->flag, BLOCK_BIT_BUSY)) { // Don't update variables if block is busy.
 			block->accelerate_until = accelerate_steps;
 			block->decelerate_after = accelerate_steps + plateau_steps;
 			block->initial_rate = initial_rate;
 			block->final_rate = final_rate;
 		}
-		interrupts();
+		__enable_irq();
 	}
 
 	static bool isBlockFlagSet(uint8_t const flag, BlockFlagBit const bitName) {
@@ -290,9 +289,9 @@ namespace Planner {
 
 			// Make a local copy of block_buffer_tail, because the interrupt can alter it
 			// Is a critical section REALLY needed for a single byte change?
-			noInterrupts();
+			__disable_irq();
 			uint8_t const tail = block_buffer_tail;
-			interrupts();
+			__enable_irq();
 
 			uint8_t b = BLOCK_MOD(block_buffer_head - 3U);
 			while (b != tail) {

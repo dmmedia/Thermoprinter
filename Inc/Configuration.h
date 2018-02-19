@@ -260,7 +260,7 @@ constexpr uint8_t TX_BUFFER_SIZE = 128U;
 
 // The minimum pulse width (in µs) for stepping a stepper.
 // Set this if you find stepping unreliable, or if using a very fast CPU.
-#define MINIMUM_STEPPER_PULSE 4 // (µs) The smallest stepper pulse allowed
+constexpr int8_t MINIMUM_STEPPER_PULSE = 4; // (µs) The smallest stepper pulse allowed
 
 // The minimal temperature defines the temperature below which the printhead will not be enabled It is used
 // to check that the wiring to the thermistor is not broken.

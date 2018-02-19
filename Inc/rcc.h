@@ -357,6 +357,8 @@ namespace Rcc {
 	void RCC_GPIOC_CLK_ENABLE();
 	void RCC_GPIOH_CLK_ENABLE();
 
+	float32_t CYCLES_PER_MICROSECOND(void);
+
 	// End
 
 }

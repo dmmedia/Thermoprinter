@@ -29,13 +29,13 @@ FORCE_INLINE bool isBitSet(uint32_t reg, uint32_t bit) {
 #define MAX3(a, b, c)       max(max(a, b), c)
 #define MAX4(a, b, c, d)    max(MAX3(a, b, c), d)
 
-#define NOOP __asm("nop")
+#define NOOP asm("NOP");
 
 #define LOW  0x0
 
 // Highly granular delays for step pulses, etc.
 #define DELAY_0_NOP NOOP
-#define DELAY_1_NOP asm("nop");
+#define DELAY_1_NOP asm("NOP")
 #define DELAY_2_NOP DELAY_1_NOP; DELAY_1_NOP
 #define DELAY_3_NOP DELAY_1_NOP; DELAY_2_NOP
 #define DELAY_4_NOP DELAY_1_NOP; DELAY_3_NOP

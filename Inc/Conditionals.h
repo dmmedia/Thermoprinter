@@ -42,11 +42,6 @@ constexpr bool hasPowerSwitch(void) {
 	return ((POWER_SUPPLY > 0) && GPIO::pinExists(PS_ON_PORT, PS_ON_PIN));
 }
 
-#define CYCLES_PER_MICROSECOND (SystemCoreClock / 1000000L) // 16 or 20
-
-// Stepper pulse duration, in cycles
-#define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
-
 /**
  * Temp Sensor defines
  */

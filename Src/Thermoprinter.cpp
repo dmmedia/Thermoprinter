@@ -11,11 +11,10 @@
 #include "Thermoprinter.h"
 #include "Configuration.h"
 #include "gpio.h"
-#include "Conditionals.h"
 #include "typedefs.h"
+#include "Conditionals.h"
 #include "serial.h"
 #include "rcc.h"
-#include "SREGEmulation.h"
 #include "Planner.h"
 #include "CommandProcessor.h"
 #include "Settings.h"
@@ -158,14 +157,14 @@ namespace Thermoprinter {
 	// After this the machine will need to be reset.
 	//
 	void kill() {
-		SERIAL_ERROR_START();
+		Serial::SERIAL_ERROR_START();
 		SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
 
 		AdcManager::disable_all_heaters();
 		Stepper::disable_MOTOR();
 
 		Timers::Delay(600U); // Wait a short time (allows messages to get out before shutting down.
-		cli(); // Stop interrupts
+		__disable_irq(); // Stop interrupts
 
 		Timers::Delay(250U); //Wait to ensure all interrupts routines stopped
 		AdcManager::disable_all_heaters(); //turn off heaters again

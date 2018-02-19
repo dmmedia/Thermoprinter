@@ -19,7 +19,6 @@
 #include "CommandParser.h"
 #include "PLanner.h"
 #include "Stepper.h"
-#include "SREGEmulation.h"
 #include "serial.h"
 #include "string.h"
 #include "Settings.h"
@@ -217,7 +216,7 @@ namespace CommandProcessor {
 	static void process_next_command() {
 		char* const current_command = command_queue[cmd_queue_index_r];
 
-		SERIAL_ECHO_START();
+		Serial::SERIAL_ECHO_START();
 		SERIAL_ECHOLN(current_command);
 
 		// Parse the next command in the queue

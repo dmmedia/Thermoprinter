@@ -12,7 +12,6 @@
 #include "CommandParser.h"
 #include "main.h"
 #include "rcc.h"
-#include "SREGEmulation.h"
 #include "serial.h"
 #include <cstring>
 
@@ -124,7 +123,7 @@ namespace CommandParser {
 	}
 
 	void unknown_command_error() {
-	  SERIAL_ECHO_START();
+	  Serial::SERIAL_ECHO_START();
 	  SERIAL_ECHOPAIR("Unknown command: \"", command_ptr);
 	  SERIAL_CHAR(static_cast<uint8_t>('"'));
 	  SERIAL_EOL();

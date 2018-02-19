@@ -1967,6 +1967,10 @@ namespace Rcc {
 		return STATUS_OK;
 	}
 
+	float32_t CYCLES_PER_MICROSECOND(void) {
+		return SystemCoreClock / 1000000L; // 16 or 20
+	}
+
 	// End
 
 }

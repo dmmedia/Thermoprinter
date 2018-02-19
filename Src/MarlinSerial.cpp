@@ -9,7 +9,6 @@
 #include "typedefs.h"
 #include "main.h"
 #include "macros.h"
-#include "SREGEmulation.h"
 #include "gpio.h"
 #include "Configuration.h"
 #include "rcc.h"
@@ -671,22 +670,22 @@ namespace MarlinSerial {
 		// the value to rx_buffer_tail; the previous value of rx_buffer_head
 		// may be written to rx_buffer_tail, making it appear as if the buffer
 		// were full, not empty.
-		noInterrupts();
-			rx_buffer.head = rx_buffer.tail;
-		interrupts();
+		__disable_irq();
+		rx_buffer.head = rx_buffer.tail;
+		__enable_irq();
 	}
 
 	uint8_t available(void) {
-		noInterrupts();
+		__disable_irq();
 		const uint8_t h = rx_buffer.head;
 		const uint8_t t = rx_buffer.tail;
-		interrupts();
+		__enable_irq();
 		return ((RX_BUFFER_SIZE + h) - t) & static_cast<uint8_t>(RX_BUFFER_SIZE - 1U);
 	}
 
 	int32_t read(void) {
 		int32_t v;
-		noInterrupts();
+		__disable_irq();
 		const uint8_t t = rx_buffer.tail;
 		if (rx_buffer.head == t) {
 			v = -1;
@@ -694,7 +693,7 @@ namespace MarlinSerial {
 			v = static_cast<int32_t>(rx_buffer.buffer[t]);
 			rx_buffer.tail = (t + 1U) & static_cast<uint8_t>(RX_BUFFER_SIZE - 1U);
 		}
-		interrupts();
+		__enable_irq();
 		return v;
 	}
 
@@ -1308,7 +1307,7 @@ namespace MarlinSerial {
 
 	static void transmit(UartHandle const* const huart, uint8_t const byte)
 	{
-		noInterrupts();
+		__disable_irq();
 		const uint8_t h = tx_buffer.head;
 		const uint8_t i = (h + 1U) & static_cast<uint8_t>(TX_BUFFER_SIZE - 1);
 
@@ -1316,7 +1315,7 @@ namespace MarlinSerial {
 			tx_buffer.buffer[h] = byte;
 			tx_buffer.head = i;
 		}
-		interrupts();
+		__enable_irq();
 		UartEnableIT(huart, UART_IT_TXE);
 	}
 
@@ -1501,7 +1500,7 @@ namespace MarlinSerial {
 	}
 
 	static FORCE_INLINE void store_char(uint8_t const c) {
-		noInterrupts();
+		__disable_irq();
 		const uint8_t h = rx_buffer.head;
 		const uint8_t i = (h + 1U) & static_cast<uint8_t>(RX_BUFFER_SIZE - 1);
 
@@ -1513,7 +1512,7 @@ namespace MarlinSerial {
 			rx_buffer.buffer[h] = c;
 			rx_buffer.head = i;
 		}
-		interrupts();
+		__enable_irq();
 	}
 
     void print(char const* str) {
