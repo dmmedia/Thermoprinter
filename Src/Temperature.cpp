@@ -25,48 +25,9 @@
 #include "Thermoprinter.h"
 
 namespace AdcManager {
-
-	#define OVERSAMPLENR 16
-
-	// User-defined table 1
-	// Dummy Thermistor table.. It will ALWAYS read a fixed value.
-	#ifndef DUMMY_THERMISTOR_998_VALUE
-		#define DUMMY_THERMISTOR_998_VALUE 25
-	#endif
-
-	const short temptable_998[][2] = {
-		{    1 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE },
-		{ 1023 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE }
-	};
-
-	// Set the high and low raw values for the print head
-	// For thermistors the highest temperature results in the lowest ADC value
-	#ifndef PRINTHEAD_RAW_HI_TEMP
-	  	#define PRINTHEAD_RAW_HI_TEMP 0
-		#define PRINTHEAD_RAW_LO_TEMP 16383
-	#endif
-
-	#define _TT_NAME(_N) temptable_ ## _N
-	#define TT_NAME(_N) _TT_NAME(_N)
-
-	#if defined(THERMISTORHEATER_0)
-		#define PRINTHEAD_TEMPTABLE TT_NAME(THERMISTORHEATER_0)
-		#define PRINTHEAD_TEMPTABLE_LEN COUNT(PRINTHEAD_TEMPTABLE)
-	#elif defined(PRINTHEAD_USES_THERMISTOR)
-		#error "No heater 0 thermistor table specified"
-	#else
-		#define PRINTHEAD_TEMPTABLE NULL
-		#define PRINTHEAD_TEMPTABLE_LEN 0
-	#endif
-
-	// Set the high and low raw values for the battery
-	#ifndef BATTERY_RAW_HI_VOLT
-		#define BATTERY_RAW_HI_VOLT 16383
-		#define BATTERY_RAW_LO_VOLT 0
-	#endif
-
-	#define BATTERY_VOLTTABLE TT_NAME(THERMISTORHEATER_0) // TODO: fixme
-	#define BATTERY_VOLTTABLE_LEN COUNT(BATTERY_VOLTTABLE)
+	//
+	// Private definitions and constants
+	//
 
 	//
 	// States for ADC reading in the ISR
@@ -77,14 +38,6 @@ namespace AdcManager {
 		SensorsReady, // Temperatures ready. Delay the next round of readings to let ADC pins settle.
 		StartupDelay  // Startup, delay initial temp reading a tiny bit so the hardware can settle
 	};
-
-	// Minimum number of Temperature::ISR loops between sensor readings.
-	// Multiplied by 16 (OVERSAMPLENR) to obtain the total time to
-	// get all oversampled sensor readings
-	#define MIN_ADC_ISR_LOOPS 10
-
-	// ADC parameters
-	#define ADCCONVERTEDVALUES_BUFFER_SIZE 2U    /* Size of array containing ADC converted values: set to ADC sequencer number of ranks converted, to have a rank in each address */
 
 	//
 	// @brief  ADC group regular oversampling structure definition
@@ -233,7 +186,71 @@ namespace AdcManager {
 		__IO uint32_t                 ErrorCode;              //!< ADC Error code
 	} ADC_HandleTypeDef;
 
-	extern ADC_HandleTypeDef AdcHandle;
+	//
+	// @brief  Structure definition of ADC channel for regular group
+	// @note   The setting of these parameters by function HAL_ADC_ConfigChannel() is conditioned to ADC state.
+	//         ADC state can be either:
+	//          - For all parameters: ADC disabled or enabled without conversion on going on regular group.
+	//         If ADC is not in the appropriate state to modify some parameters, these parameters setting is bypassed
+	//         without error reporting (as it can be the expected behavior in case of intended action to update another parameter (which fulfills the ADC state condition) on the fly).
+	//
+	typedef struct
+	{
+		uint32_t Channel;                //!< Specify the channel to configure into ADC regular group.
+										 //   This parameter can be a value of @ref ADC_channels
+										 //   Note: Depending on devices, some channels may not be available on device package pins. Refer to device datasheet for channels availability.
+
+		uint32_t Rank;                   //!< Add or remove the channel from ADC regular group sequencer.
+										 //   On STM32L0 devices,  number of ranks in the sequence is defined by number of channels enabled, rank of each channel is defined by channel number
+										 //   (channel 0 fixed on rank 0, channel 1 fixed on rank1, ...).
+										 //   Despite the channel rank is fixed, this parameter allow an additional possibility: to remove the selected rank (selected channel) from sequencer.
+										 //   This parameter can be a value of @ref ADC_rank
+	} ADC_ChannelConfTypeDef;
+
+	#define OVERSAMPLENR 16
+
+	// User-defined table 1
+	// Dummy Thermistor table.. It will ALWAYS read a fixed value.
+	#ifndef DUMMY_THERMISTOR_998_VALUE
+		#define DUMMY_THERMISTOR_998_VALUE 25
+	#endif
+
+	// Set the high and low raw values for the print head
+	// For thermistors the highest temperature results in the lowest ADC value
+	#ifndef PRINTHEAD_RAW_HI_TEMP
+	  	#define PRINTHEAD_RAW_HI_TEMP 0
+		#define PRINTHEAD_RAW_LO_TEMP 16383
+	#endif
+
+	#define _TT_NAME(_N) temptable_ ## _N
+	#define TT_NAME(_N) _TT_NAME(_N)
+
+	#if defined(THERMISTORHEATER_0)
+		#define PRINTHEAD_TEMPTABLE TT_NAME(THERMISTORHEATER_0)
+		#define PRINTHEAD_TEMPTABLE_LEN COUNT(PRINTHEAD_TEMPTABLE)
+	#elif defined(PRINTHEAD_USES_THERMISTOR)
+		#error "No heater 0 thermistor table specified"
+	#else
+		#define PRINTHEAD_TEMPTABLE NULL
+		#define PRINTHEAD_TEMPTABLE_LEN 0
+	#endif
+
+	// Set the high and low raw values for the battery
+	#ifndef BATTERY_RAW_HI_VOLT
+		#define BATTERY_RAW_HI_VOLT 16383
+		#define BATTERY_RAW_LO_VOLT 0
+	#endif
+
+	#define BATTERY_VOLTTABLE TT_NAME(THERMISTORHEATER_0) // TODO: fixme
+	#define BATTERY_VOLTTABLE_LEN COUNT(BATTERY_VOLTTABLE)
+
+	// Minimum number of Temperature::ISR loops between sensor readings.
+	// Multiplied by 16 (OVERSAMPLENR) to obtain the total time to
+	// get all oversampled sensor readings
+	#define MIN_ADC_ISR_LOOPS 10
+
+	// ADC parameters
+	#define ADCCONVERTEDVALUES_BUFFER_SIZE 2U    /* Size of array containing ADC converted values: set to ADC sequencer number of ranks converted, to have a rank in each address */
 
 	// @defgroup ADC_channels ADC_Channels
 	//
@@ -271,42 +288,6 @@ namespace AdcManager {
 
 	#define ADC1_FORCE_RESET()              SET_BIT(RCC->APB2RSTR, (RCC_APB2RSTR_ADC1RST))
 	#define ADC1_RELEASE_RESET()            CLEAR_BIT(RCC->APB2RSTR, (RCC_APB2RSTR_ADC1RST))
-
-	TIM_HandleTypeDef htim2;
-
-	/* Variable containing ADC conversions results */
-	__IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
-
-	/* Variable to report ADC sequencer status */
-	uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
-
-	// Init min and max temp with extreme values to prevent false errors during startup
-	int16_t minttemp_raw = PRINTHEAD_RAW_LO_TEMP;
-	int16_t maxttemp_raw = PRINTHEAD_RAW_HI_TEMP;
-	int16_t minttemp = 0;
-	int16_t maxttemp = 16383;
-
-	// Init min and max volt with extreme values to prevent false errors during startup
-	int16_t mintvolt_raw = BATTERY_RAW_LO_VOLT;
-	int16_t maxtvolt_raw = BATTERY_RAW_HI_VOLT;
-	int16_t mintvolt = 0;
-	int16_t maxtvolt = 16383;
-
-	void* heater_ttbl_map = (void*)PRINTHEAD_TEMPTABLE;
-	uint8_t heater_ttbllen_map = PRINTHEAD_TEMPTABLE_LEN;
-
-	void* battery_ttbl_map = (void*)BATTERY_VOLTTABLE;
-	uint8_t battery_ttbllen_map = BATTERY_VOLTTABLE_LEN;
-
-	volatile bool sens_meas_ready = false;
-
-	uint16_t raw_temp_value = 0U;
-	uint16_t raw_volt_value = 0U;
-
-	int16_t current_temperature_raw = 0;
-	int16_t current_voltage_raw = 0;
-
-	ADC_HandleTypeDef AdcHandle;
 
 	#define ADC_SINGLE_ENDED                        0x00000000U   /* dummy value */
 
@@ -407,6 +388,706 @@ namespace AdcManager {
 	// maximum prescaler.
 	// Unit: ms
 	#define ADC_CALIBRATION_TIMEOUT      10U
+
+	// @defgroup ADC_ClockPrescaler ADC Clock Prescaler
+	// @{
+	//
+	#define ADC_CLOCK_ASYNC_DIV1              0x00000000U                               			//!< ADC Asynchronous clock mode divided by 1
+	#define ADC_CLOCK_ASYNC_DIV2              (ADC_CCR_PRESC_0)                                     //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV4              (ADC_CCR_PRESC_1)                                     //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV6              (ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV8              (ADC_CCR_PRESC_2)                                     //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV10             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV12             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_1)                   //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV16             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0) //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV32             (ADC_CCR_PRESC_3)                                     //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV64             (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV128            (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_1)                   //!< ADC Asynchronous clock mode divided by 2
+	#define ADC_CLOCK_ASYNC_DIV256            (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0) //!< ADC Asynchronous clock mode divided by 2
+
+	#define ADC_CLOCK_SYNC_PCLK_DIV1         ((uint32_t)ADC_CFGR2_CKMODE)    //!< Synchronous clock mode divided by 1
+																			 //    This configuration must be enabled only if PCLK has a 50%
+																			 //    duty clock cycle (APB prescaler configured inside the RCC must be bypassed and the system clock
+																			 //    must by 50% duty cycle)
+	#define ADC_CLOCK_SYNC_PCLK_DIV2         ((uint32_t)ADC_CFGR2_CKMODE_0)  //!< Synchronous clock mode divided by 2
+	#define ADC_CLOCK_SYNC_PCLK_DIV4         ((uint32_t)ADC_CFGR2_CKMODE_1)  //!< Synchronous clock mode divided by 4
+
+	// @defgroup ADC_Resolution ADC Resolution
+	// @{
+	//
+	#define ADC_RESOLUTION_12B      0x00000000U          			 //!< ADC 12-bit resolution
+	#define ADC_RESOLUTION_10B      ((uint32_t)ADC_CFGR1_RES_0)      //!< ADC 10-bit resolution
+	#define ADC_RESOLUTION_8B       ((uint32_t)ADC_CFGR1_RES_1)      //!< ADC 8-bit resolution
+	#define ADC_RESOLUTION_6B       ((uint32_t)ADC_CFGR1_RES)        //!< ADC 6-bit resolution
+
+	// @defgroup ADC_Data_align ADC conversion data alignment
+	// @{
+	//
+	#define ADC_DATAALIGN_RIGHT      0x00000000U
+	#define ADC_DATAALIGN_LEFT       ((uint32_t)ADC_CFGR1_ALIGN)
+
+	// @defgroup ADC_Scan_mode ADC Scan mode
+	// @{
+	//
+	// Note: Scan mode values must be compatible with other STM32 devices having
+	//       a configurable sequencer.
+	//       Scan direction setting values are defined by taking in account
+	//       already defined values for other STM32 devices:
+	//         ADC_SCAN_DISABLE         ((uint32_t)0x00000000)
+	//         ADC_SCAN_ENABLE          ((uint32_t)0x00000001)
+	//       Scan direction forward is considered as default setting equivalent
+	//       to scan enable.
+	//       Scan direction backward is considered as additional setting.
+	//       In case of migration from another STM32 device, the user will be
+	//       warned of change of setting choices with assert check.
+	#define ADC_SCAN_DIRECTION_FORWARD        0x00000001U        //!< Scan direction forward: from channel 0 to channel 18
+	#define ADC_SCAN_DIRECTION_BACKWARD       0x00000002U        //!< Scan direction backward: from channel 18 to channel 0
+
+	#define ADC_SCAN_ENABLE         ADC_SCAN_DIRECTION_FORWARD             // For compatibility with other STM32 devices
+
+	// @defgroup ADC_EOCSelection ADC EOC Selection
+	// @{
+	//
+	#define ADC_EOC_SINGLE_CONV         ((uint32_t) ADC_ISR_EOC)
+	#define ADC_EOC_SEQ_CONV            ((uint32_t) ADC_ISR_EOS)
+	#define ADC_EOC_SINGLE_SEQ_CONV     ((uint32_t)(ADC_ISR_EOC | ADC_ISR_EOS))  //!< reserved for future use
+
+	// @defgroup ADC_regular_external_trigger_source ADC External Trigger Source
+	// @{
+	//
+	#define ADC_EXTERNALTRIGCONV_T6_TRGO            0x00000000U
+	#define ADC_EXTERNALTRIGCONV_T21_CC2            (ADC_CFGR1_EXTSEL_0)
+	#define ADC_EXTERNALTRIGCONV_T2_TRGO            (ADC_CFGR1_EXTSEL_1)
+	#define ADC_EXTERNALTRIGCONV_T2_CC4             (ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0)
+	#define ADC_EXTERNALTRIGCONV_T22_TRGO           (ADC_CFGR1_EXTSEL_2)
+	#define ADC_EXTERNALTRIGCONV_T3_TRGO            (ADC_CFGR1_EXTSEL_2 | ADC_CFGR1_EXTSEL_1)
+	#define ADC_EXTERNALTRIGCONV_EXT_IT11           (ADC_CFGR1_EXTSEL_2 | ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0)
+	#define ADC_SOFTWARE_START                      (ADC_CFGR1_EXTSEL + 1U)
+
+	// @defgroup ADC_regular_external_trigger_edge ADC External Trigger Source Edge for Regular Group
+	// @{
+	//
+	#define ADC_EXTERNALTRIGCONVEDGE_NONE           0x00000000U
+	#define ADC_EXTERNALTRIGCONVEDGE_RISING         ((uint32_t)ADC_CFGR1_EXTEN_0)
+	#define ADC_EXTERNALTRIGCONVEDGE_FALLING        ((uint32_t)ADC_CFGR1_EXTEN_1)
+	#define ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING  ((uint32_t)ADC_CFGR1_EXTEN)
+
+	// @defgroup ADC_Overrun ADC Overrun
+	// @{
+	//
+	#define ADC_OVR_DATA_PRESERVED              0x00000000U
+	#define ADC_OVR_DATA_OVERWRITTEN            ((uint32_t)ADC_CFGR1_OVRMOD)
+
+	// @defgroup ADC_sampling_times ADC Sampling Cycles
+	// @{
+	//
+	#define ADC_SAMPLETIME_1CYCLE_5       0x00000000U   			                      //!<  ADC sampling time 1.5 cycle
+	#define ADC_SAMPLETIME_3CYCLES_5      ((uint32_t)ADC_SMPR_SMPR_0)                     //!<  ADC sampling time 3.5 CYCLES
+	#define ADC_SAMPLETIME_7CYCLES_5      ((uint32_t)ADC_SMPR_SMPR_1)                     //!<  ADC sampling time 7.5 CYCLES
+	#define ADC_SAMPLETIME_12CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_0)) //!<  ADC sampling time 12.5 CYCLES
+	#define ADC_SAMPLETIME_19CYCLES_5     ((uint32_t)ADC_SMPR_SMPR_2)                     //!<  ADC sampling time 19.5 CYCLES
+	#define ADC_SAMPLETIME_39CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_2 | ADC_SMPR_SMPR_0)) //!<  ADC sampling time 39.5 CYCLES
+	#define ADC_SAMPLETIME_79CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_2 | ADC_SMPR_SMPR_1)) //!<  ADC sampling time 79.5 CYCLES
+	#define ADC_SAMPLETIME_160CYCLES_5    ((uint32_t)ADC_SMPR_SMPR)                       //!<  ADC sampling time 160.5 CYCLES
+
+	//
+	// @brief Check if no conversion on going on regular group
+	// @param __HANDLE__: ADC handle
+	// @retval SET (conversion is on going) or RESET (no conversion is on going)
+	//
+	#define ADC_IS_CONVERSION_ONGOING_REGULAR(__HANDLE__)                          \
+	    (( (((__HANDLE__)->Instance->CR) & ADC_CR_ADSTART) == RESET                  \
+	    ) ? RESET : SET)
+
+	// Fixed timeout values for ADC calibration, enable settling time, disable
+	// settling time.
+	// Values defined to be higher than worst cases: low clocks freq,
+	// maximum prescalers.
+	// Unit: ms
+	#define ADC_ENABLE_TIMEOUT            10U
+	#define ADC_DISABLE_TIMEOUT           10U
+	#define ADC_STOP_CONVERSION_TIMEOUT   10U
+
+	// @defgroup ADC_Error_Code ADC Error Code
+	// @{
+	//
+	#define ADC_ERROR_NONE        0x00U   //!< No error
+	#define ADC_ERROR_INTERNAL    0x01U   //!< ADC IP internal error (problem of clocking,
+										  //				  enable/disable, erroneous state, ...)
+	#define ADC_ERROR_OVR         0x02U   //!< Overrun error
+	#define ADC_ERROR_DMA         0x04U   //!< DMA transfer error
+
+	//
+	// @brief Verification of hardware constraints before ADC can be disabled
+	// @param __HANDLE__: ADC handle
+	// @retval SET (ADC can be disabled) or RESET (ADC cannot be disabled)
+	//
+	#define ADC_DISABLING_CONDITIONS(__HANDLE__)                             \
+		   (( ( ((__HANDLE__)->Instance->CR) &                                     \
+				(ADC_CR_ADSTART | ADC_CR_ADEN)) == ADC_CR_ADEN   \
+			) ? SET : RESET)
+
+	//
+	// @brief Clear the ADC's pending flags
+	// @param __HANDLE__: ADC handle.
+	// @param __FLAG__: ADC flag.
+	// @retval None
+	//
+	// Note: bit cleared bit by writing 1
+	#define ADC_CLEAR_FLAG(__HANDLE__, __FLAG__) \
+		(((__HANDLE__)->Instance->ISR) = (__FLAG__))
+
+	//
+	// @brief Disable the ADC peripheral
+	// @param __HANDLE__: ADC handle
+	// @retval None
+	//
+	#define ADC_DISABLE(__HANDLE__)                                          \
+		do{                                                                          \
+			(__HANDLE__)->Instance->CR |= ADC_CR_ADDIS;                           \
+			ADC_CLEAR_FLAG((__HANDLE__), (ADC_FLAG_EOSMP | ADC_FLAG_RDY)); \
+		} while(0)
+
+	//
+	// @brief Disable the ADC end of conversion interrupt.
+	// @param __HANDLE__: ADC handle.
+	// @param __INTERRUPT__: ADC interrupt.
+	// @retval None
+	//
+	#define ADC_DISABLE_IT(__HANDLE__, __INTERRUPT__) \
+		(((__HANDLE__)->Instance->IER) &= ~(__INTERRUPT__))
+
+	// @defgroup ADC_interrupts_definition ADC Interrupts Definition
+	// @{
+	//
+	#define ADC_IT_RDY           ADC_IER_ADRDYIE     //!< ADC Ready (ADRDY) interrupt source
+	#define ADC_IT_EOSMP         ADC_IER_EOSMPIE     //!< ADC End of Sampling interrupt source
+	#define ADC_IT_EOC           ADC_IER_EOCIE       //!< ADC End of Regular Conversion interrupt source
+	#define ADC_IT_EOS           ADC_IER_EOSEQIE     //!< ADC End of Regular sequence of Conversions interrupt source
+	#define ADC_IT_OVR           ADC_IER_OVRIE       //!< ADC overrun interrupt source
+	#define ADC_IT_AWD           ADC_IER_AWDIE       //!< ADC Analog watchdog 1 interrupt source
+	#define ADC_IT_EOCAL         ADC_IER_EOCALIE     //!< ADC End of Calibration interrupt source
+
+	//
+	// @brief Clear ADC error code (set it to error code: "no error")
+	// @param __HANDLE__: ADC handle
+	// @retval None
+	//
+	#define ADC_CLEAR_ERRORCODE(__HANDLE__)                                        \
+		((__HANDLE__)->ErrorCode = ADC_ERROR_NONE)
+
+	//
+	// @brief Configuration of ADC clock & prescaler: clock source PCLK or Asynchronous with selectable prescaler
+	// @param __HANDLE__: ADC handle
+	// @retval None
+	//
+	#define ADC_CLOCK_PRESCALER(__HANDLE__)                                       \
+		do{                                                                               \
+			if ((((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV1) ||  \
+				(((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV2) ||  \
+				(((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV4))    \
+			{                                                                             \
+				(__HANDLE__)->Instance->CFGR2 &= ~(ADC_CFGR2_CKMODE);                       \
+				(__HANDLE__)->Instance->CFGR2 |=  (__HANDLE__)->Init.ClockPrescaler;        \
+			}                                                                             \
+			else                                                                          \
+			{                                                                             \
+				/* CKMOD bits must be reset */                                              \
+				(__HANDLE__)->Instance->CFGR2 &= ~(ADC_CFGR2_CKMODE);                       \
+				ADC->CCR &= ~(ADC_CCR_PRESC);                                               \
+				ADC->CCR |=  (__HANDLE__)->Init.ClockPrescaler;                             \
+			}                                                                             \
+		} while(0)
+
+	//
+	// @brief Enable the ADC Low Frequency mode.
+	// @param _LOW_FREQUENCY_MODE_: Low Frequency mode.
+	// @retval None
+	//
+	#define ADC_CCR_LOWFREQUENCY(_LOW_FREQUENCY_MODE_) ((_LOW_FREQUENCY_MODE_) << 25U)
+
+	//
+	// @brief Enable ADC scan mode to convert multiple ranks with sequencer.
+	// @param _SCAN_MODE_: Scan conversion mode.
+	// @retval None
+	//
+	#define ADC_SCANDIR(_SCAN_MODE_)                                   \
+		( ( (_SCAN_MODE_) == (ADC_SCAN_DIRECTION_BACKWARD)                           \
+			)? (ADC_CFGR1_SCANDIR) : (0x00000000U)                                      \
+		)
+
+	//
+	// @brief Enable ADC continuous conversion mode.
+	// @param _CONTINUOUS_MODE_: Continuous mode.
+	// @retval None
+	//
+	#define ADC_CONTINUOUS(_CONTINUOUS_MODE_) ((_CONTINUOUS_MODE_) << 13U)
+
+	//
+	// @brief Enable the ADC DMA continuous request.
+	// @param _DMAContReq_MODE_: DMA continuous request mode.
+	// @retval None
+	//
+	#define ADC_DMACONTREQ(_DMAContReq_MODE_) ((_DMAContReq_MODE_) << 1U)
+
+	//
+	// @brief Enable the ADC Auto Delay.
+	// @param _AutoDelay_: Auto delay bit enable or disable.
+	// @retval None
+	//
+	#define ADC_CFGR1_AutoDelay(_AutoDelay_) ((_AutoDelay_) << 14U)
+
+	//
+	// @brief Enable the ADC LowPowerAutoPowerOff.
+	// @param _AUTOFF_: AutoOff bit enable or disable.
+	// @retval None
+	//
+	#define ADC_CFGR1_AUTO_OFF(_AUTOFF_) ((_AUTOFF_) << 15U)
+
+	// @defgroup ADC_rank ADC rank
+	// @{
+	//
+	#define ADC_RANK_CHANNEL_NUMBER                 0x00001000U  //!< Enable the rank of the selected channels. Number of ranks in the sequence is defined by number of channels enabled, rank of each channel is defined by channel number (channel 0 fixed on rank 0, channel 1 fixed on rank1, ...)
+	#define ADC_RANK_NONE                           0x00001001U  //!< Disable the selected rank (selected channel) from sequencer
+
+	// @defgroup ADC_Channel_AWD_Masks ADC Channel Masks
+	// @{
+	//
+	#define ADC_CHANNEL_MASK        0x0007FFFFU
+	#define ADC_CHANNEL_AWD_MASK    0x7C000000U
+
+	// Delay for temperature sensor stabilization time.
+	// Maximum delay is 10us (refer to device datasheet, parameter tSTART).
+	// Unit: us
+	#define ADC_TEMPSENSOR_DELAY_US ((uint32_t) 10U)
+
+	//
+	// @brief Verification of hardware constraints before ADC can be enabled
+	// @param __HANDLE__: ADC handle
+	// @retval SET (ADC can be enabled) or RESET (ADC cannot be enabled)
+	//
+	#define ADC_ENABLING_CONDITIONS(__HANDLE__)           \
+		(( ( ((__HANDLE__)->Instance->CR) &                  \
+			(ADC_CR_ADCAL | ADC_CR_ADSTP | ADC_CR_ADSTART | \
+				ADC_CR_ADDIS | ADC_CR_ADEN )                   \
+			) == RESET                                       \
+		) ? SET : RESET)
+
+	//
+	// @brief Enable the ADC peripheral
+	// @param __HANDLE__: ADC handle
+	// @retval None
+	//
+	#define ADC_ENABLE(__HANDLE__) ((__HANDLE__)->Instance->CR |= ADC_CR_ADEN)
+
+	//
+	// @brief Get the selected ADC's flag status.
+	// @param __HANDLE__: ADC handle.
+	// @param __FLAG__: ADC flag.
+	// @retval None
+	//
+	#define ADC_GET_FLAG(__HANDLE__, __FLAG__) \
+	    ((((__HANDLE__)->Instance->ISR) & (__FLAG__)) == (__FLAG__))
+
+	// Delay for ADC stabilization time.
+	// Maximum delay is 1us (refer to device datasheet, parameter tSTART).
+	// Unit: us
+	#define ADC_STAB_DELAY_US       1U
+
+	//
+	// @brief Test if conversion trigger of regular group is software start
+	//        or external trigger.
+	// @param __HANDLE__: ADC handle
+	// @retval SET (software start) or RESET (external trigger)
+	//
+	#define ADC_IS_SOFTWARE_START_REGULAR(__HANDLE__)                              \
+		(((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_EXTEN) == RESET)
+
+	//
+	// @brief Enable the ADC end of conversion interrupt.
+	// @param __HANDLE__: ADC handle.
+	// @param __INTERRUPT__: ADC Interrupt.
+	// @retval None
+	//
+	#define ADC_ENABLE_IT(__HANDLE__, __INTERRUPT__)  \
+		(((__HANDLE__)->Instance->IER) |= (__INTERRUPT__))
+
+	//
+	// @brief  Enable the specified DMA Channel.
+	// @param  __HANDLE__: DMA handle
+	// @retval None.
+	//
+	#define DMA_ENABLE(__HANDLE__)        ((__HANDLE__)->Instance->CCR |=  DMA_CCR_EN)
+
+	//
+	// @brief  Disable the specified DMA Channel.
+	// @param  __HANDLE__: DMA handle
+	// @retval None.
+	//
+	#define DMA_DISABLE(__HANDLE__)       ((__HANDLE__)->Instance->CCR &=  ~DMA_CCR_EN)
+
+	// @defgroup DMA_Data_transfer_direction DMA Data Transfer directions
+	// @{
+	//
+	#define DMA_PERIPH_TO_MEMORY         0x00000000U 			       //!< Peripheral to memory direction
+	#define DMA_MEMORY_TO_PERIPH         ((uint32_t)DMA_CCR_DIR)       //!< Memory to peripheral direction
+	#define DMA_MEMORY_TO_MEMORY         ((uint32_t)(DMA_CCR_MEM2MEM)) //!< Memory to memory direction
+
+	#define IS_DMA_DIRECTION(DIRECTION) (((DIRECTION) == DMA_PERIPH_TO_MEMORY ) || \
+		((DIRECTION) == DMA_MEMORY_TO_PERIPH)  || \
+		((DIRECTION) == DMA_MEMORY_TO_MEMORY))
+
+	//
+	// @brief  Enables the specified DMA Channel interrupts.
+	// @param  __HANDLE__: DMA handle
+	// @param __INTERRUPT__: specifies the DMA interrupt sources to be enabled or disabled.
+	//          This parameter can be any combination of the following values:
+	//            @arg DMA_IT_TC:  Transfer complete interrupt mask
+	//            @arg DMA_IT_HT:  Half transfer complete interrupt mask
+	//            @arg DMA_IT_TE:  Transfer error interrupt mask
+	// @retval None
+	//
+	#define DMA_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((__HANDLE__)->Instance->CCR |= (__INTERRUPT__))
+
+	//
+	// @brief  Disables the specified DMA Channel interrupts.
+	// @param  __HANDLE__: DMA handle
+	// @param __INTERRUPT__: specifies the DMA interrupt sources to be enabled or disabled.
+	//          This parameter can be any combination of the following values:
+	//            @arg DMA_IT_TC:  Transfer complete interrupt mask
+	//            @arg DMA_IT_HT:  Half transfer complete interrupt mask
+	//            @arg DMA_IT_TE:  Transfer error interrupt mask
+	// @retval None
+	//
+	#define DMA_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((__HANDLE__)->Instance->CCR &= ~(__INTERRUPT__))
+
+	// @defgroup DMA_interrupt_enable_definitions DMA Interrupt Definitions
+	// @{
+	//
+	#define DMA_IT_TC                         ((uint32_t)DMA_CCR_TCIE)
+	#define DMA_IT_HT                         ((uint32_t)DMA_CCR_HTIE)
+	#define DMA_IT_TE                         ((uint32_t)DMA_CCR_TEIE)
+
+	const short temptable_998[][2] = {
+		{    1 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE },
+		{ 1023 * OVERSAMPLENR, DUMMY_THERMISTOR_998_VALUE }
+	};
+
+	//
+	// Variable initialization
+	//
+
+	static ADC_HandleTypeDef AdcHandle;
+
+	TIM_HandleTypeDef htim2;
+
+	/* Variable containing ADC conversions results */
+	static __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
+
+	/* Variable to report ADC sequencer status */
+	static uint8_t         ubSequenceCompleted = RESET;     /* Set when all ranks of the sequence have been converted */
+
+	// Init min and max temp with extreme values to prevent false errors during startup
+	static int16_t minttemp_raw = PRINTHEAD_RAW_LO_TEMP;
+	static int16_t maxttemp_raw = PRINTHEAD_RAW_HI_TEMP;
+	static int16_t minttemp = 0;
+	static int16_t maxttemp = 16383;
+
+	// Init min and max volt with extreme values to prevent false errors during startup
+	static int16_t mintvolt_raw = BATTERY_RAW_LO_VOLT;
+	static int16_t maxtvolt_raw = BATTERY_RAW_HI_VOLT;
+	static int16_t mintvolt = 0;
+//	static int16_t maxtvolt = 16383;
+
+	static void* heater_ttbl_map = (void*)PRINTHEAD_TEMPTABLE;
+	static uint8_t heater_ttbllen_map = PRINTHEAD_TEMPTABLE_LEN;
+
+	static void* battery_ttbl_map = (void*)BATTERY_VOLTTABLE;
+	static uint8_t battery_ttbllen_map = BATTERY_VOLTTABLE_LEN;
+
+	static volatile bool sens_meas_ready = false;
+
+	static uint16_t raw_temp_value = 0U;
+	static uint16_t raw_volt_value = 0U;
+
+	static int16_t current_temperature_raw = 0;
+	static int16_t current_voltage_raw = 0;
+
+	volatile bool in_temp_isr = false;
+
+	//
+	// Private function prototypes
+	//
+
+	//
+	// @brief  Perform an ADC automatic self-calibration
+	//         Calibration prerequisite: ADC must be disabled (execute this
+	//         function before HAL_ADC_Start() or after HAL_ADC_Stop() ).
+	// @note   Calibration factor can be read after calibration, using function
+	//         HAL_ADC_GetValue() (value on 7 bits: from DR[6;0]).
+	// @param  hadc       ADC handle
+	// @param  SingleDiff: Selection of single-ended or differential input
+	//          This parameter can be only of the following values:
+	//            @arg ADC_SINGLE_ENDED: Channel in mode input single ended
+	// @retval HAL status
+	//
+	StatusTypeDef ADCEx_Calibration_Start(ADC_HandleTypeDef* hadc, uint32_t SingleDiff);
+
+	//
+	// @brief  Stop ADC conversion.
+	// @note   Prerequisite condition to use this function: ADC conversions must be
+	//         stopped to disable the ADC.
+	// @param  hadc: ADC handle
+	// @retval status.
+	//
+	static StatusTypeDef ADC_ConversionStop(ADC_HandleTypeDef* hadc);
+
+	//
+	// @brief  Disable the selected ADC.
+	// @note   Prerequisite condition to use this function: ADC conversions must be
+	//         stopped.
+	// @param  hadc: ADC handle
+	// @retval status.
+	///
+	static StatusTypeDef ADC_Disable(ADC_HandleTypeDef* hadc);
+
+	//
+	// @brief ADC MSP de-initialization
+	//        This function frees the hardware resources used in this example:
+	//          - Disable clock of ADC peripheral
+	//          - Revert GPIO associated to the peripheral channels to their default state
+	//          - Revert NVIC associated to the peripheral interruptions to its default state
+	// @param hadc: ADC handle pointer
+	// @retval None
+	//
+	void ADC_MspDeInit(ADC_HandleTypeDef *hadc);
+
+	//
+	// @brief  Deinitialize the ADC peripheral registers to their default reset
+	//         values, with deinitialization of the ADC MSP.
+	// @note   For devices with several ADCs: reset of ADC common registers is done
+	//         only if all ADCs sharing the same common group are disabled.
+	//         If this is not the case, reset of these common parameters reset is
+	//         bypassed without error reporting: it can be the intended behavior in
+	//         case of reset of a single ADC while the other ADCs sharing the same
+	//         common group is still running.
+	// @param  hadc: ADC handle
+	// @retval HAL status
+	//
+	StatusTypeDef ADC_DeInit(ADC_HandleTypeDef* hadc);
+
+	void ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE();
+	void ADC1_CHANNEL_TEMPERATURE_GPIO_CLK_ENABLE();
+
+	//
+	// @brief ADC MSP initialization
+	//        This function configures the hardware resources used in this example:
+	//          - Enable clock of ADC peripheral
+	//          - Configure the GPIO associated to the peripheral channels
+	//          - Configure the NVIC associated to the peripheral interruptions
+	// @param hadc: ADC handle pointer
+	// @retval None
+	//
+	void ADC_MspInit(ADC_HandleTypeDef *hadc);
+
+	//
+	// @brief  Initialize the ADC peripheral and regular group according to
+	//         parameters specified in structure "ADC_InitTypeDef".
+	// @note   As prerequisite, ADC clock must be configured at RCC top level
+	//         depending on possible clock sources: APB clock of HSI clock.
+	//         See commented example code below that can be copied and uncommented
+	//         into HAL_ADC_MspInit().
+	// @note   Possibility to update parameters on the fly:
+	//         This function initializes the ADC MSP (HAL_ADC_MspInit()) only when
+	//         coming from ADC state reset. Following calls to this function can
+	//         be used to reconfigure some parameters of ADC_InitTypeDef
+	//         structure on the fly, without modifying MSP configuration. If ADC
+	//         MSP has to be modified again, HAL_ADC_DeInit() must be called
+	//         before HAL_ADC_Init().
+	//         The setting of these parameters is conditioned to ADC state.
+	//         For parameters constraints, see comments of structure
+	//         "ADC_InitTypeDef".
+	// @note   This function configures the ADC within 2 scopes: scope of entire
+	//         ADC and scope of regular group. For parameters details, see comments
+	//         of structure "ADC_InitTypeDef".
+	// @note   When device is in mode low-power (low-power run, low-power sleep or stop mode),
+	//         function "HAL_ADCEx_EnableVREFINT()" must be called before function HAL_ADC_Init()
+	//         (in case of previous ADC operations: function HAL_ADC_DeInit() must be called first).
+	//         In case of internal temperature sensor to be measured:
+	//         function "HAL_ADCEx_EnableVREFINTTempSensor()" must be called similarilly.
+	// @param  hadc: ADC handle
+	// @retval status
+	//
+	StatusTypeDef ADC_Init(ADC_HandleTypeDef* hadc);
+
+	//
+	// @brief  Delay micro seconds
+	// @param  microSecond : delay
+	// @retval None
+	//
+	void ADC_DelayMicroSecond(uint32_t microSecond);
+
+	//
+	// @brief  Configure a channel to be assigned to ADC group regular.
+	// @note   In case of usage of internal measurement channels:
+	//         VrefInt/Vlcd(STM32L0x3xx only)/TempSensor.
+	//         Sampling time constraints must be respected (sampling time can be
+	//         adjusted in function of ADC clock frequency and sampling time
+	//         setting).
+	//         Refer to device datasheet for timings values, parameters TS_vrefint,
+	//         TS_vlcd (STM32L0x3xx only), TS_temp (values rough order: 5us to 17us).
+	//         These internal paths can be be disabled using function
+	//         HAL_ADC_DeInit().
+	// @note   Possibility to update parameters on the fly:
+	//         This function initializes channel into ADC group regular,
+	//         following calls to this function can be used to reconfigure
+	//         some parameters of structure "ADC_ChannelConfTypeDef" on the fly,
+	//         without resetting the ADC.
+	//         The setting of these parameters is conditioned to ADC state:
+	//         Refer to comments of structure "ADC_ChannelConfTypeDef".
+	// @param  hadc: ADC handle
+	// @param  sConfig: Structure of ADC channel assigned to ADC group regular.
+	// @retval status
+	//
+	StatusTypeDef ADC_ConfigChannel(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig);
+
+	//
+	// @brief  Enable the selected ADC.
+	// @note   Prerequisite condition to use this function: ADC must be disabled
+	//         and voltage regulator must be enabled (done into HAL_ADC_Init()).
+	// @note   If low power mode AutoPowerOff is enabled, power-on/off phases are
+	//         performed automatically by hardware.
+	//         In this mode, this function is useless and must not be called because
+	//         flag ADC_FLAG_RDY is not usable.
+	//         Therefore, this function must be called under condition of
+	//         "if (hadc->Init.LowPowerAutoPowerOff != ENABLE)".
+	// @param  hadc: ADC handle
+	// @retval status.
+	//
+	StatusTypeDef ADC_Enable(ADC_HandleTypeDef* hadc);
+
+	//
+	// @brief  Conversion complete callback in non blocking mode
+	// @param  AdcHandle : ADC handle
+	// @note   This example shows a simple way to report end of conversion
+	//         and get conversion result. You can add your own implementation.
+	// @retval None
+	//
+	void ADC_ConvCpltCallback(ADC_HandleTypeDef *AdcHandle);
+
+	//
+	// @brief  Conversion DMA half-transfer callback in non blocking mode
+	// @param  hadc: ADC handle
+	// @retval None
+	//
+	void ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc);
+
+	//
+	// @brief  ADC error callback in non blocking mode
+	//        (ADC conversion with interruption or transfer by DMA)
+	// @param  hadc: ADC handle
+	// @retval None
+	//
+	void ADC_ErrorCallback(ADC_HandleTypeDef *hadc);
+
+	//
+	// @brief  DMA transfer complete callback.
+	// @param  hdma: pointer to DMA handle.
+	// @retval None
+	//
+	static void ADC_DMAConvCplt(DMA_HandleTypeDef *hdma);
+
+	//
+	// @brief  DMA half transfer complete callback.
+	// @param  hdma: pointer to DMA handle.
+	// @retval None
+	//
+	static void ADC_DMAHalfConvCplt(DMA_HandleTypeDef *hdma);
+
+	//
+	// @brief  DMA error callback.
+	// @param  hdma: pointer to DMA handle.
+	// @retval None
+	//
+	static void ADC_DMAError(DMA_HandleTypeDef *hdma);
+
+	//
+	// @brief  Sets the DMA Transfer parameter.
+	// @param  hdma:       pointer to a DMA_HandleTypeDef structure that contains
+	//                     the configuration information for the specified DMA Channel.
+	// @param  SrcAddress: The source memory Buffer address
+	// @param  DstAddress: The destination memory Buffer address
+	// @param  DataLength: The length of data to be transferred from source to destination
+	// @retval HAL status
+	//
+	static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+
+	//
+	// @brief  Start the DMA Transfer with interrupt enabled.
+	// @param  hdma:       pointer to a DMA_HandleTypeDef structure that contains
+	//                     the configuration information for the specified DMA Channel.
+	// @param  SrcAddress: The source memory Buffer address
+	// @param  DstAddress: The destination memory Buffer address
+	// @param  DataLength: The length of data to be transferred from source to destination
+	// @retval status
+	//
+	StatusTypeDef DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+
+	//
+	// @brief  Enable ADC, start conversion of regular group and transfer result through DMA.
+	// @note   Interruptions enabled in this function:
+	//         overrun (if applicable), DMA half transfer, DMA transfer complete.
+	//         Each of these interruptions has its dedicated callback function.
+	// @param  hadc: ADC handle
+	// @param  pData: Destination Buffer address.
+	// @param  Length: Length of data to be transferred from ADC peripheral to memory (in bytes)
+	// @retval status.
+	//
+	StatusTypeDef ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length);
+
+	//
+	// @brief  ADC configuration
+	// @param  None
+	// @retval None
+	//
+	void ADC_Config(void);
+
+	//
+	// @brief  Enable ADC, start conversion of regular group.
+	// @note   Interruptions enabled in this function: None.
+	// @param  hadc: ADC handle
+	// @retval status
+	///
+	StatusTypeDef ADC_Start(ADC_HandleTypeDef* hadc);
+
+	//
+	// Called from the Temperature ISR
+	//
+	void isr();
+
+	// Derived from RepRap FiveD extruder::getTemperature()
+	// For hot end temperature measurement.
+	float32_t analog2temp(int32_t raw);
+
+	// For battery voltage measurement.
+	float32_t analog2volt(int32_t raw);
+
+	//
+	// Get raw temperatures
+	//
+	void set_current_sens_raw();
+
+	//
+	// Temperature Error Handlers
+	//
+	void _sens_error(const char * const serial_msg);
+
+	void max_sens_error();
+	void min_sens_error();
+
+	//
+	// Namespace body
+	//
 
 	//
 	// @brief  Perform an ADC automatic self-calibration
@@ -587,155 +1268,6 @@ namespace AdcManager {
 		}
 	}
 
-	// @defgroup ADC_ClockPrescaler ADC Clock Prescaler
-	// @{
-	//
-	#define ADC_CLOCK_ASYNC_DIV1              0x00000000U                               			//!< ADC Asynchronous clock mode divided by 1
-	#define ADC_CLOCK_ASYNC_DIV2              (ADC_CCR_PRESC_0)                                     //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV4              (ADC_CCR_PRESC_1)                                     //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV6              (ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV8              (ADC_CCR_PRESC_2)                                     //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV10             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV12             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_1)                   //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV16             (ADC_CCR_PRESC_2 | ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0) //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV32             (ADC_CCR_PRESC_3)                                     //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV64             (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_0)                   //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV128            (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_1)                   //!< ADC Asynchronous clock mode divided by 2
-	#define ADC_CLOCK_ASYNC_DIV256            (ADC_CCR_PRESC_3 | ADC_CCR_PRESC_1 | ADC_CCR_PRESC_0) //!< ADC Asynchronous clock mode divided by 2
-
-	#define ADC_CLOCK_SYNC_PCLK_DIV1         ((uint32_t)ADC_CFGR2_CKMODE)    //!< Synchronous clock mode divided by 1
-																			 //    This configuration must be enabled only if PCLK has a 50%
-																			 //    duty clock cycle (APB prescaler configured inside the RCC must be bypassed and the system clock
-																			 //    must by 50% duty cycle)
-	#define ADC_CLOCK_SYNC_PCLK_DIV2         ((uint32_t)ADC_CFGR2_CKMODE_0)  //!< Synchronous clock mode divided by 2
-	#define ADC_CLOCK_SYNC_PCLK_DIV4         ((uint32_t)ADC_CFGR2_CKMODE_1)  //!< Synchronous clock mode divided by 4
-
-	// @defgroup ADC_Resolution ADC Resolution
-	// @{
-	//
-	#define ADC_RESOLUTION_12B      0x00000000U          			 //!< ADC 12-bit resolution
-	#define ADC_RESOLUTION_10B      ((uint32_t)ADC_CFGR1_RES_0)      //!< ADC 10-bit resolution
-	#define ADC_RESOLUTION_8B       ((uint32_t)ADC_CFGR1_RES_1)      //!< ADC 8-bit resolution
-	#define ADC_RESOLUTION_6B       ((uint32_t)ADC_CFGR1_RES)        //!< ADC 6-bit resolution
-
-	// @defgroup ADC_Data_align ADC conversion data alignment
-	// @{
-	//
-	#define ADC_DATAALIGN_RIGHT      0x00000000U
-	#define ADC_DATAALIGN_LEFT       ((uint32_t)ADC_CFGR1_ALIGN)
-
-	// @defgroup ADC_Scan_mode ADC Scan mode
-	// @{
-	//
-	// Note: Scan mode values must be compatible with other STM32 devices having
-	//       a configurable sequencer.
-	//       Scan direction setting values are defined by taking in account
-	//       already defined values for other STM32 devices:
-	//         ADC_SCAN_DISABLE         ((uint32_t)0x00000000)
-	//         ADC_SCAN_ENABLE          ((uint32_t)0x00000001)
-	//       Scan direction forward is considered as default setting equivalent
-	//       to scan enable.
-	//       Scan direction backward is considered as additional setting.
-	//       In case of migration from another STM32 device, the user will be
-	//       warned of change of setting choices with assert check.
-	#define ADC_SCAN_DIRECTION_FORWARD        0x00000001U        //!< Scan direction forward: from channel 0 to channel 18
-	#define ADC_SCAN_DIRECTION_BACKWARD       0x00000002U        //!< Scan direction backward: from channel 18 to channel 0
-
-	#define ADC_SCAN_ENABLE         ADC_SCAN_DIRECTION_FORWARD             // For compatibility with other STM32 devices
-
-	// @defgroup ADC_EOCSelection ADC EOC Selection
-	// @{
-	//
-	#define ADC_EOC_SINGLE_CONV         ((uint32_t) ADC_ISR_EOC)
-	#define ADC_EOC_SEQ_CONV            ((uint32_t) ADC_ISR_EOS)
-	#define ADC_EOC_SINGLE_SEQ_CONV     ((uint32_t)(ADC_ISR_EOC | ADC_ISR_EOS))  //!< reserved for future use
-
-	// @defgroup ADC_regular_external_trigger_source ADC External Trigger Source
-	// @{
-	//
-	#define ADC_EXTERNALTRIGCONV_T6_TRGO            0x00000000U
-	#define ADC_EXTERNALTRIGCONV_T21_CC2            (ADC_CFGR1_EXTSEL_0)
-	#define ADC_EXTERNALTRIGCONV_T2_TRGO            (ADC_CFGR1_EXTSEL_1)
-	#define ADC_EXTERNALTRIGCONV_T2_CC4             (ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0)
-	#define ADC_EXTERNALTRIGCONV_T22_TRGO           (ADC_CFGR1_EXTSEL_2)
-	#define ADC_EXTERNALTRIGCONV_T3_TRGO            (ADC_CFGR1_EXTSEL_2 | ADC_CFGR1_EXTSEL_1)
-	#define ADC_EXTERNALTRIGCONV_EXT_IT11           (ADC_CFGR1_EXTSEL_2 | ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0)
-	#define ADC_SOFTWARE_START                      (ADC_CFGR1_EXTSEL + 1U)
-
-	// @defgroup ADC_regular_external_trigger_edge ADC External Trigger Source Edge for Regular Group
-	// @{
-	//
-	#define ADC_EXTERNALTRIGCONVEDGE_NONE           0x00000000U
-	#define ADC_EXTERNALTRIGCONVEDGE_RISING         ((uint32_t)ADC_CFGR1_EXTEN_0)
-	#define ADC_EXTERNALTRIGCONVEDGE_FALLING        ((uint32_t)ADC_CFGR1_EXTEN_1)
-	#define ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING  ((uint32_t)ADC_CFGR1_EXTEN)
-
-	// @defgroup ADC_Overrun ADC Overrun
-	// @{
-	//
-	#define ADC_OVR_DATA_PRESERVED              0x00000000U
-	#define ADC_OVR_DATA_OVERWRITTEN            ((uint32_t)ADC_CFGR1_OVRMOD)
-
-	// @defgroup ADC_sampling_times ADC Sampling Cycles
-	// @{
-	//
-	#define ADC_SAMPLETIME_1CYCLE_5       0x00000000U   			                      //!<  ADC sampling time 1.5 cycle
-	#define ADC_SAMPLETIME_3CYCLES_5      ((uint32_t)ADC_SMPR_SMPR_0)                     //!<  ADC sampling time 3.5 CYCLES
-	#define ADC_SAMPLETIME_7CYCLES_5      ((uint32_t)ADC_SMPR_SMPR_1)                     //!<  ADC sampling time 7.5 CYCLES
-	#define ADC_SAMPLETIME_12CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_0)) //!<  ADC sampling time 12.5 CYCLES
-	#define ADC_SAMPLETIME_19CYCLES_5     ((uint32_t)ADC_SMPR_SMPR_2)                     //!<  ADC sampling time 19.5 CYCLES
-	#define ADC_SAMPLETIME_39CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_2 | ADC_SMPR_SMPR_0)) //!<  ADC sampling time 39.5 CYCLES
-	#define ADC_SAMPLETIME_79CYCLES_5     ((uint32_t)(ADC_SMPR_SMPR_2 | ADC_SMPR_SMPR_1)) //!<  ADC sampling time 79.5 CYCLES
-	#define ADC_SAMPLETIME_160CYCLES_5    ((uint32_t)ADC_SMPR_SMPR)                       //!<  ADC sampling time 160.5 CYCLES
-
-	//
-	// @brief  Structure definition of ADC channel for regular group
-	// @note   The setting of these parameters by function HAL_ADC_ConfigChannel() is conditioned to ADC state.
-	//         ADC state can be either:
-	//          - For all parameters: ADC disabled or enabled without conversion on going on regular group.
-	//         If ADC is not in the appropriate state to modify some parameters, these parameters setting is bypassed
-	//         without error reporting (as it can be the expected behavior in case of intended action to update another parameter (which fulfills the ADC state condition) on the fly).
-	//
-	typedef struct
-	{
-		uint32_t Channel;                //!< Specify the channel to configure into ADC regular group.
-										 //   This parameter can be a value of @ref ADC_channels
-										 //   Note: Depending on devices, some channels may not be available on device package pins. Refer to device datasheet for channels availability.
-
-		uint32_t Rank;                   //!< Add or remove the channel from ADC regular group sequencer.
-										 //   On STM32L0 devices,  number of ranks in the sequence is defined by number of channels enabled, rank of each channel is defined by channel number
-										 //   (channel 0 fixed on rank 0, channel 1 fixed on rank1, ...).
-										 //   Despite the channel rank is fixed, this parameter allow an additional possibility: to remove the selected rank (selected channel) from sequencer.
-										 //   This parameter can be a value of @ref ADC_rank
-	} ADC_ChannelConfTypeDef;
-
-	//
-	// @brief Check if no conversion on going on regular group
-	// @param __HANDLE__: ADC handle
-	// @retval SET (conversion is on going) or RESET (no conversion is on going)
-	//
-	#define ADC_IS_CONVERSION_ONGOING_REGULAR(__HANDLE__)                          \
-	    (( (((__HANDLE__)->Instance->CR) & ADC_CR_ADSTART) == RESET                  \
-	    ) ? RESET : SET)
-
-	// Fixed timeout values for ADC calibration, enable settling time, disable
-	// settling time.
-	// Values defined to be higher than worst cases: low clocks freq,
-	// maximum prescalers.
-	// Unit: ms
-	#define ADC_ENABLE_TIMEOUT            10U
-	#define ADC_DISABLE_TIMEOUT           10U
-	#define ADC_STOP_CONVERSION_TIMEOUT   10U
-
-	// @defgroup ADC_Error_Code ADC Error Code
-	// @{
-	//
-	#define ADC_ERROR_NONE        0x00U   //!< No error
-	#define ADC_ERROR_INTERNAL    0x01U   //!< ADC IP internal error (problem of clocking,
-										  //				  enable/disable, erroneous state, ...)
-	#define ADC_ERROR_OVR         0x02U   //!< Overrun error
-	#define ADC_ERROR_DMA         0x04U   //!< DMA transfer error
-
 	//
 	// @brief  Stop ADC conversion.
 	// @note   Prerequisite condition to use this function: ADC conversions must be
@@ -784,37 +1316,6 @@ namespace AdcManager {
 		// Return status
 		return STATUS_OK;
 	}
-
-	//
-	// @brief Verification of hardware constraints before ADC can be disabled
-	// @param __HANDLE__: ADC handle
-	// @retval SET (ADC can be disabled) or RESET (ADC cannot be disabled)
-	//
-	#define ADC_DISABLING_CONDITIONS(__HANDLE__)                             \
-		   (( ( ((__HANDLE__)->Instance->CR) &                                     \
-				(ADC_CR_ADSTART | ADC_CR_ADEN)) == ADC_CR_ADEN   \
-			) ? SET : RESET)
-
-	//
-	// @brief Clear the ADC's pending flags
-	// @param __HANDLE__: ADC handle.
-	// @param __FLAG__: ADC flag.
-	// @retval None
-	//
-	// Note: bit cleared bit by writing 1
-	#define ADC_CLEAR_FLAG(__HANDLE__, __FLAG__) \
-		(((__HANDLE__)->Instance->ISR) = (__FLAG__))
-
-	//
-	// @brief Disable the ADC peripheral
-	// @param __HANDLE__: ADC handle
-	// @retval None
-	//
-	#define ADC_DISABLE(__HANDLE__)                                          \
-		do{                                                                          \
-			(__HANDLE__)->Instance->CR |= ADC_CR_ADDIS;                           \
-			ADC_CLEAR_FLAG((__HANDLE__), (ADC_FLAG_EOSMP | ADC_FLAG_RDY)); \
-		} while(0)
 
 	//
 	// @brief  Disable the selected ADC.
@@ -871,34 +1372,6 @@ namespace AdcManager {
 		// Return status
 		return STATUS_OK;
 	}
-
-	//
-	// @brief Disable the ADC end of conversion interrupt.
-	// @param __HANDLE__: ADC handle.
-	// @param __INTERRUPT__: ADC interrupt.
-	// @retval None
-	//
-	#define ADC_DISABLE_IT(__HANDLE__, __INTERRUPT__) \
-		(((__HANDLE__)->Instance->IER) &= ~(__INTERRUPT__))
-
-	// @defgroup ADC_interrupts_definition ADC Interrupts Definition
-	// @{
-	//
-	#define ADC_IT_RDY           ADC_IER_ADRDYIE     //!< ADC Ready (ADRDY) interrupt source
-	#define ADC_IT_EOSMP         ADC_IER_EOSMPIE     //!< ADC End of Sampling interrupt source
-	#define ADC_IT_EOC           ADC_IER_EOCIE       //!< ADC End of Regular Conversion interrupt source
-	#define ADC_IT_EOS           ADC_IER_EOSEQIE     //!< ADC End of Regular sequence of Conversions interrupt source
-	#define ADC_IT_OVR           ADC_IER_OVRIE       //!< ADC overrun interrupt source
-	#define ADC_IT_AWD           ADC_IER_AWDIE       //!< ADC Analog watchdog 1 interrupt source
-	#define ADC_IT_EOCAL         ADC_IER_EOCALIE     //!< ADC End of Calibration interrupt source
-
-	//
-	// @brief Clear ADC error code (set it to error code: "no error")
-	// @param __HANDLE__: ADC handle
-	// @retval None
-	//
-	#define ADC_CLEAR_ERRORCODE(__HANDLE__)                                        \
-		((__HANDLE__)->ErrorCode = ADC_ERROR_NONE)
 
 	//
 	// @brief ADC MSP de-initialization
@@ -1049,75 +1522,6 @@ namespace AdcManager {
 		// Return function status
 		return tmp_hal_status;
 	}
-
-	//
-	// @brief Configuration of ADC clock & prescaler: clock source PCLK or Asynchronous with selectable prescaler
-	// @param __HANDLE__: ADC handle
-	// @retval None
-	//
-
-	#define ADC_CLOCK_PRESCALER(__HANDLE__)                                       \
-		do{                                                                               \
-			if ((((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV1) ||  \
-				(((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV2) ||  \
-				(((__HANDLE__)->Init.ClockPrescaler) == ADC_CLOCK_SYNC_PCLK_DIV4))    \
-			{                                                                             \
-				(__HANDLE__)->Instance->CFGR2 &= ~(ADC_CFGR2_CKMODE);                       \
-				(__HANDLE__)->Instance->CFGR2 |=  (__HANDLE__)->Init.ClockPrescaler;        \
-			}                                                                             \
-			else                                                                          \
-			{                                                                             \
-				/* CKMOD bits must be reset */                                              \
-				(__HANDLE__)->Instance->CFGR2 &= ~(ADC_CFGR2_CKMODE);                       \
-				ADC->CCR &= ~(ADC_CCR_PRESC);                                               \
-				ADC->CCR |=  (__HANDLE__)->Init.ClockPrescaler;                             \
-			}                                                                             \
-		} while(0)
-
-	//
-	// @brief Enable the ADC Low Frequency mode.
-	// @param _LOW_FREQUENCY_MODE_: Low Frequency mode.
-	// @retval None
-	//
-	#define ADC_CCR_LOWFREQUENCY(_LOW_FREQUENCY_MODE_) ((_LOW_FREQUENCY_MODE_) << 25U)
-
-	//
-	// @brief Enable ADC scan mode to convert multiple ranks with sequencer.
-	// @param _SCAN_MODE_: Scan conversion mode.
-	// @retval None
-	//
-	#define ADC_SCANDIR(_SCAN_MODE_)                                   \
-		( ( (_SCAN_MODE_) == (ADC_SCAN_DIRECTION_BACKWARD)                           \
-			)? (ADC_CFGR1_SCANDIR) : (0x00000000U)                                      \
-		)
-
-	//
-	// @brief Enable ADC continuous conversion mode.
-	// @param _CONTINUOUS_MODE_: Continuous mode.
-	// @retval None
-	//
-	#define ADC_CONTINUOUS(_CONTINUOUS_MODE_) ((_CONTINUOUS_MODE_) << 13U)
-
-	//
-	// @brief Enable the ADC DMA continuous request.
-	// @param _DMAContReq_MODE_: DMA continuous request mode.
-	// @retval None
-	//
-	#define ADC_DMACONTREQ(_DMAContReq_MODE_) ((_DMAContReq_MODE_) << 1U)
-
-	//
-	// @brief Enable the ADC Auto Delay.
-	// @param _AutoDelay_: Auto delay bit enable or disable.
-	// @retval None
-	//
-	#define ADC_CFGR1_AutoDelay(_AutoDelay_) ((_AutoDelay_) << 14U)
-
-	//
-	// @brief Enable the ADC LowPowerAutoPowerOff.
-	// @param _AUTOFF_: AutoOff bit enable or disable.
-	// @retval None
-	//
-	#define ADC_CFGR1_AUTO_OFF(_AUTOFF_) ((_AUTOFF_) << 15U)
 
 	void ADC1_CHANNEL_VOLTAGE_GPIO_CLK_ENABLE() {
 		Rcc::RCC_GPIOB_CLK_ENABLE();
@@ -1407,18 +1811,6 @@ namespace AdcManager {
 		return STATUS_OK;
 	}
 
-	// @defgroup ADC_rank ADC rank
-	// @{
-	//
-	#define ADC_RANK_CHANNEL_NUMBER                 0x00001000U  //!< Enable the rank of the selected channels. Number of ranks in the sequence is defined by number of channels enabled, rank of each channel is defined by channel number (channel 0 fixed on rank 0, channel 1 fixed on rank1, ...)
-	#define ADC_RANK_NONE                           0x00001001U  //!< Disable the selected rank (selected channel) from sequencer
-
-	// @defgroup ADC_Channel_AWD_Masks ADC Channel Masks
-	// @{
-	//
-	#define ADC_CHANNEL_MASK        0x0007FFFFU
-	#define ADC_CHANNEL_AWD_MASK    0x7C000000U
-
 	//
 	// @brief  Delay micro seconds
 	// @param  microSecond : delay
@@ -1434,11 +1826,6 @@ namespace AdcManager {
 			waitLoopIndex--;
 		}
 	}
-
-	// Delay for temperature sensor stabilization time.
-	// Maximum delay is 10us (refer to device datasheet, parameter tSTART).
-	// Unit: us
-	#define ADC_TEMPSENSOR_DELAY_US ((uint32_t) 10U)
 
 	//
 	// @brief  Configure a channel to be assigned to ADC group regular.
@@ -1551,39 +1938,6 @@ namespace AdcManager {
 	}
 
 	//
-	// @brief Verification of hardware constraints before ADC can be enabled
-	// @param __HANDLE__: ADC handle
-	// @retval SET (ADC can be enabled) or RESET (ADC cannot be enabled)
-	//
-	#define ADC_ENABLING_CONDITIONS(__HANDLE__)           \
-		(( ( ((__HANDLE__)->Instance->CR) &                  \
-			(ADC_CR_ADCAL | ADC_CR_ADSTP | ADC_CR_ADSTART | \
-				ADC_CR_ADDIS | ADC_CR_ADEN )                   \
-			) == RESET                                       \
-		) ? SET : RESET)
-
-	//
-	// @brief Enable the ADC peripheral
-	// @param __HANDLE__: ADC handle
-	// @retval None
-	//
-	#define ADC_ENABLE(__HANDLE__) ((__HANDLE__)->Instance->CR |= ADC_CR_ADEN)
-
-	//
-	// @brief Get the selected ADC's flag status.
-	// @param __HANDLE__: ADC handle.
-	// @param __FLAG__: ADC flag.
-	// @retval None
-	//
-	#define ADC_GET_FLAG(__HANDLE__, __FLAG__) \
-	    ((((__HANDLE__)->Instance->ISR) & (__FLAG__)) == (__FLAG__))
-
-	// Delay for ADC stabilization time.
-	// Maximum delay is 1us (refer to device datasheet, parameter tSTART).
-	// Unit: us
-	#define ADC_STAB_DELAY_US       1U
-
-	//
 	// @brief  Enable the selected ADC.
 	// @note   Prerequisite condition to use this function: ADC must be disabled
 	//         and voltage regulator must be enabled (done into HAL_ADC_Init()).
@@ -1646,15 +2000,6 @@ namespace AdcManager {
 		// Return status
 		return STATUS_OK;
 	}
-
-	//
-	// @brief Test if conversion trigger of regular group is software start
-	//        or external trigger.
-	// @param __HANDLE__: ADC handle
-	// @retval SET (software start) or RESET (external trigger)
-	//
-	#define ADC_IS_SOFTWARE_START_REGULAR(__HANDLE__)                              \
-		(((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_EXTEN) == RESET)
 
 	//
 	// @brief  Conversion complete callback in non blocking mode
@@ -1786,40 +2131,6 @@ namespace AdcManager {
 	}
 
 	//
-	// @brief Enable the ADC end of conversion interrupt.
-	// @param __HANDLE__: ADC handle.
-	// @param __INTERRUPT__: ADC Interrupt.
-	// @retval None
-	//
-	#define ADC_ENABLE_IT(__HANDLE__, __INTERRUPT__)  \
-		(((__HANDLE__)->Instance->IER) |= (__INTERRUPT__))
-
-	//
-	// @brief  Enable the specified DMA Channel.
-	// @param  __HANDLE__: DMA handle
-	// @retval None.
-	//
-	#define DMA_ENABLE(__HANDLE__)        ((__HANDLE__)->Instance->CCR |=  DMA_CCR_EN)
-
-	//
-	// @brief  Disable the specified DMA Channel.
-	// @param  __HANDLE__: DMA handle
-	// @retval None.
-	//
-	#define DMA_DISABLE(__HANDLE__)       ((__HANDLE__)->Instance->CCR &=  ~DMA_CCR_EN)
-
-	// @defgroup DMA_Data_transfer_direction DMA Data Transfer directions
-	// @{
-	//
-	#define DMA_PERIPH_TO_MEMORY         0x00000000U 			       //!< Peripheral to memory direction
-	#define DMA_MEMORY_TO_PERIPH         ((uint32_t)DMA_CCR_DIR)       //!< Memory to peripheral direction
-	#define DMA_MEMORY_TO_MEMORY         ((uint32_t)(DMA_CCR_MEM2MEM)) //!< Memory to memory direction
-
-	#define IS_DMA_DIRECTION(DIRECTION) (((DIRECTION) == DMA_PERIPH_TO_MEMORY ) || \
-		((DIRECTION) == DMA_MEMORY_TO_PERIPH)  || \
-		((DIRECTION) == DMA_MEMORY_TO_MEMORY))
-
-	//
 	// @brief  Sets the DMA Transfer parameter.
 	// @param  hdma:       pointer to a DMA_HandleTypeDef structure that contains
 	//                     the configuration information for the specified DMA Channel.
@@ -1852,37 +2163,6 @@ namespace AdcManager {
 			hdma->Instance->CMAR = DstAddress;
 		}
 	}
-
-	//
-	// @brief  Enables the specified DMA Channel interrupts.
-	// @param  __HANDLE__: DMA handle
-	// @param __INTERRUPT__: specifies the DMA interrupt sources to be enabled or disabled.
-	//          This parameter can be any combination of the following values:
-	//            @arg DMA_IT_TC:  Transfer complete interrupt mask
-	//            @arg DMA_IT_HT:  Half transfer complete interrupt mask
-	//            @arg DMA_IT_TE:  Transfer error interrupt mask
-	// @retval None
-	//
-	#define DMA_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((__HANDLE__)->Instance->CCR |= (__INTERRUPT__))
-
-	//
-	// @brief  Disables the specified DMA Channel interrupts.
-	// @param  __HANDLE__: DMA handle
-	// @param __INTERRUPT__: specifies the DMA interrupt sources to be enabled or disabled.
-	//          This parameter can be any combination of the following values:
-	//            @arg DMA_IT_TC:  Transfer complete interrupt mask
-	//            @arg DMA_IT_HT:  Half transfer complete interrupt mask
-	//            @arg DMA_IT_TE:  Transfer error interrupt mask
-	// @retval None
-	//
-	#define DMA_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((__HANDLE__)->Instance->CCR &= ~(__INTERRUPT__))
-
-	// @defgroup DMA_interrupt_enable_definitions DMA Interrupt Definitions
-	// @{
-	//
-	#define DMA_IT_TC                         ((uint32_t)DMA_CCR_TCIE)
-	#define DMA_IT_HT                         ((uint32_t)DMA_CCR_HTIE)
-	#define DMA_IT_TE                         ((uint32_t)DMA_CCR_TEIE)
 
 	//
 	// @brief  Start the DMA Transfer with interrupt enabled.
@@ -2104,8 +2384,6 @@ namespace AdcManager {
 
 	}
 
-	volatile bool in_temp_isr = false;
-
 	//
 	// @brief  Enable ADC, start conversion of regular group.
 	// @note   Interruptions enabled in this function: None.
@@ -2245,6 +2523,7 @@ namespace AdcManager {
 				break;
 
 			case StartupDelay:
+			default:
 				break;
 
 		} // switch(adc_sensor_state)
@@ -2395,44 +2674,8 @@ namespace AdcManager {
 	  // for sure our print job has stopped
 	}
 
-	//
-	// Static (class) methods
-	//
-	float32_t analog2temp(int32_t raw);
-	float32_t analog2volt(int32_t raw);
+	// End
 
-	//
-	// Called from the Temperature ISR
-	//
-	void isr();
-
-	int16_t current_temperature_raw;
-	int16_t current_voltage_raw;
-
-	// Init min and max temp with extreme values to prevent false errors during startup
-	int16_t minttemp_raw;
-	int16_t maxttemp_raw;
-	int16_t minttemp;
-	int16_t maxttemp;
-
-	// Init min and max volt with extreme values to prevent false errors during startup
-	int16_t mintvolt_raw;
-	int16_t maxtvolt_raw;
-	int16_t mintvolt;
-	int16_t maxtvolt;
-
-	volatile bool sens_meas_ready;
-
-	void set_current_sens_raw();
-
-	uint16_t raw_temp_value;
-	uint16_t raw_volt_value;
-
-	void _sens_error(const char * const serial_msg);
-	void max_sens_error();
-	void min_sens_error();
-
-	void ADC_Config(void);
 }
 
 extern "C" {

@@ -35,7 +35,7 @@ namespace MarlinSerial {
     void print(char const* str);
     void print(int32_t const , int32_t const = DEC);
     void print(uint32_t const, int32_t const = DEC);
-    void print(double, int = 2);
+//    void print(double, int = 2);
 
     // End
 

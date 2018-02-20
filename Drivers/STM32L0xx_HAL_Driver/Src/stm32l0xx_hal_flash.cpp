@@ -233,52 +233,6 @@ extern void    FLASH_PageErase(uint32_t PageAddress);
   */
 
 /**
-  * @brief  Program word at a specified address
-  * @note   To correctly run this function, the HAL_FLASH_Unlock() function
-  *         must be called before.
-  *         Call the HAL_FLASH_Lock() to disable the flash memory access
-  *         (recommended to protect the FLASH memory against possible unwanted operation).
-  *
-  * @param  TypeProgram   Indicate the way to program at a specified address.
-  *                       This parameter can be a value of @ref FLASH_Type_Program
-  * @param  Address       Specifie the address to be programmed.
-  * @param  Data          Specifie the data to be programmed
-  * 
-  * @retval HAL_StatusTypeDef HAL Status
-  */
-HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint32_t Data)
-{
-  HAL_StatusTypeDef status = HAL_ERROR;
-  
-  /* Process Locked */
-  __HAL_LOCK(&pFlash);
-
-  /* Check the parameters */
-  assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));
-  assert_param(IS_FLASH_PROGRAM_ADDRESS(Address));
-
-  /* Wait for last operation to be completed */
-  status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);
-  
-  if(status == HAL_OK)
-  {
-    /* Clean the error context */
-    pFlash.ErrorCode = HAL_FLASH_ERROR_NONE;
-
-    /*Program word (32-bit) at a specified address.*/
-    *(__IO uint32_t *)Address = Data;
-
-    /* Wait for last operation to be completed */
-    status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);
-  }
-
-  /* Process Unlocked */
-  __HAL_UNLOCK(&pFlash);
-
-  return status;
-}
-
-/**
   * @brief   Program word at a specified address  with interrupt enabled.
   *
   * @param  TypeProgram  Indicate the way to program at a specified address.
@@ -569,20 +523,6 @@ HAL_StatusTypeDef HAL_FLASH_OB_Lock(void)
 }
   
 /**
-  * @brief  Launch the option byte loading.
-  * @note   This function will reset automatically the MCU.
-  * @retval HAL Status
-  */
-HAL_StatusTypeDef HAL_FLASH_OB_Launch(void)
-{
-  /* Set the OBL_Launch bit to launch the option byte loading */
-  SET_BIT(FLASH->PECR, FLASH_PECR_OBL_LAUNCH);
-  
-  /* Wait for last operation to be completed */
-  return(FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE));
-}
-
-/**
   * @}
   */  
 
@@ -621,64 +561,6 @@ uint32_t HAL_FLASH_GetError(void)
 /** @addtogroup FLASH_Private_Functions
  * @{
  */
-
-/**
-  * @brief  Wait for a FLASH operation to complete.
-  * @param  Timeout  maximum flash operation timeout
-  * @retval HAL Status
-  */
-HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout)
-{
-  /* Wait for the FLASH operation to complete by polling on BUSY flag to be reset.
-     Even if the FLASH operation fails, the BUSY flag will be reset and an error
-     flag will be set */
-     
-  uint32_t tickstart = HAL_GetTick();
-     
-  while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)) 
-  { 
-    if (Timeout != HAL_MAX_DELAY)
-    {
-      if((Timeout == 0U) || ((HAL_GetTick()-tickstart) > Timeout))
-      {
-        return HAL_TIMEOUT;
-      }
-    }
-  }
-  
-  /* Check FLASH End of Operation flag  */
-  if (__HAL_FLASH_GET_FLAG(FLASH_FLAG_EOP))
-  {
-    /* Clear FLASH End of Operation pending bit */
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
-  }
-  
-  if( __HAL_FLASH_GET_FLAG(FLASH_FLAG_WRPERR)     || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_PGAERR)     || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_SIZERR)     || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_OPTVERR)    || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_RDERR)      || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_FWWERR)     || 
-      __HAL_FLASH_GET_FLAG(FLASH_FLAG_NOTZEROERR) )
-  {
-    /*Save the error code*/
-
-    /* WARNING : On the first cut of STM32L031xx and STM32L041xx devices,
-     *           (RefID = 0x1000) the FLASH_FLAG_OPTVERR bit was not behaving
-     *           as expected. If the user run an application using the first
-     *           cut of the STM32L031xx device or the first cut of the STM32L041xx
-     *           device, this error should be ignored. The revId of the device
-     *           can be retrieved via the HAL_GetREVID() function.
-     *
-     */
-    FLASH_SetErrorCode();
-    return HAL_ERROR;
-  }
-
-  /* There is no error flag set */
-  return HAL_OK;
-}
-
 
 /**
   * @brief  Set the specific FLASH error flag.

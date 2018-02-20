@@ -194,7 +194,7 @@ namespace GPIO {
 	#define GPIOB_PIN_AVAILABLE  GPIO_PIN_All
 	#define GPIOC_PIN_AVAILABLE  GPIO_PIN_All
 	#define GPIOD_PIN_AVAILABLE  GPIO_PIN_2
-	#define GPIOH_PIN_AVAILABLE  GPIO_PIN_0 | GPIO_PIN_1
+	#define GPIOH_PIN_AVAILABLE  (GPIO_PIN_0 | GPIO_PIN_1)
 
 	#define SET_OUTPUT(IO) GPIO::setOutput(IO ## _PORT, IO ## _PIN)
 
@@ -294,6 +294,7 @@ namespace GPIO {
 			case GPIO_PIN_RESET:
 				port->BRR = pin;
 				break;
+			case GPIO_PIN_SET:
 			default:
 				port->BSRR = pin;
 				break;

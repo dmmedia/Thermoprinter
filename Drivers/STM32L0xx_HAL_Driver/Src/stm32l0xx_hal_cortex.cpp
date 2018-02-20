@@ -136,26 +136,6 @@
   */
 
 /**
-  * @brief  Sets the priority of an interrupt.
-  * @param  IRQn: External interrupt number .
-  *         This parameter can be an enumerator of  IRQn_Type enumeration
-  *         (For the complete STM32 Devices IRQ Channels list, please refer to stm32l0xx.h file)
-  * @param  PreemptPriority: The pre-emption priority for the IRQn channel.
-  *         This parameter can be a value between 0 and 3.
-  *         A lower priority value indicates a higher priority 
-  * @param  SubPriority: The subpriority level for the IRQ channel.
-  *         with stm32l0xx devices, this parameter is a dummy value and it is ignored, because 
-  *         no subpriority supported in Cortex M0+ based products.   
-  * @retval None
-  */
-void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority)
-{ 
-    /* Check the parameters */
-  assert_param(IS_NVIC_PREEMPTION_PRIORITY(PreemptPriority));
-  NVIC_SetPriority(IRQn,PreemptPriority);
-}
-
-/**
   * @brief  Enables a device specific interrupt in the NVIC interrupt controller.
   * @note   To configure interrupts priority correctly, the NVIC_PriorityGroupConfig()
   *         function should be called before. 

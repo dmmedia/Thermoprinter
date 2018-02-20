@@ -729,14 +729,6 @@ typedef struct
   *         using it.
   * @{
   */
-#define __HAL_RCC_GPIOA_CLK_ENABLE()   do { \
-                                        __IO uint32_t tmpreg; \
-                                        SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
-                                        /* Delay after an RCC peripheral clock enabling */ \
-                                        tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
-                                        UNUSED(tmpreg); \
-                                      } while(0)
-                                      
 #define __HAL_RCC_GPIOB_CLK_ENABLE()   do { \
                                         __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);\

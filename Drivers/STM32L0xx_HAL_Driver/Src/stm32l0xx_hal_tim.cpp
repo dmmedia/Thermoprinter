@@ -150,7 +150,6 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-static void TIM_Base_SetConfig(TIM_TypeDef *TIMx, TIM_Base_InitTypeDef *Structure);
 static void TIM_OC1_SetConfig(TIM_TypeDef *TIMx, TIM_OC_InitTypeDef *OC_Config);
 static void TIM_OC2_SetConfig(TIM_TypeDef *TIMx, TIM_OC_InitTypeDef *OC_Config);
 static void TIM_OC3_SetConfig(TIM_TypeDef *TIMx, TIM_OC_InitTypeDef *OC_Config);
@@ -200,48 +199,6 @@ static void TIM_SlaveTimer_SetConfig(TIM_HandleTypeDef *htim,TIM_SlaveConfigType
 @endverbatim
   * @{
   */
-/**
-  * @brief  Initializes the TIM Time base Unit according to the specified
-  *         parameters in the TIM_HandleTypeDef and create the associated handle.
-  * @param  htim : TIM handle
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_Base_Init(TIM_HandleTypeDef *htim)
-{ 
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-  
-  /* Check the parameters */
-  assert_param(IS_TIM_INSTANCE(htim->Instance)); 
-  assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
-  assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-  
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {  
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC */
-    HAL_TIM_Base_MspInit(htim);
-  }
-    
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-  
-  /* Set the Time Base configuration */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init); 
-  
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-  
-  return HAL_OK;
-}
-
 /**
   * @brief  DeInitializes the TIM Base peripheral
   * @param  htim : TIM handle
@@ -479,47 +436,6 @@ HAL_StatusTypeDef HAL_TIM_Base_Stop_DMA(TIM_HandleTypeDef *htim)
 @endverbatim
   * @{
   */
-/**
-  * @brief  Initializes the TIM Output Compare according to the specified
-  *         parameters in the TIM_HandleTypeDef and create the associated handle.
-  * @param  htim: TIM Output Compare handle
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OC_Init(TIM_HandleTypeDef* htim)
-{
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-
-  /* Check the parameters */
-  assert_param(IS_TIM_INSTANCE(htim->Instance));
-  assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
-  assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA*/
-    HAL_TIM_OC_MspInit(htim);
-  }
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-
-  /* Init the base time for the Output Compare */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init);
-  
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-  
-  return HAL_OK;
-}
-
 /**
   * @brief  DeInitializes the TIM peripheral
   * @param  htim: TIM Output Compare handle
@@ -950,50 +866,6 @@ HAL_StatusTypeDef HAL_TIM_OC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel)
 @endverbatim
   * @{
   */
-/**
-  * @brief  Initializes the TIM PWM Time Base according to the specified
-  *         parameters in the TIM_HandleTypeDef and create the associated handle.
-  * @param  htim : TIM handle
-  * @retval HAL status
-  */
-
-
-HAL_StatusTypeDef HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim)
-{
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-
-  /* Check the parameters */
-  assert_param(IS_TIM_INSTANCE(htim->Instance));
-  assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
-  assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
-    HAL_TIM_PWM_MspInit(htim);
-  }
-
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-
-  /* Init the base time for the PWM */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init);
-
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-
-  return HAL_OK;
-}
-
 /**
   * @brief  DeInitializes the TIM peripheral
   * @param  htim : TIM handle
@@ -1429,48 +1301,6 @@ HAL_StatusTypeDef HAL_TIM_PWM_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel
   * @{
   */
 /**
-  * @brief  Initializes the TIM Input Capture Time base according to the specified
-  *         parameters in the TIM_HandleTypeDef and create the associated handle.
-  * @param  htim: TIM Input Capture handle
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_IC_Init(TIM_HandleTypeDef *htim)
-{
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-
-  /* Check the parameters */
-  assert_param(IS_TIM_INSTANCE(htim->Instance));
-  assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
-  assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
-    HAL_TIM_IC_MspInit(htim);
-  }
-
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-
-  /* Init the base time for the input capture */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init);
-
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-
-  return HAL_OK;
-}
-
-/**
   * @brief  DeInitializes the TIM peripheral
   * @param  htim: TIM Input Capture handle
   * @retval HAL status
@@ -1902,59 +1732,6 @@ HAL_StatusTypeDef HAL_TIM_IC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel)
   * @{
   */
 /**
-  * @brief  Initializes the TIM One Pulse Time Base according to the specified
-  *         parameters in the TIM_HandleTypeDef and create the associated handle.
-  * @param  htim: TIM OnePulse handle
-  * @param  OnePulseMode: Select the One pulse mode.
-  *         This parameter can be one of the following values:
-  *            @arg TIM_OPMODE_SINGLE: Only one pulse will be generated.
-  *            @arg TIM_OPMODE_REPETITIVE: Repetitive pulses will be generated.
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Init(TIM_HandleTypeDef *htim, uint32_t OnePulseMode)
-{
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-
-  /* Check the parameters */
-  assert_param(IS_TIM_CC2_INSTANCE(htim->Instance));
-  assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
-  assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
-  assert_param(IS_TIM_OPM_MODE(OnePulseMode));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
-    HAL_TIM_OnePulse_MspInit(htim);
-  }
-
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-
-  /* Configure the Time base in the One Pulse Mode */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init);
-
-  /* Reset the OPM Bit */
-  htim->Instance->CR1 &= ~TIM_CR1_OPM;
-
-  /* Configure the OPM Mode */
-  htim->Instance->CR1 |= OnePulseMode;
-
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-
-  return HAL_OK;
-}
-
-/**
   * @brief  DeInitializes the TIM One Pulse
   * @param  htim: TIM One Pulse handle
   * @retval HAL status
@@ -2012,124 +1789,6 @@ __weak void HAL_TIM_OnePulse_MspDeInit(TIM_HandleTypeDef *htim)
 }
 
 /**
-  * @brief  Starts the TIM One Pulse signal generation.
-  * @param  htim : TIM handle
-  * @param  OutputChannel : TIM Channels to be enabled.
-  *          This parameter is not used since both channels TIM_CHANNEL_1 and
-  *          TIM_CHANNEL_2 are automatically selected.
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Start(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
-{
-  /* Enable the Capture compare and the Input Capture channels
-    (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
-    if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
-    if TIM_CHANNEL_1 is used as input, the TIM_CHANNEL_2 will be used as output
-    in all combinations, the TIM_CHANNEL_1 and TIM_CHANNEL_2 should be enabled together
-
-    No need to enable the counter, it's enabled automatically by hardware
-    (the counter starts in response to a stimulus and generate a pulse */
-
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_1, TIM_CCx_ENABLE);
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_2, TIM_CCx_ENABLE);
-
-  /* Return function status */
-  return HAL_OK;
-}
-
-/**
-  * @brief  Stops the TIM One Pulse signal generation.
-  * @param  htim : TIM handle
-  * @param  OutputChannel : TIM Channels to be disable.
-  *          This parameter can be one of the following values:
-  *            @arg TIM_CHANNEL_1: TIM Channel 1 selected
-  *            @arg TIM_CHANNEL_2: TIM Channel 2 selected
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Stop(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
-{
-  /* Disable the Capture compare and the Input Capture channels
-  (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
-  if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
-  if TIM_CHANNEL_1 is used as input, the TIM_CHANNEL_2 will be used as output
-  in all combinations, the TIM_CHANNEL_1 and TIM_CHANNEL_2 should be disabled together */
-
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_1, TIM_CCx_DISABLE);
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_2, TIM_CCx_DISABLE);
-
-  /* Disable the Peripheral */
-  __HAL_TIM_DISABLE(htim);
-
-  /* Return function status */
-  return HAL_OK;
-}
-
-/**
-  * @brief  Starts the TIM One Pulse signal generation in interrupt mode.
-  * @param  htim : TIM handle
-  * @param  OutputChannel: TIM Channels to be enabled.
-  *          This parameter can be one of the following values:
-  *            @arg TIM_CHANNEL_1: TIM Channel 1 selected
-  *            @arg TIM_CHANNEL_2: TIM Channel 2 selected
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Start_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
-{
-  /* Enable the Capture compare and the Input Capture channels
-    (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
-    if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
-    if TIM_CHANNEL_1 is used as input, the TIM_CHANNEL_2 will be used as output
-    in all combinations, the TIM_CHANNEL_1 and TIM_CHANNEL_2 should be enabled together
-
-    No need to enable the counter, it's enabled automatically by hardware
-    (the counter starts in response to a stimulus and generate a pulse */
-
-  /* Enable the TIM Capture/Compare 1 interrupt */
-  __HAL_TIM_ENABLE_IT(htim, TIM_IT_CC1);
-
-  /* Enable the TIM Capture/Compare 2 interrupt */
-  __HAL_TIM_ENABLE_IT(htim, TIM_IT_CC2);
-
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_1, TIM_CCx_ENABLE);
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_2, TIM_CCx_ENABLE);
-
-  /* Return function status */
-  return HAL_OK;
-}
-
-/**
-  * @brief  Stops the TIM One Pulse signal generation in interrupt mode.
-  * @param  htim : TIM handle
-  * @param  OutputChannel: TIM Channels to be enabled.
-  *          This parameter can be one of the following values:
-  *            @arg TIM_CHANNEL_1: TIM Channel 1 selected
-  *            @arg TIM_CHANNEL_2: TIM Channel 2 selected
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Stop_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
-{
-  /* Disable the TIM Capture/Compare 1 interrupt */
-  __HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
-
-  /* Disable the TIM Capture/Compare 2 interrupt */
-  __HAL_TIM_DISABLE_IT(htim, TIM_IT_CC2);
-
-  /* Disable the Capture compare and the Input Capture channels
-  (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
-  if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
-  if TIM_CHANNEL_1 is used as input, the TIM_CHANNEL_2 will be used as output
-  in all combinations, the TIM_CHANNEL_1 and TIM_CHANNEL_2 should be disabled together */
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_1, TIM_CCx_DISABLE);
-  TIM_CCxChannelCmd(htim->Instance, TIM_CHANNEL_2, TIM_CCx_DISABLE);
-
-  /* Disable the Peripheral */
-   __HAL_TIM_DISABLE(htim);
-
-  /* Return function status */
-  return HAL_OK;
-}
-
-/**
   * @}
   */
 
@@ -2154,98 +1813,6 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Out
 @endverbatim
   * @{
   */
-/**
-  * @brief  Initializes the TIM Encoder Interface and create the associated handle.
-  * @param  htim: TIM Encoder Interface handle
-  * @param  sConfig: TIM Encoder Interface configuration structure
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_Encoder_Init(TIM_HandleTypeDef *htim,  TIM_Encoder_InitTypeDef* sConfig)
-{
-  uint32_t tmpsmcr = 0U;
-  uint32_t tmpccmr1 = 0U;
-  uint32_t tmpccer = 0U;
-
-  /* Check the TIM handle allocation */
-  if(htim == NULL)
-  {
-    return HAL_ERROR;
-  }
-
-  /* Check the parameters */
-  assert_param(IS_TIM_CC2_INSTANCE(htim->Instance));
-  assert_param(IS_TIM_ENCODER_MODE(sConfig->EncoderMode));
-  assert_param(IS_TIM_IC_SELECTION(sConfig->IC1Selection));
-  assert_param(IS_TIM_IC_SELECTION(sConfig->IC2Selection));
-  assert_param(IS_TIM_IC_POLARITY(sConfig->IC1Polarity));
-  assert_param(IS_TIM_IC_POLARITY(sConfig->IC2Polarity));
-  assert_param(IS_TIM_IC_PRESCALER(sConfig->IC1Prescaler));
-  assert_param(IS_TIM_IC_PRESCALER(sConfig->IC2Prescaler));
-  assert_param(IS_TIM_IC_FILTER(sConfig->IC1Filter));
-  assert_param(IS_TIM_IC_FILTER(sConfig->IC2Filter));
-  assert_param(IS_TIM_PERIOD(htim->Init.Period));
-  assert_param(IS_TIM_PRESCALER(htim->Init.Prescaler));
-
-  if(htim->State == HAL_TIM_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;
-
-    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
-    HAL_TIM_Encoder_MspInit(htim);
-  }
-
-  /* Set the TIM state */
-  htim->State= HAL_TIM_STATE_BUSY;
-
-  /* Reset the SMS bits */
-  htim->Instance->SMCR &= ~TIM_SMCR_SMS;
-
-  /* Configure the Time base in the Encoder Mode */
-  TIM_Base_SetConfig(htim->Instance, &htim->Init);
-
-  /* Get the TIMx SMCR register value */
-  tmpsmcr = htim->Instance->SMCR;
-
-  /* Get the TIMx CCMR1 register value */
-  tmpccmr1 = htim->Instance->CCMR1;
-
-  /* Get the TIMx CCER register value */
-  tmpccer = htim->Instance->CCER;
-
-  /* Set the encoder Mode */
-  tmpsmcr |= sConfig->EncoderMode;
-
-  /* Select the Capture Compare 1 and the Capture Compare 2 as input */
-  tmpccmr1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_CC2S);
-  tmpccmr1 |= (sConfig->IC1Selection | (sConfig->IC2Selection << 8U));
-
-  /* Set the the Capture Compare 1 and the Capture Compare 2 prescalers and filters */
-  tmpccmr1 &= ~(TIM_CCMR1_IC1PSC | TIM_CCMR1_IC2PSC);
-  tmpccmr1 &= ~(TIM_CCMR1_IC1F | TIM_CCMR1_IC2F);
-  tmpccmr1 |= sConfig->IC1Prescaler | (sConfig->IC2Prescaler << 8U);
-  tmpccmr1 |= (sConfig->IC1Filter << 4U) | (sConfig->IC2Filter << 12U);
-
-  /* Set the TI1 and the TI2 Polarities */
-  tmpccer &= ~(TIM_CCER_CC1P | TIM_CCER_CC2P);
-  tmpccer &= ~(TIM_CCER_CC1NP | TIM_CCER_CC2NP);
-  tmpccer |= sConfig->IC1Polarity | (sConfig->IC2Polarity << 4U);
-
-  /* Write to TIMx SMCR */
-  htim->Instance->SMCR = tmpsmcr;
-
-  /* Write to TIMx CCMR1 */
-  htim->Instance->CCMR1 = tmpccmr1;
-
-  /* Write to TIMx CCER */
-  htim->Instance->CCER = tmpccer;
-
-  /* Initialize the TIM state*/
-  htim->State= HAL_TIM_STATE_READY;
-
-  return HAL_OK;
-}
-
 /**
   * @brief  DeInitializes the TIM Encoder interface
   * @param  htim: TIM Encoder handle
@@ -3334,60 +2901,6 @@ HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStart(TIM_HandleTypeDef *htim, uint32_t 
 }
 
 /**
-  * @brief  Stops the TIM DMA Burst mode
-  * @param  htim : TIM handle
-  * @param  BurstRequestSrc: TIM DMA Request sources to disable
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc)
-{
-  /* Check the parameters */
-  assert_param(IS_TIM_DMA_SOURCE(BurstRequestSrc));
-  
-  /* Abort the DMA transfer (at least disable the DMA channel) */
-  switch(BurstRequestSrc)
-  {
-    case TIM_DMA_UPDATE:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_UPDATE]); 
-    }
-    break;
-    case TIM_DMA_CC1:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC1]);     
-    }
-    break;
-    case TIM_DMA_CC2:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC2]);     
-    }
-    break;
-    case TIM_DMA_CC3:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC3]);     
-    }
-    break;
-    case TIM_DMA_CC4:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC4]);     
-    }
-    break;
-    case TIM_DMA_TRIGGER:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_TRIGGER]);     
-    }
-    break;
-    default:
-    break;  
-  }
-  /* Disable the TIM Update DMA request */
-  __HAL_TIM_DISABLE_DMA(htim, BurstRequestSrc);
-      
-  /* Return function status */
-  return HAL_OK;  
-}
-
-/**
   * @brief  Configure the DMA Burst to transfer Data from the TIM peripheral to the memory
   * @param  htim : TIM handle
   * @param  BurstBaseAddress: TIM Base address from when the DMA will starts the Data read.
@@ -3532,61 +3045,6 @@ HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStart(TIM_HandleTypeDef *htim, uint32_t B
 
   htim->State = HAL_TIM_STATE_READY;
   
-  /* Return function status */
-  return HAL_OK;
-}
-
-/**
-  * @brief  Stop the DMA burst reading
-  * @param  htim : TIM handle
-  * @param  BurstRequestSrc: TIM DMA Request sources to disable.
-  * @retval HAL status
-  */
-HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc)
-{
-  /* Check the parameters */
-  assert_param(IS_TIM_DMA_SOURCE(BurstRequestSrc));
-  
-  /* Abort the DMA transfer (at least disable the DMA channel) */
-  switch(BurstRequestSrc)
-  {
-    case TIM_DMA_UPDATE:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_UPDATE]); 
-    }
-    break;
-    case TIM_DMA_CC1:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC1]);     
-    }
-    break;
-    case TIM_DMA_CC2:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC2]);     
-    }
-    break;
-    case TIM_DMA_CC3:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC3]);     
-    }
-    break;
-    case TIM_DMA_CC4:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_CC4]);     
-    }
-    break;
-    case TIM_DMA_TRIGGER:
-    {  
-      HAL_DMA_Abort(htim->hdma[TIM_DMA_ID_TRIGGER]);     
-    }
-    break;
-    default:
-    break;  
-  }
-
-  /* Disable the TIM Update DMA request */
-  __HAL_TIM_DISABLE_DMA(htim, BurstRequestSrc);
-
   /* Return function status */
   return HAL_OK;
 }
@@ -4376,44 +3834,6 @@ static void TIM_DMATriggerCplt(DMA_HandleTypeDef *hdma)
   htim->State= HAL_TIM_STATE_READY; 
   
   HAL_TIM_TriggerCallback(htim);
-}
-
-/**
-  * @brief  Time Base configuration
-  * @param  TIMx : TIM peripheral
-  * @param   Structure : TIM Base configuration structure
-  * @retval None
-  */
-static void TIM_Base_SetConfig(TIM_TypeDef *TIMx, TIM_Base_InitTypeDef *Structure)
-{
-  uint32_t tmpcr1 = 0U;
-  tmpcr1 = TIMx->CR1;
-  
-  /* Set TIM Time Base Unit parameters ---------------------------------------*/
-  if(IS_TIM_CC1_INSTANCE(TIMx) != RESET)
-  {
-    /* Select the Counter Mode */
-    tmpcr1 &= ~(TIM_CR1_DIR | TIM_CR1_CMS);
-    tmpcr1 |= Structure->CounterMode;
-  }
- 
-  if(IS_TIM_CC1_INSTANCE(TIMx) != RESET)  
-  {
-    /* Set the clock division */
-    tmpcr1 &= ~TIM_CR1_CKD;
-    tmpcr1 |= (uint32_t)Structure->ClockDivision;
-  }
-
-  TIMx->CR1 = tmpcr1;
-
-  /* Set the Autoreload value */
-  TIMx->ARR = (uint32_t)Structure->Period ;
- 
-  /* Set the Prescaler value */
-  TIMx->PSC = (uint32_t)Structure->Prescaler;
-
-  /* Generate an update event to reload the Prescaler value immediatly */
-  TIMx->EGR = TIM_EGR_UG;
 }
 
 /**

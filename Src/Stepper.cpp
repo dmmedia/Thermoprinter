@@ -254,7 +254,7 @@ namespace Stepper {
 	void enableISRs(void);
 
 	// Stepper pulse duration, in cycles
-	inline int32_t STEP_PULSE_CYCLES(void) {
+	inline uint32_t STEP_PULSE_CYCLES(void) {
 		return MINIMUM_STEPPER_PULSE * Rcc::CYCLES_PER_MICROSECOND();
 	}
 
@@ -373,7 +373,7 @@ namespace Stepper {
 			// Delays under 20 cycles (1.25µs) will be very accurate, using NOPs.
 			// Longer delays use a loop. The resolution is 8 cycles.
 			//
-			const int32_t EXTRA_CYCLES_XYZE = STEP_PULSE_CYCLES() - 10;
+			const uint32_t EXTRA_CYCLES_XYZE = STEP_PULSE_CYCLES() - 10;
 
 			//
 			// If a minimum pulse time was specified get the timer TIM2 value.
