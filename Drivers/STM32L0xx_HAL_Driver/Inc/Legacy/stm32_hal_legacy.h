@@ -44,88 +44,8 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
-/* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
-/** @defgroup HAL_AES_Aliased_Defines HAL CRYP Aliased Defines maintained for legacy purpose
-  * @{
-  */
-#define AES_FLAG_RDERR                  CRYP_FLAG_RDERR
-#define AES_FLAG_WRERR                  CRYP_FLAG_WRERR
-#define AES_CLEARFLAG_CCF               CRYP_CLEARFLAG_CCF
-#define AES_CLEARFLAG_RDERR             CRYP_CLEARFLAG_RDERR
-#define AES_CLEARFLAG_WRERR             CRYP_CLEARFLAG_WRERR
-
-/**
-  * @}
-  */
-  
-/** @defgroup HAL_ADC_Aliased_Defines HAL ADC Aliased Defines maintained for legacy purpose
-  * @{
-  */
-#define ADC_RESOLUTION12b               ADC_RESOLUTION_12B
-#define ADC_RESOLUTION10b               ADC_RESOLUTION_10B
-#define ADC_RESOLUTION8b                ADC_RESOLUTION_8B
-#define ADC_RESOLUTION6b                ADC_RESOLUTION_6B
-#define OVR_DATA_OVERWRITTEN            ADC_OVR_DATA_OVERWRITTEN
-#define OVR_DATA_PRESERVED              ADC_OVR_DATA_PRESERVED
-#define EOC_SINGLE_CONV                 ADC_EOC_SINGLE_CONV
-#define EOC_SEQ_CONV                    ADC_EOC_SEQ_CONV
-#define EOC_SINGLE_SEQ_CONV             ADC_EOC_SINGLE_SEQ_CONV
-#define REGULAR_GROUP                   ADC_REGULAR_GROUP
-#define INJECTED_GROUP                  ADC_INJECTED_GROUP
-#define REGULAR_INJECTED_GROUP          ADC_REGULAR_INJECTED_GROUP
-#define AWD_EVENT                       ADC_AWD_EVENT
-#define AWD1_EVENT                      ADC_AWD1_EVENT
-#define AWD2_EVENT                      ADC_AWD2_EVENT
-#define AWD3_EVENT                      ADC_AWD3_EVENT
-#define OVR_EVENT                       ADC_OVR_EVENT
-#define JQOVF_EVENT                     ADC_JQOVF_EVENT
-#define ALL_CHANNELS                    ADC_ALL_CHANNELS
-#define REGULAR_CHANNELS                ADC_REGULAR_CHANNELS
-#define INJECTED_CHANNELS               ADC_INJECTED_CHANNELS
-#define SYSCFG_FLAG_SENSOR_ADC          ADC_FLAG_SENSOR
-#define SYSCFG_FLAG_VREF_ADC            ADC_FLAG_VREFINT
-#define ADC_CLOCKPRESCALER_PCLK_DIV1    ADC_CLOCK_SYNC_PCLK_DIV1
-#define ADC_CLOCKPRESCALER_PCLK_DIV2    ADC_CLOCK_SYNC_PCLK_DIV2
-#define ADC_CLOCKPRESCALER_PCLK_DIV4    ADC_CLOCK_SYNC_PCLK_DIV4
-#define ADC_CLOCKPRESCALER_PCLK_DIV6    ADC_CLOCK_SYNC_PCLK_DIV6
-#define ADC_CLOCKPRESCALER_PCLK_DIV8    ADC_CLOCK_SYNC_PCLK_DIV8
-#define ADC_EXTERNALTRIG0_T6_TRGO       ADC_EXTERNALTRIGCONV_T6_TRGO 
-#define ADC_EXTERNALTRIG1_T21_CC2       ADC_EXTERNALTRIGCONV_T21_CC2 
-#define ADC_EXTERNALTRIG2_T2_TRGO       ADC_EXTERNALTRIGCONV_T2_TRGO 
-#define ADC_EXTERNALTRIG3_T2_CC4        ADC_EXTERNALTRIGCONV_T2_CC4  
-#define ADC_EXTERNALTRIG4_T22_TRGO      ADC_EXTERNALTRIGCONV_T22_TRGO
-#define ADC_EXTERNALTRIG7_EXT_IT11      ADC_EXTERNALTRIGCONV_EXT_IT11
-#define ADC_CLOCK_ASYNC                 ADC_CLOCK_ASYNC_DIV1
-#define ADC_EXTERNALTRIG_EDGE_NONE      ADC_EXTERNALTRIGCONVEDGE_NONE
-#define ADC_EXTERNALTRIG_EDGE_RISING    ADC_EXTERNALTRIGCONVEDGE_RISING
-#define ADC_EXTERNALTRIG_EDGE_FALLING   ADC_EXTERNALTRIGCONVEDGE_FALLING
-#define ADC_EXTERNALTRIG_EDGE_RISINGFALLING ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING
-#define ADC_SAMPLETIME_2CYCLE_5         ADC_SAMPLETIME_2CYCLES_5
-
-#define HAL_ADC_STATE_BUSY_REG          HAL_ADC_STATE_REG_BUSY
-#define HAL_ADC_STATE_BUSY_INJ          HAL_ADC_STATE_INJ_BUSY
-#define HAL_ADC_STATE_EOC_REG           HAL_ADC_STATE_REG_EOC
-#define HAL_ADC_STATE_EOC_INJ           HAL_ADC_STATE_INJ_EOC
-#define HAL_ADC_STATE_ERROR             HAL_ADC_STATE_ERROR_INTERNAL
-#define HAL_ADC_STATE_BUSY              HAL_ADC_STATE_BUSY_INTERNAL
-#define HAL_ADC_STATE_AWD               HAL_ADC_STATE_AWD1 
-/**
-  * @}
-  */
-  
-/** @defgroup HAL_CEC_Aliased_Defines HAL CEC Aliased Defines maintained for legacy purpose
-  * @{
-  */ 
-  
-#define __HAL_CEC_GET_IT __HAL_CEC_GET_FLAG 
-
-/**
-  * @}
-  */   
-   
 /** @defgroup HAL_COMP_Aliased_Defines HAL COMP Aliased Defines maintained for legacy purpose
   * @{
   */

@@ -31,11 +31,6 @@ namespace CommandParser {
 	// Private function declarations
 	//
 
-	// Reset is done before parsing
-	static void reset();
-
-    inline int value_int();
-
     //
     // Public variable initialization
     //
@@ -52,12 +47,32 @@ namespace CommandParser {
 	//
 	// Since each param is set/cleared on seen codes
 	//
-	static void reset() {
+	static inline void reset() {
         string_arg = NULL;                    // No whole line argument
         // stringArg = "";
 	    command_letter = '?';                 // No command letter
 	    codenum = 0U;                         // No command code
 	}
+
+    // Float removes 'E' to prevent scientific notation interpretation
+    static inline int value_int() {
+    	if (int_arg) {
+    		char *e = int_arg;
+    		for (;;) {
+    			const char c { *e };
+    			if (c == '\0' || c == ' ') break;
+    			if (c == 'E' || c == 'e') {
+    				*e = '\0';
+    				const int ret = strtol(int_arg, NULL, 10);
+    				*e = c;
+    				return ret;
+    			}
+    			++e;
+    		}
+    		return strtol(int_arg, NULL, 10);
+    	}
+    	return 0;
+    }
 
 	void parse(char* p) {
 		reset(); // No codes to report
@@ -131,26 +146,6 @@ namespace CommandParser {
 
     int32_t value_axis_units() {
     	return value_int();
-    }
-
-    // Float removes 'E' to prevent scientific notation interpretation
-    inline int value_int() {
-    	if (int_arg) {
-    		char *e = int_arg;
-    		for (;;) {
-    			const char c { *e };
-    			if (c == '\0' || c == ' ') break;
-    			if (c == 'E' || c == 'e') {
-    				*e = '\0';
-    				const int ret = strtol(int_arg, NULL, 10);
-    				*e = c;
-    				return ret;
-    			}
-    			++e;
-    		}
-    		return strtol(int_arg, NULL, 10);
-    	}
-    	return 0;
     }
 
     // End
