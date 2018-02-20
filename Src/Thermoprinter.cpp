@@ -18,14 +18,17 @@
 #include "Planner.h"
 #include "CommandProcessor.h"
 #include "Settings.h"
+#include "Timers.h"
 #include "Temperature.h"
 #include "Stepper.h"
-#include "Timers.h"
 
 namespace Thermoprinter {
 	//lint -save -e1924
 	bool Running = true;
 	//lint -restore
+
+	bool IsRunning() { return  Running; }
+	bool IsStopped() { return !Running; }
 
 	namespace BSP {
 		void setup_powerhold() {

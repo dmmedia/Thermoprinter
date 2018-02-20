@@ -294,47 +294,6 @@ typedef enum
   * @}
   */
 
-/** @defgroup TIM_Active_Channel  TIM active channel definition
-  * @{
-  */
-/** 
-  * @brief  HAL Active channel structures definition  
-  */ 
-typedef enum
-{
-  HAL_TIM_ACTIVE_CHANNEL_1        = 0x01U,    /*!< The active channel is 1     */
-  HAL_TIM_ACTIVE_CHANNEL_2        = 0x02U,    /*!< The active channel is 2     */
-  HAL_TIM_ACTIVE_CHANNEL_3        = 0x04U,    /*!< The active channel is 3     */   
-  HAL_TIM_ACTIVE_CHANNEL_4        = 0x08U,    /*!< The active channel is 4     */
-  HAL_TIM_ACTIVE_CHANNEL_CLEARED  = 0x00U     /*!< All active channels cleared */    
-}HAL_TIM_ActiveChannel;
-/**
-  * @}
-  */
-
-/** @defgroup TIM_Handle  TIM handler
-  * @{
-  */
-/** 
-  * @brief  TIM Time Base Handle Structure definition  
-  */ 
-typedef struct
-{
-  TIM_TypeDef              *Instance;     /*!< Register base address             */ 
-  TIM_Base_InitTypeDef     Init;          /*!< TIM Time Base required parameters */
-  HAL_TIM_ActiveChannel    Channel;       /*!< Active channel                    */ 
-  DMA_HandleTypeDef        *hdma[7];      /*!< DMA Handlers array
-                                             This array is accessed by a @ref DMA_Handle_index */
-  HAL_LockTypeDef          Lock;          /*!< Locking object                    */
-__IO HAL_TIM_StateTypeDef  State;         /*!< TIM operation state               */  
-}TIM_HandleTypeDef;
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 /* Exported constants --------------------------------------------------------*/
 /** @defgroup TIM_Exported_Constants TIM Exported Constants
   * @{
@@ -1242,212 +1201,10 @@ __IO HAL_TIM_StateTypeDef  State;         /*!< TIM operation state              
   * @}
   */   
      
-/* Include TIM HAL Extension module */
-#include "stm32l0xx_hal_tim_ex.h"
-
 /* Exported functions --------------------------------------------------------*/
 /** @defgroup TIM_Exported_Functions TIM Exported Functions
   * @{
   */
-
-/* Exported functions --------------------------------------------------------*/
-/* Time Base functions ********************************************************/
-
-/** @defgroup TIM_Exported_Functions_Group1 Timer Base functions
- *  @brief    Time Base functions
- *  @{
- */
-HAL_StatusTypeDef HAL_TIM_Base_Init(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_Base_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_Base_Start(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_Base_Stop(TIM_HandleTypeDef *htim);
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_Base_Stop_IT(TIM_HandleTypeDef *htim);
-/* Non-Blocking mode: DMA */
-HAL_StatusTypeDef HAL_TIM_Base_Start_DMA(TIM_HandleTypeDef *htim, uint32_t *pData, uint16_t Length);
-HAL_StatusTypeDef HAL_TIM_Base_Stop_DMA(TIM_HandleTypeDef *htim);
-
-/**
-  * @}
-  */
-
-
-/* Timer Output Compare functions **********************************************/
-
-/** @defgroup TIM_Exported_Functions_Group2 Timer Output Compare functions
- *  @brief    Timer Output Compare functions
- *  @{
- */
-
-HAL_StatusTypeDef HAL_TIM_OC_Init(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_OC_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_OC_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_OC_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_OC_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_OC_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_OC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_OC_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: DMA */
-HAL_StatusTypeDef HAL_TIM_OC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
-HAL_StatusTypeDef HAL_TIM_OC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
-/**
-  * @}
-  */
-
-
-/* Timer PWM functions *********************************************************/
-
-/** @defgroup TIM_Exported_Functions_Group3 Timer PWM functions
- *   @brief    Timer PWM functions
- *   @{
- */
-HAL_StatusTypeDef HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_PWM_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_PWM_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_PWM_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_PWM_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_PWM_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: DMA */
-HAL_StatusTypeDef HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
-HAL_StatusTypeDef HAL_TIM_PWM_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
-/**
-  * @}
-  */
-
-/* Timer Input Capture functions ***********************************************/
-
-/** @defgroup TIM_Exported_Functions_Group4 Timer Input Capture functions
- *  @brief    Timer Input Capture functions
- *  @{
- */
-HAL_StatusTypeDef HAL_TIM_IC_Init(TIM_HandleTypeDef *htim);
-HAL_StatusTypeDef HAL_TIM_IC_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_IC_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_IC_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_IC_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_IC_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_IC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_IC_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: DMA */
-HAL_StatusTypeDef HAL_TIM_IC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
-HAL_StatusTypeDef HAL_TIM_IC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
-/**
-  * @}
-  */
-
-/* Timer One Pulse functions ***************************************************/
-
-/** @defgroup TIM_Exported_Functions_Group5 Timer One Pulse functions
- *  @brief    Timer One Pulse functions
- *  @{
- */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Init(TIM_HandleTypeDef *htim, uint32_t OnePulseMode);
-HAL_StatusTypeDef HAL_TIM_OnePulse_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_OnePulse_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_OnePulse_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Start(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
-HAL_StatusTypeDef HAL_TIM_OnePulse_Stop(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
-
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_OnePulse_Start_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
-HAL_StatusTypeDef HAL_TIM_OnePulse_Stop_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
-
-/**
-  * @}
-  */
-
-/* Timer Encoder functions *****************************************************/
-
-/** @defgroup TIM_Exported_Functions_Group6 Timer Encoder functions
- *  @brief       Timer Encoder functions
- *  @{
- */
-HAL_StatusTypeDef HAL_TIM_Encoder_Init(TIM_HandleTypeDef *htim,  TIM_Encoder_InitTypeDef* sConfig);
-HAL_StatusTypeDef HAL_TIM_Encoder_DeInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim);
-void HAL_TIM_Encoder_MspDeInit(TIM_HandleTypeDef *htim);
-/* Blocking mode: Polling */
-HAL_StatusTypeDef HAL_TIM_Encoder_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_Encoder_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: Interrupt */
-HAL_StatusTypeDef HAL_TIM_Encoder_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_Encoder_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
-/* Non-Blocking mode: DMA */
-HAL_StatusTypeDef HAL_TIM_Encoder_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData1, uint32_t *pData2, uint16_t Length);
-HAL_StatusTypeDef HAL_TIM_Encoder_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
-
-/**
-  * @}
-  */
-
-/* Interrupt Handler functions  **********************************************/
-
-/** @defgroup TIM_Exported_Functions_Group7 Timer IRQ handler management
- *  @brief      Interrupt Handler functions
- *  @{
- */
-void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim);
-/**
-  * @}
-  */
-
-/* Control functions  *********************************************************/
-
-/** @defgroup TIM_Exported_Functions_Group8 Peripheral Control functions
- *  @brief      Control functions
- *  @{
- */
-HAL_StatusTypeDef HAL_TIM_OC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef* sConfig, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_PWM_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef* sConfig, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_IC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_IC_InitTypeDef* sConfig, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_OnePulse_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OnePulse_InitTypeDef* sConfig, uint32_t OutputChannel,  uint32_t InputChannel);
-HAL_StatusTypeDef HAL_TIM_ConfigOCrefClear(TIM_HandleTypeDef *htim, TIM_ClearInputConfigTypeDef * sClearInputConfig, uint32_t Channel);
-HAL_StatusTypeDef HAL_TIM_ConfigClockSource(TIM_HandleTypeDef *htim, TIM_ClockConfigTypeDef * sClockSourceConfig);    
-HAL_StatusTypeDef HAL_TIM_ConfigTI1Input(TIM_HandleTypeDef *htim, uint32_t TI1_Selection);
-HAL_StatusTypeDef HAL_TIM_SlaveConfigSynchronization(TIM_HandleTypeDef *htim, TIM_SlaveConfigTypeDef * sSlaveConfig);
-HAL_StatusTypeDef HAL_TIM_SlaveConfigSynchronization_IT(TIM_HandleTypeDef *htim, TIM_SlaveConfigTypeDef * sSlaveConfig);
-HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress, uint32_t BurstRequestSrc, \
-                                              uint32_t  *BurstBuffer, uint32_t  BurstLength);
-HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc);
-HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress, uint32_t BurstRequestSrc, \
-                                              uint32_t  *BurstBuffer, uint32_t  BurstLength);
-HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc);
-HAL_StatusTypeDef HAL_TIM_GenerateEvent(TIM_HandleTypeDef *htim, uint32_t EventSource);
-uint32_t HAL_TIM_ReadCapturedValue(TIM_HandleTypeDef *htim, uint32_t Channel);
-
-/**
-  * @}
-  */
-
-/* Callback in non blocking modes (Interrupt and DMA) *************************/
-
-/** @defgroup TIM_Exported_Functions_Group9 Timer Callbacks functions
- *  @brief      Callback functions
- *  @{
- */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim);
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
-void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim);
-void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim);
-/**
-  * @}
-  */
-
 
 /* Peripheral State functions  **************************************************/
 
@@ -1455,12 +1212,6 @@ void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim);
  *  @brief      Peripheral State functions
  *  @{
  */
-HAL_TIM_StateTypeDef HAL_TIM_Base_GetState(TIM_HandleTypeDef *htim);
-HAL_TIM_StateTypeDef HAL_TIM_OC_GetState(TIM_HandleTypeDef *htim);
-HAL_TIM_StateTypeDef HAL_TIM_PWM_GetState(TIM_HandleTypeDef *htim);
-HAL_TIM_StateTypeDef HAL_TIM_IC_GetState(TIM_HandleTypeDef *htim);
-HAL_TIM_StateTypeDef HAL_TIM_OnePulse_GetState(TIM_HandleTypeDef *htim);
-HAL_TIM_StateTypeDef HAL_TIM_Encoder_GetState(TIM_HandleTypeDef *htim);
 void TIM_DMADelayPulseCplt(DMA_HandleTypeDef *hdma);
 void TIM_DMAError(DMA_HandleTypeDef *hdma);
 void TIM_DMACaptureCplt(DMA_HandleTypeDef *hdma);
@@ -1472,16 +1223,6 @@ void TIM_DMACaptureCplt(DMA_HandleTypeDef *hdma);
 /**
   * @}
   */
-
-/* Define the private group ***********************************/
-/**************************************************************/
-/** @defgroup TIM_Private TIM Private
-  * @{
-  */
-/**
-  * @}
-  */
-/**************************************************************/
 
 /**
   * @}

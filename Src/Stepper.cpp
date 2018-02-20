@@ -33,9 +33,9 @@
 #include "Configuration.h"
 #include "Stepper.h"
 #include <stddef.h>
+#include "Timers.h"
 #include "Temperature.h"
 #include "Endstops.h"
-#include "tim.h"
 #include "Thermoprinter.h"
 #include "Conditionals.h"
 #include "rcc.h"
@@ -128,7 +128,7 @@ namespace Stepper {
 	// Private variables
 	//
 
-	TIM_HandleTypeDef htim6;
+	Timers::TIM_HandleTypeDef htim6;
 
 	//
 	// Positions of stepper motors, in step units
@@ -511,7 +511,7 @@ namespace Stepper {
 		// frequency on a 16MHz MCU. If you are going to change this, be
 		// sure to regenerate speed_lookuptable.h with
 		// create_speed_lookuptable.py
-		TIM_Base_InitTypeDef tim6_Init;
+		Timers::TIM_Base_InitTypeDef tim6_Init;
 		tim6_Init.Prescaler = 8;
 		tim6_Init.CounterMode = TIM_COUNTERMODE_UP;
 		// Init Stepper ISR to 122 Hz for quick starting
@@ -520,7 +520,7 @@ namespace Stepper {
 
 		htim6.Instance = TIM6;
 		htim6.Init = tim6_Init;
-		htim6.Channel = TIM_ACTIVE_CHANNEL_CLEARED;
+		htim6.Channel = Timers::TIM_ACTIVE_CHANNEL_CLEARED;
 
 		if (STATUS_ERROR == TIM_Base_Init(&htim6)) {
 			Thermoprinter::Error_Handler(__FILE__, __LINE__);

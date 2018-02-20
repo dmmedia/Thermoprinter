@@ -168,6 +168,7 @@
 								<option id="com.atollic.truestudio.common_options.target.fpucore.1136616940" name="FPU" superClass="com.atollic.truestudio.common_options.target.fpucore" value="com.atollic.truestudio.common_options.target.fpucore.None" valueType="enumerated"/>
 								<option id="com.atollic.truestudio.common_options.target.fpu.328570258" name="Floating point" superClass="com.atollic.truestudio.common_options.target.fpu"/>
 								<option id="com.atollic.truestudio.common_options.target.interwork.413176210" name="Mix ARM/Thumb" superClass="com.atollic.truestudio.common_options.target.interwork"/>
+								<option id="com.atollic.truestudio.ld.general.scriptfile.1067857843" superClass="com.atollic.truestudio.ld.general.scriptfile"/>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1391373562" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp">
 								<option id="com.atollic.truestudio.gpp.directories.select.53749179" name="Include path" superClass="com.atollic.truestudio.gpp.directories.select" useByScannerDiscovery="false" valueType="includePath">
@@ -205,7 +206,7 @@
 								<option id="com.atollic.truestudio.common_options.target.instr_set.661318902" name="Instruction set" superClass="com.atollic.truestudio.common_options.target.instr_set" useByScannerDiscovery="false" value="com.atollic.truestudio.common_options.target.instr_set.thumb2" valueType="enumerated"/>
 								<option id="com.atollic.truestudio.common_options.target.fpu.994370991" name="Floating point" superClass="com.atollic.truestudio.common_options.target.fpu" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.interwork.1720230425" name="Mix ARM/Thumb" superClass="com.atollic.truestudio.common_options.target.interwork" useByScannerDiscovery="false"/>
-								<option id="com.atollic.truestudio.ldcc.general.scriptfile.291914747" name="Linker script" superClass="com.atollic.truestudio.ldcc.general.scriptfile" useByScannerDiscovery="false" value="C:\Users\Den\Documents\TTU\Thesis\firmware\SystemWorkbench\Thermoprinter\STM32L053R8Tx_FLASH.ld" valueType="string"/>
+								<option id="com.atollic.truestudio.ldcc.general.scriptfile.291914747" name="Linker script" superClass="com.atollic.truestudio.ldcc.general.scriptfile" useByScannerDiscovery="false" value="../Debug_STM32L053R8_FLASH.ld" valueType="string"/>
 								<option id="com.atollic.truestudio.ldcc.general.nostartfiles.177141261" name="Do not use standard start files" superClass="com.atollic.truestudio.ldcc.general.nostartfiles" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<option id="com.atollic.truestudio.ldcc.optimization.do_garbage.1196678526" name="Dead code removal" superClass="com.atollic.truestudio.ldcc.optimization.do_garbage" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="com.atollic.truestudio.ldcc.input.165423420" name="Input" superClass="com.atollic.truestudio.ldcc.input">
@@ -219,7 +220,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="Drivers/STM32L0xx_HAL_Driver/Src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Drivers/STM32L0xx_HAL_Driver/Src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -231,10 +231,11 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug.bak"/>
+		<configuration configurationName="Release"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/Thermoprinter"/>
 		</configuration>
-		<configuration configurationName="Release"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">

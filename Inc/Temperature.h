@@ -7,8 +7,6 @@
  *      Author: Den
  */
 
-#include "typedefs.h"
-
 namespace AdcManager {
 	//
 	// Public constants and definitions
@@ -18,7 +16,7 @@ namespace AdcManager {
 	// Public variables
 	//
 
-	extern TIM_HandleTypeDef htim2;
+	extern Timers::TIM_HandleTypeDef htim2;
 
 	extern volatile bool in_temp_isr;
 

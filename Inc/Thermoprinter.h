@@ -9,8 +9,8 @@
 
 namespace Thermoprinter {
 	extern bool Running;
-	inline bool IsRunning() { return  Running; }
-	inline bool IsStopped() { return !Running; }
+	bool IsRunning();
+	bool IsStopped();
 
 	void idle();
 

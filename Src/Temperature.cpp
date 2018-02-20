@@ -14,14 +14,13 @@
 #include "Conditionals.h"
 #include "typedefs.h"
 #include "main.h"
+#include "Timers.h"
 #include "Temperature.h"
 #include "Planner.h"
 #include "Stepper.h"
 #include "Endstops.h"
-#include "tim.h"
 #include "rcc.h"
 #include "serial.h"
-#include "Timers.h"
 #include "Thermoprinter.h"
 
 namespace AdcManager {
@@ -779,7 +778,7 @@ namespace AdcManager {
 
 	static ADC_HandleTypeDef AdcHandle;
 
-	TIM_HandleTypeDef htim2;
+	Timers::TIM_HandleTypeDef htim2;
 
 	/* Variable containing ADC conversions results */
 	static __IO uint16_t   aADCxConvertedValues[ADCCONVERTEDVALUES_BUFFER_SIZE];
@@ -1195,7 +1194,7 @@ namespace AdcManager {
 		// frequency on a 16MHz MCU. If you are going to change this, be
 		// sure to regenerate speed_lookuptable.h with
 		// create_speed_lookuptable.py
-		TIM_Base_InitTypeDef tim2_Init;
+		Timers::TIM_Base_InitTypeDef tim2_Init;
 		tim2_Init.Prescaler = 64;
 		tim2_Init.CounterMode = TIM_COUNTERMODE_UP;
 		// Init Stepper ISR to 4 us Hz
@@ -1204,7 +1203,7 @@ namespace AdcManager {
 
 		htim2.Instance = TIM2;
 		htim2.Init = tim2_Init;
-		htim2.Channel = TIM_ACTIVE_CHANNEL_CLEARED;
+		htim2.Channel = Timers::TIM_ACTIVE_CHANNEL_CLEARED;
 
 		if (STATUS_ERROR == TIM_Base_Init(&htim2)) {
 			Thermoprinter::Error_Handler(__FILE__, __LINE__);
