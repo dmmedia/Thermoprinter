@@ -201,16 +201,35 @@ constexpr uint8_t TX_BUFFER_SIZE = 128U;
 
 //#define EEPROM_SETTINGS   // Enable for M500 and M501 commands
 
+#define PAPER_WIDTH_UNITS 58
+#define PRINT_WIDTH_UNITS 48
+
 /**
  * Default Steps Per Unit (steps/mm)
  */
  // default steps per unit for RigidBot with standard hardware
 #define DEFAULT_STEPS_PER_UNIT   16
 
+#define DOTS_PER_UNIT 8
+
+
 /**
  * Default Max Feed Rate (mm/s)
  */
-#define DEFAULT_MAX_FEEDRATE          62.5
+#define DEFAULT_MAX_FEEDRATE          52.5
+// 7.2V, Head temp >= 30C, <= 64 dots/line
+#define MAX_FEEDRATE_LPS 420
+// 5.0V, Head temp >= 50C, <= 64 dots/line
+#define MAX_FEEDRATE_LPS 200
+
+// number of steps backward and then forward before print to avoid backlash
+#define STEPS_BACKLASH 20U
+
+// Pause 2x time of last print between prints
+#define HEAL_INTERVAL_FACTOR 2
+
+// motor speed * factor while loading paper
+#define AUTOLOAD_SPEED_FACTOR 1/4
 
 /**
  * Default Max Acceleration (change/s) change = mm/s

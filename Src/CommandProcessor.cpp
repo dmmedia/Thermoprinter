@@ -29,8 +29,6 @@ namespace CommandProcessor {
 	// Private definitions
 	//
 
-	#define MMS_SCALED(MM_S) (((MM_S) * RuntimeSettings::feedrate_percentage) * 0.01)
-
 	//
 	// Private variables
 	//
@@ -136,10 +134,6 @@ namespace CommandProcessor {
 	    Planner::buffer_line(destination, fr_mm_s);
 	}
 
-	static inline void line_to_destination() {
-		line_to_destination(RuntimeSettings::feedrate_mm_s);
-	}
-
 	//
 	// sync_plan_position
 	//
@@ -152,18 +146,12 @@ namespace CommandProcessor {
 
 	//
 	// Prepare a linear move in a Cartesian setup.
-	// If Mesh Bed Leveling is enabled, perform a mesh move.
 	//
 	// Returns true if the caller didn't update current_position.
 	//
 	static inline bool prepare_move_to_destination_cartesian() {
 	    // Do not use feedrate_percentage for E or Z only moves
-	    if (current_position == destination)
-	        line_to_destination();
-	    else {
-	        const float fr_scaled = MMS_SCALED(RuntimeSettings::feedrate_mm_s);
-	            line_to_destination(fr_scaled);
-	      }
+        line_to_destination(RuntimeSettings::feedrate_mm_s);
 	    return false;
 	}
 

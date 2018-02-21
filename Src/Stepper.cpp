@@ -564,6 +564,83 @@ namespace Stepper {
 		writePin(MOTOR_ENABLE_PORT, MOTOR_ENABLE_PIN, MOTOR_ENABLE_ON);
 	}
 
+	#define Emax = 0.37F // maximum energy per dot for print head
+	// Driving pulse width at 25C [ms]
+	// dotCount - number of simultaneously driven dots
+	// VH - Supply voltage [V]
+	//
+	// Examples (T = 25C, dotCount = 64, Rav = 130 Ohms)
+	//  VH  | pulse width
+	// 4.2V |   6.32 ms
+	// 5.0V |   3.34 ms
+	// 6.0V |   1.90 ms
+	// 7.2V |   1.15 ms
+	float32_t calcTon25(int16_t dotCount, float32_t VH)
+	{
+		static const float32_t Eo = 0.25F; // Typical energy applied to paper [mJ]
+		static const float32_t Rcom = 0.65F; // Common line resistance [Ohm]
+		static const float32_t Rav = 130.0F; // Mean resistanse value [Ohm]
+		static const float32_t Ric = 18.0F; // Driver ON resistanse [Ohm]
+		const float32_t V = -0.0321F * sq(VH) + 1.8455F * VH - 3.8783F;
+		return Eo * (sq(dotCount * Rcom + Rav + Ric)/(sq(V) * Rav));
+	}
+
+	// Compensated pulse width for temperature [ms]
+	// Ton25 - value calculated by calcTon25() [ms]
+	// Tx - operating temperature [C]
+	// Examples
+	// Tx [C] | Thermistor resistance [kOhm] | VH = 4.2V | VH = 5.0V | VH = 6.0V | VH = 7.2V
+	//    0   |            100.86            |    8.69   |    4.60   |    2.61   |    1.58
+	//    5   |             77.77            |    8.22   |    4.35   |    2.46   |    1.50
+	//   10   |             60.52            |    7.75   |    4.10   |    2.32   |    1.41
+	//   15   |             47.51            |    7.27   |    3.85   |    2.18   |    1.33
+	//   20   |             37.61            |    6.80   |    3.59   |    2.04   |    1.24
+	//   25   |             30.00            |    6.32   |    3.34   |    1.90   |    1.15
+	//   30   |             24.11            |    5.94   |    3.14   |    1.78   |    1.08
+	//   35   |             19.52            |    5.56   |    2.94   |    1.67   |    1.01
+	//   40   |             15.90            |    5.18   |    2.74   |    1.55   |    0.94
+	//   45   |             13.04            |    4.81   |    2.54   |    1.44   |    0.88
+	//   50   |             10.77            |    4.43   |    2.34   |    1.33   |    0.81
+	//   55   |              8.94            |    4.05   |    2.14   |    1.21   |    0.74
+	//   60   |              7.46            |    3.67   |    1.94   |    1.10   |    0.67
+	//   65   |              6.26            |    3.29   |    1.74   |    0.99   |    0.60
+	float32_t calcTonForTx(float32_t Ton25, float32_t Tx)
+	{
+		static const float32_t T25 = 25.0F; // Room temperature [C]
+		const float32_t C = Tx > T25 ? 1.2F : 1.5F; // Temperature compensation coefficient
+		return Ton25 * (1 + (((T25 - Tx) * C) / 100));
+	}
+
+	// motor maximum pulse rate for VH [pps]
+	// VH - Supply voltage [V]
+	int16_t calcStepperMaxRateAtVH(float32_t VH)
+	{
+		return 200 * VH - 600;
+	}
+
+	// Acceleration table example
+	// Step |    VH = 4.2 - 4.7    |    VH = 4.8 - 5.5    |    VH = 5.6 - 6.5    |    VH = 6.6 - 7.5    |    VH = 7.6 - 8.5
+	//  No  | Step time [ms] | pps | step time [ms] | pps | step time [ms] | pps | step time [ms] | pps | step time [ms] | pps
+	//   0  |      13.33     |  75 |      8.85      | 113 |      6.41      | 156 |      4.44      | 225 |      3.47      | 288
+	//   1  |      10.91     | 108 |      7.30      | 161 |      5.26      | 224 |      3.78      | 305 |      2.99      | 382
+	//   2  |       8.27     | 134 |      5.57      | 198 |      4.00      | 276 |      2.98      | 367 |      2.39      | 456
+	//   3  |       6.94     | 155 |      4.69      | 229 |      3.36      | 319 |      2.54      | 421 |      2.05      | 520
+	//   4  |       6.09     | 173 |      4.13      | 256 |      2.96      | 358 |      2.25      | 468 |      1.82      | 577
+	//   5  |       5.50     | 190 |      3.57      | 280 |      2.67      | 392 |      2.04      | 511 |      1.66      | 629
+	//   6  |       5.05     | 206 |      3.30      | 303 |      2.45      | 424 |      1.88      | 551 |      1.53      | 677
+	//   7  |       4.70     | 220 |      3.19      | 324 |      2.28      | 453 |      1.76      | 588 |      1.43      | 722
+	//   8  |       4.41     | 233 |      2.99      | 344 |      2.14      | 481 |      1.65      | 623 |      1.35      | 764
+	//   9  |       4.17     | 246 |      2.83      | 362 |      2.02      | 507 |      1.56      | 656 |      1.28      | 804
+	//  10  |       3.96     | 258 |      2.69      | 380 |      1.92      | 532 |      1.49      | 687 |      1.21      | 842
+	//  11  |       3.79     | 270 |      2.57      | 397 |      1.84      | 556 |      1.42      | 717 |      1.16      | 878
+	//  12  |       3.63     | 281 |      2.47      | 413 |      1.76      | 579 |      1.37      | 746 |      1.12      | 913
+	//  13  |       3.49     | 292 |      2.37      | 429 |      1.70      | 601 |      1.32      | 774 |      1.07      | 947
+	//  14  |       3.37     | 302 |      2.29      | 444 |      1.64      | 622 |      1.27      | 801 |      1.04      | 980
+	//  15  |       3.26     | 312 |      2.22      | 459 |      1.58      | 642 |      1.23      | 827 |      1.00      | 1011
+	//  16  |       3.16     | 322 |      2.15      | 473 |      1.53      | 662 |      1.19      | 852 |      0.97      | 1042
+	//  17  |       3.07     | 331 |      2.08      | 487 |      1.49      | 681 |      1.16      | 876 |      0.95      | 1071
+	//  18  |       2.98     | 340 |      2.03      | 500 |      1.45      | 700 |      1.13      | 900 |      0.92      | 1100
+
 	// End
 
 }
