@@ -207,6 +207,19 @@ constexpr uint8_t TX_BUFFER_SIZE = 128U;
  // default steps per unit for RigidBot with standard hardware
 #define DEFAULT_STEPS_PER_UNIT   16
 
+// motor steps between 2 line centers
+#define STEPS_PER_LINE 2
+
+#define DOTS_PER_LINE 384
+
+#define PRINT_BLOCKS 6
+
+#define DOTS_PER_BLOCK (DOTS_PER_LINE / PRINT_BLOCKS)
+
+#define BYTES_PER_BLOCK 8
+
+#define LINE_BUFFER (BYTES_PER_BLOCK * PRINT_BLOCKS)
+
 /**
  * Default Max Feed Rate (mm/s)
  */

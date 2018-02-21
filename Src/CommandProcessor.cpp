@@ -77,8 +77,8 @@ namespace CommandProcessor {
 
 	static void ok_to_send();
 
-	static inline void line_to_destination(const float32_t fr_mm_s);
-	static inline void line_to_destination();
+	static void line_to_destination(const float32_t fr_mm_s);
+	static void line_to_destination();
 
 	static inline bool prepare_move_to_destination_cartesian();
 
@@ -132,11 +132,11 @@ namespace CommandProcessor {
 	// Move the planner to the position stored in the destination, which is
 	// used by M0 function to set a destination.
 	//
-	static inline void line_to_destination(const float32_t fr_mm_s) {
+	static void line_to_destination(const float32_t fr_mm_s) {
 	    Planner::buffer_line(destination, fr_mm_s);
 	}
 
-	static inline void line_to_destination() {
+	static void line_to_destination() {
 		line_to_destination(RuntimeSettings::feedrate_mm_s);
 	}
 
