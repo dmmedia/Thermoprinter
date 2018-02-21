@@ -130,10 +130,6 @@ namespace Settings {
 }
 
 namespace RuntimeSettings {
-	constexpr float MMM_TO_MMS(float32_t MM_M) {
-		return ((MM_M)/60.0);
-	}
-
 	// Initialized by settings.load()
 	//lint -save -e1924
 	bool axis_relative_modes = false;
@@ -142,7 +138,7 @@ namespace RuntimeSettings {
 	bool relative_mode = false;
 	//lint -restore
 
-	float32_t feedrate_mm_s = MMM_TO_MMS(1500.0F);
+	float32_t feedrate_mm_s = DEFAULT_MAX_FEEDRATE;
 
 	int16_t feedrate_percentage = 100;
 	int16_t saved_feedrate_percentage;
